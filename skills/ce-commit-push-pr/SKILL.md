@@ -60,6 +60,8 @@ Note the existing PR URL from the PR check if `state: OPEN`. Step 5 uses it to r
 
 Match repo style for commit messages and PR titles (project instructions in context > recent commits > conventional commits as default). With conventional commits, default to `fix:` over `feat:` when ambiguous — adding code to remedy broken or missing behavior is `fix:`. Reserve `feat:` for capabilities the user could not previously accomplish. The user may override.
 
+If the branch changes durable behavior, workflow, API contracts, UX, or product intent, run a spec drift check before committing: read `docs/specs/index.yml` when present, update affected specs or report why no spec applies, and log missing decisions with `ce-decision-log` when ambiguity was resolved.
+
 ## Step 3: Commit and push
 
 If on the default branch, branch creation needs to handle stale local `<base>`, unpushed commits on local `<base>`, and uncommitted changes that collide with the fresh remote base. Read `references/branch-creation.md` and follow its decision flow before continuing.

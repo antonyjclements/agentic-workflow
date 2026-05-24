@@ -24,6 +24,26 @@ Many repos include a standards registry at `docs/standards/index.yml`. If it exi
 - When reviewing, flag standards violations as findings with file/line references and concrete fixes.
 - When standards are missing, stale, or ambiguous, mention the gap rather than inventing a rule.
 
+## Spec-Driven Development
+
+Use the repo as the source of truth for product intent, standards, and decisions.
+
+- `AGENTS.md` is the orientation and routing file for coding agents. If a repo also has `CLAUDE.md`, keep it aligned with this file.
+- Living specs live under `docs/specs/` and are indexed by `docs/specs/index.yml`.
+- Use one spec per feature or coherent capability. Specs describe current behavior and durable intent, not task progress.
+- Standards live under `docs/standards/` and are indexed by `docs/standards/index.yml`.
+- Decisions live under `docs/decisions/` and are indexed by `docs/decisions/index.yml`.
+- Learnings live under `docs/learnings/` for repo-specific lessons or `~/.agents/learnings/` for global lessons.
+- If it describes intent, keep it alive. If it describes a plan, let it expire. If it describes a decision, log it immutably.
+
+### Spec and Decision Routing
+
+- Use `ce-spec-create` when turning a PRD, feature request, existing behavior, or implementation change into a living feature spec.
+- Use `ce-spec-review` before PRs and after non-trivial implementation changes to catch drift between code and specs.
+- Use `ce-decision-log` when ambiguity is resolved, a trade-off is chosen, or product/architecture behavior is decided.
+- Use `ce-retrospective` when user correction should change future agent behavior; log a decision as well if the correction establishes a durable repo fact.
+- A normal feature flow is: request or PRD -> living spec -> temporary plan -> implementation -> decisions logged as they happen -> spec review before PR.
+
 ## Compound Engineering Workflow
 
 Use the Compound Engineering skills as the default workflow router when available.
@@ -41,6 +61,7 @@ Use the Compound Engineering skills as the default workflow router when availabl
 
 - Use `ce-ideate` when the user asks for ideas, options, improvements, surprising directions, or what to build.
 - Use `ce-brainstorm` when scope, product behavior, requirements, success criteria, or trade-offs are unclear.
+- Use `ce-spec-create` when product intent needs a durable home in `docs/specs/`.
 - Use `ce-plan` when the user asks for a plan, when a brainstorm/requirements doc is ready, or when a multi-step implementation needs structure.
 - Use `ce-doc-review` to improve requirements or plan documents before implementation.
 - Use `ce-proof` when the user wants human review of a markdown draft in Proof.
@@ -55,6 +76,7 @@ Use the Compound Engineering skills as the default workflow router when availabl
 ### Review, Test, and Ship
 
 - Use `ce-code-review` before creating a PR or after non-trivial changes.
+- Use `ce-spec-review` before creating a PR when behavior, workflow, API contracts, UX, or product intent changed.
 - Use `ce-test-browser` for web UI changes that need browser verification.
 - Use `ce-test-xcode` for iOS changes that need simulator build/test verification.
 - Use `ce-demo-reel` when a visual change or user-facing workflow needs screenshots/GIF/video evidence.
@@ -65,6 +87,7 @@ Use the Compound Engineering skills as the default workflow router when availabl
 ### Knowledge Capture
 
 - Use `ce-retrospective` for correction-driven learnings that should prevent repeated agent mistakes.
+- Use `ce-decision-log` for resolved ambiguity, product behavior choices, architecture trade-offs, and workflow policy decisions.
 - Use `ce-discover-standards` when the user wants to extract repeated project conventions into `docs/standards/` and update `docs/standards/index.yml`.
 - Use `ce-compound` after solving a non-trivial problem that should become reusable team knowledge.
 - Use `ce-compound-refresh` when auditing or refreshing `docs/solutions/`.
@@ -75,12 +98,14 @@ Use the Compound Engineering skills as the default workflow router when availabl
 For a normal feature request:
 
 1. If the request is vague or product-shaped, run `ce-brainstorm`.
-2. If the work is multi-step or risky, run `ce-plan`.
-3. Execute with `ce-work`.
-4. Verify with relevant tests, browser checks, simulator checks, or builds.
-5. Review with `ce-code-review` for non-trivial changes.
-6. Capture durable learning with `ce-compound` when appropriate.
-7. Commit/PR only when the user asks.
+2. Create or update a living spec with `ce-spec-create` when durable product intent is affected.
+3. If the work is multi-step or risky, run `ce-plan`.
+4. Execute with `ce-work`.
+5. Log decisions with `ce-decision-log` as ambiguity is resolved.
+6. Verify with relevant tests, browser checks, simulator checks, or builds.
+7. Review with `ce-spec-review` and `ce-code-review` for non-trivial changes.
+8. Capture durable learning with `ce-compound` or `ce-retrospective` when appropriate.
+9. Commit/PR only when the user asks.
 
 For a bug:
 

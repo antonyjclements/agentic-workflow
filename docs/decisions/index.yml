@@ -1,0 +1,9 @@
+decisions:
+  - path: docs/decisions/2026-05-24-use-docs-for-spec-driven-workflow.md
+    title: Use docs/ for spec-driven workflow registries
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - documentation
+      - installer

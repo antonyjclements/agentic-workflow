@@ -16,7 +16,7 @@ Defaults:
 What it does:
   1. Installs skills/* globally into the skills directory.
   2. Copies AGENTS.md into the target repo.
-  3. Creates repo-local docs/standards/index.yml and docs/learnings/index.yml if missing.
+  3. Creates repo-local docs/specs, docs/standards, docs/decisions, and docs/learnings indexes if missing.
   4. Creates global ~/.agents/learnings/index.yml if missing.
 
 Existing files are preserved unless --force is passed.
@@ -117,7 +117,9 @@ install_repo_files() {
   mkdir -p "$repo_dir"
   copy_file "$source_dir/AGENTS.md" "$repo_dir/AGENTS.md"
 
+  write_file_if_missing "$repo_dir/docs/specs/index.yml" "specs: []"
   write_file_if_missing "$repo_dir/docs/standards/index.yml" "standards: []"
+  write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
 }
 

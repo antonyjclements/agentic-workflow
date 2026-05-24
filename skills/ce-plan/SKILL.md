@@ -18,6 +18,7 @@ A ready plan has:
 
 - problem frame, scope boundary, assumptions, dependencies
 - requirements traceability to request/origin doc
+- living spec traceability to `docs/specs/` when product intent already exists or is being created
 - repo-relative paths only; never absolute paths
 - concrete implementation units with decisions and rationale
 - explicit test file paths and enumerated test scenarios for each feature-bearing unit
@@ -41,9 +42,10 @@ A ready plan has:
 
 ## Phase 1: Research
 
-Always inspect local code, tests, docs, conventions, `docs/solutions/` for prior learnings, and `docs/standards/index.yml` when present. Treat that index as the standards registry: infer its schema, select relevant referenced markdown standards by path/tag/glob/domain, and read only applicable standards. Discover user-named tools/resources before substituting alternatives. Decide on external research when APIs, libraries, standards, laws, pricing, or current behavior may have changed; use primary sources. Capture:
+Always inspect local code, tests, docs, conventions, `docs/specs/index.yml` for living product intent, `docs/decisions/index.yml` for prior decisions, `docs/solutions/` for prior learnings, and `docs/standards/index.yml` when present. Treat the standards index as the standards registry: infer its schema, select relevant referenced markdown standards by path/tag/glob/domain, and read only applicable standards. Discover user-named tools/resources before substituting alternatives. Decide on external research when APIs, libraries, standards, laws, pricing, or current behavior may have changed; use primary sources. Capture:
 
 - relevant files and patterns
+- applicable specs and decisions
 - applicable standards and best-practice constraints
 - constraints and contracts
 - likely implementation boundaries
@@ -121,6 +123,7 @@ Before writing, check:
 - paths are repo-relative
 - decisions include rationale
 - plan does not contain implementation progress state
+- plan does not duplicate living spec content except as traceability
 
 After writing, summarize the file path, depth, major decisions, unresolved assumptions, and recommended next step (`ce-work`, `ce-brainstorm`, or manual review).
 

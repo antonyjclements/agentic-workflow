@@ -24,6 +24,7 @@ Do not trigger for ordinary clarifying answers, new unrelated requests, or one-o
 - First honor the correction. Do not let retrospective capture block urgent repair work.
 - Capture one lesson per file.
 - Store durable preferences, repo conventions, workflow expectations, and product-behavior lessons.
+- If the correction establishes a durable product, architecture, API, or workflow decision, also use `ce-decision-log` so the repo decision is recorded immutably.
 - Skip blame, apology, and transcript logging. Write the lesson that prevents recurrence.
 - Ask before promoting a lesson to global scope unless the user explicitly says it is global.
 - Avoid secrets, private customer data, credentials, and sensitive incident details.
