@@ -28,6 +28,15 @@ Many repos include a standards registry at `docs/standards/index.yml`. If it exi
 
 Use the Compound Engineering skills as the default workflow router when available.
 
+### Retrospective Learning
+
+- Use `ce-retrospective` when the user corrects, interrupts, redirects, or later says completed work should have behaved differently.
+- Capture durable lessons as discrete markdown files indexed by `index.yml`.
+- Store repo-specific lessons under `docs/learnings/`.
+- Store global lessons under `~/.agents/learnings/`.
+- Ask before promoting an ambiguous lesson to global scope.
+- Apply the correction first when the current task is blocked; capture the retrospective at the next natural pause.
+
 ### Idea and Requirements
 
 - Use `ce-ideate` when the user asks for ideas, options, improvements, surprising directions, or what to build.
@@ -55,6 +64,7 @@ Use the Compound Engineering skills as the default workflow router when availabl
 
 ### Knowledge Capture
 
+- Use `ce-retrospective` for correction-driven learnings that should prevent repeated agent mistakes.
 - Use `ce-discover-standards` when the user wants to extract repeated project conventions into `docs/standards/` and update `docs/standards/index.yml`.
 - Use `ce-compound` after solving a non-trivial problem that should become reusable team knowledge.
 - Use `ce-compound-refresh` when auditing or refreshing `docs/solutions/`.
