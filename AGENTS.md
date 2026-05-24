@@ -55,6 +55,7 @@ Use the Compound Engineering skills as the default workflow router when availabl
 
 ### Knowledge Capture
 
+- Use `ce-discover-standards` when the user wants to extract repeated project conventions into `docs/standards/` and update `docs/standards/index.yml`.
 - Use `ce-compound` after solving a non-trivial problem that should become reusable team knowledge.
 - Use `ce-compound-refresh` when auditing or refreshing `docs/solutions/`.
 - Do not create learning docs for trivial fixes or unsupported conclusions.

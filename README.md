@@ -6,6 +6,7 @@ Portable agent workflow instructions and Compound Engineering skills.
 
 - `AGENTS.md` - copy this into a repository root to guide coding agents and route work through the Compound Engineering workflow.
 - `skills/` - Compound Engineering skill definitions and supporting reference files.
+- `skills/ce-discover-standards/` - workflow for extracting repeated codebase conventions into `docs/standards/`.
 
 ## Standards Registry Convention
 
