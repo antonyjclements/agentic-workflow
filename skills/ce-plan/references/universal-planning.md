@@ -8,7 +8,7 @@ The detection stub in SKILL.md routes here for anything that isn't clearly softw
 
 - **Is this actually a software task?** The key distinction is task-type, not topic-domain. A study guide about Rust is non-software (producing educational content). A Rust library refactor is software (modifying code). If this is actually software, return to Phase 0.2 in the main SKILL.md.
 - **Is this a quick-help request, not a planning task?** Error messages, factual questions, and single-step tasks don't need a plan. Respond directly and exit. Examples: "zsh: command not found: brew", "what's the capital of France."
-- **Pipeline mode?** If invoked from LFG or any `disable-model-invocation` context: output "This is a non-software task. The LFG pipeline requires ce-work, which only supports software tasks. Use `/ce-plan` directly for non-software planning." and stop.
+- **Pipeline mode?** If invoked from an automated software pipeline or any `disable-model-invocation` context: output "This is a non-software task. The automated software pipeline requires ce-work, which only supports software tasks. Use `/ce-plan` directly for non-software planning." and stop.
 
 Once past these checks, commit to producing a plan. Do not exit because the task looks like a "lookup" or "research question" — the user invoked `ce-plan` because they want a structured output.
 
@@ -91,24 +91,10 @@ Example: A date night plan should present 2-3 restaurant options, 2-3 activity o
   - Research plan for investigations (questions, methods, sources)
   - Options menu for preference-driven tasks (curated picks per category)
 
-## Step 3: Save or Share
+## Step 3: Save
 
-After structuring the plan, ask the user how they want to receive it using the platform's blocking question tool: `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex, `ask_user` in Gemini, `ask_user` in Pi (requires the `pi-ask-user` extension). Fall back to numbered options in chat only when no blocking tool exists or the call errors (e.g., Codex edit modes) — not because a schema load is required. Never silently skip the question.
+After structuring the plan, save it to `docs/features/<feature>/plan.md`. If the relevant feature directory does not exist, create or identify it before writing the plan.
 
-**Question:** "Plan ready. How would you like to receive it?"
+Start the document with a `# Title` heading, followed by `Created: YYYY-MM-DD` on the next line. No YAML frontmatter.
 
-**Options:**
-
-1. **Save to disk** — Write the plan as a markdown file. Ask where:
-   - `docs/plans/` (only show if this directory exists)
-   - Current working directory
-   - `/tmp`
-   - A custom path
-   - Use filename convention: `YYYY-MM-DD-<descriptive-name>-plan.md`
-   - Start the document with a `# Title` heading, followed by `Created: YYYY-MM-DD` on the next line. No YAML frontmatter.
-
-2. **Open in Proof (web app) — review and comment to iterate with the agent** — Open the doc in Every's Proof editor, iterate with the agent via comments, or copy a link to share with others. Load the `ce-proof` skill to create and open the document.
-
-3. **Save to disk AND open in Proof** — Do both: write the markdown file to disk and open the doc in Proof for review.
-
-Do not offer `/ce-work` (software-only) or issue creation (not applicable to non-software plans).
+Do not offer `/ce-work` (software-only), issue creation, or Proof review for non-software plans in the bare-bones workflow.

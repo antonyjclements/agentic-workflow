@@ -1,8 +1,168 @@
 decisions:
+  - path: docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
+    title: Use PR title and body templates
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - pull-requests
+      - configuration
+  - path: docs/decisions/2026-05-25-configure-commit-message-format.md
+    title: Configure commit message format per repo
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - git
+      - configuration
+  - path: docs/decisions/2026-05-25-configure-pr-creation-skill.md
+    title: Configure PR creation skill per repo
+    date: 2026-05-25
+    status: superseded
+    tags:
+      - workflow
+      - pull-requests
+      - configuration
+    superseded_by:
+      - docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
+  - path: docs/decisions/2026-05-25-add-decision-refresh-maintenance.md
+    title: Add decision refresh maintenance
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - decisions
+      - maintenance
+  - path: docs/decisions/2026-05-24-use-single-feature-plan-file.md
+    title: Use single feature plan file
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - plans
+      - features
+  - path: docs/decisions/2026-05-24-make-ce-init-the-install-source-of-truth.md
+    title: Make ce-init the install source of truth
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - installer
+      - skills
+  - path: docs/decisions/2026-05-24-curate-skills-and-enforce-readme-updates.md
+    title: Curate bundled skills and enforce README updates
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - skills
+      - documentation
+  - path: docs/decisions/2026-05-24-add-circleci-pipeline-monitor-skill.md
+    title: Add CircleCI pipeline monitor skill
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - ci
+      - circleci
+  - path: docs/decisions/2026-05-24-add-ce-init-installer-skill.md
+    title: Add ce-init installer skill
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - installer
+      - skills
+  - path: docs/decisions/2026-05-24-add-human-review-gates-for-specs-and-plans.md
+    title: Add human review gates for specs and plans
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - review
+      - github
+  - path: docs/decisions/2026-05-24-blank-ticket-skill-skips-ticket-creation.md
+    title: Blank ticket skill skips ticket creation
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - tickets
+      - configuration
+  - path: docs/decisions/2026-05-24-configure-post-pr-ci-monitoring.md
+    title: Configure post-PR CI monitoring skill per repo
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - ci
+      - automation
+  - path: docs/decisions/2026-05-24-configure-ticket-creation-skill.md
+    title: Configure ticket creation skill per repo
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - tickets
+      - automation
+  - path: docs/decisions/2026-05-24-use-agents-skills-as-canonical-skill-directory.md
+    title: Use ~/.agents/skills as canonical skill directory
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - installer
+      - skills
+  - path: docs/decisions/2026-05-24-use-feature-directories-for-specs-and-plans.md
+    title: Use feature directories for specs and plans
+    date: 2026-05-24
+    status: superseded
+    superseded_by:
+      - docs/decisions/2026-05-24-use-single-feature-plan-file.md
+    tags:
+      - workflow
+      - specs
+      - plans
+  - path: docs/decisions/2026-05-24-use-brainstorm-for-prd-intake.md
+    title: Use brainstorm for PRD intake
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - prd
+      - specs
+  - path: docs/decisions/2026-05-24-import-prds-as-historical-source-artifacts.md
+    title: Import PRDs as historical source artifacts
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - prd
+      - product
+  - path: docs/decisions/2026-05-24-support-feature-spec-indexes.md
+    title: Support feature spec indexes
+    date: 2026-05-24
+    status: superseded
+    superseded_by:
+      - docs/decisions/2026-05-24-use-feature-directories-for-specs-and-plans.md
+    tags:
+      - workflow
+      - specs
+      - features
+  - path: docs/decisions/2026-05-24-proactively-prompt-for-knowledge-capture.md
+    title: Proactively prompt for knowledge capture
+    date: 2026-05-24
+    status: active
+    tags:
+      - workflow
+      - automation
+      - knowledge-capture
   - path: docs/decisions/2026-05-24-use-docs-for-spec-driven-workflow.md
     title: Use docs/ for spec-driven workflow registries
     date: 2026-05-24
-    status: active
+    status: superseded
+    superseded_by:
+      - docs/decisions/2026-05-24-use-feature-directories-for-specs-and-plans.md
     tags:
       - workflow
       - documentation

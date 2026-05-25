@@ -1,8 +1,0 @@
-specs:
-  - path: docs/specs/spec-driven-agentic-workflow.md
-    title: Spec-Driven Agentic Workflow
-    status: active
-    tags:
-      - workflow
-      - specs
-      - decisions

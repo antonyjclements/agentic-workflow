@@ -11,7 +11,7 @@ description: Commit, push, and open a PR with an adaptive, value-first descripti
 
 - **Description-only** — user wants *just* a description ("write/draft a PR description", "describe this PR", or pasted a PR URL/number alone). Run Step 4 only; print the result. Apply only if the user asks. If a PR ref was pasted, pass it to Step 4 so Pre-A resolves the right range.
 - **Description update** — user wants to refresh/rewrite an existing PR's description with no commit/push intent. If no open PR, report and stop. Otherwise run Step 4 (PR mode using the existing PR's URL), then Step 5 to preview, confirm, and apply via `gh pr edit`.
-- **Full workflow** — otherwise. Run Steps 1-5 in order.
+- **Full workflow** — otherwise. Run Steps 1-6 in order.
 
 ## Context
 
@@ -58,9 +58,33 @@ Note the existing PR URL from the PR check if `state: OPEN`. Step 5 uses it to r
 
 ## Step 2: Determine conventions
 
-Match repo style for commit messages and PR titles (project instructions in context > recent commits > conventional commits as default). With conventional commits, default to `fix:` over `feat:` when ambiguous — adding code to remedy broken or missing behavior is `fix:`. Reserve `feat:` for capabilities the user could not previously accomplish. The user may override.
+Read `docs/workflow/config.yml` when it exists. For commit messages, follow `git.commit` before falling back to repo history:
 
-If the branch changes durable behavior, workflow, API contracts, UX, or product intent, run a spec drift check before committing: read `docs/specs/index.yml` when present, update affected specs or report why no spec applies, and log missing decisions with `ce-decision-log` when ambiguity was resolved.
+```yaml
+git:
+  commit:
+    skill: ""
+    format: conventional
+    scope_required: false
+    template: "<type>(<scope>): <description>"
+    allowed_types: [feat, fix, docs, chore, refactor, test, ci, build, perf, style]
+    examples:
+      - "docs(readme): update usage guide"
+```
+
+If `git.commit.skill` is set, delegate commit creation or message generation to that configured skill and pass the diff, branch, recent commits, configured template, allowed types, examples, and PR intent. The custom skill must return the commit hash or the exact commit message to use before continuing to push/PR.
+
+If `git.commit.template` or examples are set, follow them. Treat `scope_required: true` as requiring a non-empty scope. Keep placeholders literal in interpretation only; produce a real subject such as `docs(readme): update usage guide`.
+
+For PR titles, match repo style (project instructions in context > recent commits > conventional commits as default). With conventional commits, default to `fix:` over `feat:` when ambiguous — adding code to remedy broken or missing behavior is `fix:`. Reserve `feat:` for capabilities the user could not previously accomplish. The user may override.
+
+If the branch changes durable behavior, workflow, API contracts, UX, or product intent, run a spec drift check before committing: read `docs/features/index.yml` when present, update affected specs or report why no spec applies, and log missing decisions with `ce-decision-log` when ambiguity was resolved.
+
+If the branch changes user-facing setup, commands, configuration, architecture, or workflow behavior, update `README.md` before committing. Treat missing README updates as a shipping blocker unless the change is clearly internal or the repo has no README.
+
+Run a capture checkpoint before committing non-trivial work: confirm decisions are logged, correction learnings are captured, and solved reusable problems have been offered for `ce-compound`. Keep the prompt concise; skip it when the diff is trivial or capture already happened.
+
+Run `ce-code-review` before pushing or opening a PR for non-trivial changes. Address safe findings before Step 3; carry judgment calls into the PR body when not fixed.
 
 ## Step 3: Commit and push
 
@@ -96,13 +120,38 @@ If the working tree is clean and all commits are already pushed, this step is a 
 
 Otherwise, if the branch diff changes observable behavior (UI, CLI output, API behavior with runnable code, generated artifacts, workflow output) and evidence is not blocked (unavailable credentials, paid services, deploy-only infrastructure, hardware), ask: "This PR has observable behavior. Capture evidence for the PR description?"
 
-- **Capture now** — load `ce-demo-reel` with a target description from the branch diff. It returns `Tier`, `Description`, `URL`, `Path`. Exactly one of `URL`/`Path` contains a real value; the other is `"none"`. If `URL`, splice as a `## Demo` section. If `Path` (user chose local save), note in the body that a demo was recorded but is not embedded. If skipped, proceed without evidence.
+- **Capture now** — use available local tools or screenshots to produce concise evidence. If capture is impossible or clearly not useful, note briefly and proceed without evidence.
 - **Use existing evidence** — ask for the URL or markdown embed; splice as a `## Demo` section.
 - **Skip** — proceed without an evidence section.
 
 Then continue with the rest of the reference (Steps A through G) to compose the title and body.
 
-## Step 5: Apply and report
+## Step 5: Apply PR
+
+Before creating or editing a PR, read `docs/workflow/config.yml` when it exists:
+
+```yaml
+pull_request:
+  template:
+    title: <markdown-template-ref>
+    body: <markdown-template-ref>
+```
+
+Template refs may be:
+
+- `https://github.com/<org>/<repo>/blob/<ref>/<path>.md`
+- `https://raw.githubusercontent.com/<org>/<repo>/<ref>/<path>.md`
+- `file:///absolute/path/to/template.md`
+- an absolute local path
+- a repo-relative local path
+
+If `pull_request.template.title` is set, load that markdown file and use it to shape the PR title. If it contains frontmatter `title:` or a first non-empty heading, use that as the title template; otherwise use the file text as the title template. Replace obvious placeholders such as `{type}`, `{scope}`, `{description}`, `{branch}`, `{ticket}`, `{summary}`, and `{default_title}` when the values are known. If a placeholder cannot be resolved, remove it cleanly or fall back to the generated title.
+
+If `pull_request.template.body` is set, load that markdown file and use it as the PR body template. Replace obvious placeholders such as `{summary}`, `{what_changed}`, `{validation}`, `{risks}`, `{ticket}`, `{spec}`, `{decisions}`, `{default_body}`, and `{badge}` when the values are known. If the template includes `{default_body}`, insert the generated body there; otherwise fill the template sections directly using the generated PR evidence.
+
+For GitHub `blob` URLs, convert to the matching `raw.githubusercontent.com` URL before fetching. For `file://` URLs and local paths, read from disk. If a configured template cannot be loaded, report the problem and fall back to the generated title/body rather than blocking PR creation.
+
+Templates customize PR text only. PR creation still uses the built-in behavior below.
 
 **Description-only mode** — print the title and body. Stop unless the user asks to apply.
 
@@ -114,6 +163,14 @@ Then continue with the rest of the reference (Steps A through G) to compose the 
 - **Yes** — run Step 4 if not already done, then preview and apply (see below).
 
 **Description update mode, or existing-PR rewrite confirmed** — preview before applying. Ask: "New title: `<title>` (`<N>` chars). Summary leads with: `<first two sentences>`. Total body: `<L>` lines. Apply?" If declined, the user may pass focus text back for a regenerate; do not apply. If confirmed, apply per "Applying via gh" below using `gh pr edit` and report the URL.
+
+## Step 6: Post-PR CI Loop
+
+After a new PR is created, or after pushing commits to an existing PR, read `docs/workflow/config.yml`.
+
+- If `post_pr.ci_monitor.skill` is blank or missing, skip monitoring and report that post-PR CI monitoring is disabled.
+- If configured, invoke `ce-monitor-pipeline` with the PR URL/branch.
+- The monitor/fix loop should continue until checks pass, the configured max attempts is reached, or failures are blocked by external infrastructure, credentials, flakes, quota, or unrelated base-branch issues.
 
 ---
 

@@ -1,0 +1,54 @@
+ticket_creation:
+  provider: manual
+  skill: ""
+  project_key: ""
+  team: ""
+  default_labels: []
+  default_priority: ""
+  story_template: default
+research:
+  slack:
+    provider: manual
+    skill: ""
+    workspace: ""
+    default_channels: []
+pull_request:
+  template:
+    title: ""
+    body: ""
+git:
+  commit:
+    skill: ""
+    format: conventional
+    scope_required: false
+    template: "<type>(<scope>): <description>"
+    allowed_types:
+      - feat
+      - fix
+      - docs
+      - chore
+      - refactor
+      - test
+      - ci
+      - build
+      - perf
+      - style
+    examples:
+      - "docs(readme): update usage guide"
+post_pr:
+  ci_monitor:
+    provider: manual
+    skill: ""
+    max_attempts: 3
+    poll_interval_seconds: 30
+    circleci:
+      vcs: github
+      org: ""
+      project: ""
+      branch: ""
+      token_env: CIRCLECI_CLI_TOKEN
+human_review:
+  spec:
+    reviewers: []
+  plan:
+    reviewers: []

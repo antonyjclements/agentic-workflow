@@ -32,7 +32,7 @@ Check whether `agent-browser` is installed:
 command -v agent-browser >/dev/null 2>&1 && echo "Installed" || echo "NOT INSTALLED"
 ```
 
-If not installed, inform the user: "`agent-browser` is not installed. Run `/ce-setup` to install required dependencies." Then stop — this skill cannot function without agent-browser.
+If not installed, inform the user: "`agent-browser` is not installed. Install it before running browser tests." Then stop — this skill cannot function without agent-browser.
 
 ## Workflow
 
@@ -44,7 +44,7 @@ Before starting, verify `agent-browser` is available:
 command -v agent-browser >/dev/null 2>&1 && echo "Ready" || echo "NOT INSTALLED"
 ```
 
-If not installed, inform the user: "`agent-browser` is not installed. Run `/ce-setup` to install required dependencies." Then stop.
+If not installed, inform the user: "`agent-browser` is not installed. Install it before running browser tests." Then stop.
 
 ### 2. Ask Browser Mode
 
@@ -102,7 +102,7 @@ Add any routes, states, accessibility checks, or viewport requirements mandated 
 
 ### 5. Detect and Claim a Free Port
 
-**Pipeline mode only (`mode:pipeline`):** When invoked from LFG or another automated pipeline, always find a port that is actually free — never assume 3000 is available, as multiple agents may be running in parallel on the same machine.
+**Pipeline mode only (`mode:pipeline`):** When invoked from an automated pipeline, always find a port that is actually free — never assume 3000 is available, as multiple agents may be running in parallel on the same machine.
 
 **Manual mode (no `mode:pipeline`):** Use the preferred port as-is. Do not scan for alternatives — the user controls their own server.
 

@@ -1,1 +1,8 @@
-learnings: []
+learnings:
+  - path: docs/learnings/2026-05-24-blank-ticket-skill-is-opt-out.md
+    title: Blank ticket skill is an opt-out
+    scope: repo
+    tags:
+      - workflow
+      - tickets
+      - configuration

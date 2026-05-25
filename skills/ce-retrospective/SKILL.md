@@ -19,6 +19,8 @@ Use this skill when the user:
 
 Do not trigger for ordinary clarifying answers, new unrelated requests, or one-off preferences the user explicitly says are temporary.
 
+Agents should proactively offer this skill after corrections instead of expecting the user to remember it. Apply the correction first when needed, then ask whether the lesson should be saved if scope or durability is ambiguous.
+
 ## Principles
 
 - First honor the correction. Do not let retrospective capture block urgent repair work.

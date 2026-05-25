@@ -18,17 +18,19 @@ A ready plan has:
 
 - problem frame, scope boundary, assumptions, dependencies
 - requirements traceability to request/origin doc
-- living spec traceability to `docs/specs/` when product intent already exists or is being created
+- living spec traceability to `docs/features/<feature>/spec.md` when product intent already exists or is being created
+- canonical save path `docs/features/<feature>/plan.md`
 - repo-relative paths only; never absolute paths
 - concrete implementation units with decisions and rationale
 - explicit test file paths and enumerated test scenarios for each feature-bearing unit
+- implementation units that can become tickets/stories when `ce-create-tickets` is used
 - existing patterns/code references to follow
 - applicable `docs/standards/` references when a standards registry exists
 - clear sequencing and deferred work
 
 ## Phase 0: Source, Scope, Route
 
-1. Resume if the user names an existing plan or a recent obvious match exists in `docs/plans/`; update in place unless the user chooses a new file.
+1. Resume if the user names an existing plan or a recent obvious match exists at `docs/features/*/plan.md`; update in place unless the user chooses a new file.
 2. If the user says deepen/deepening for a plan, verify the target plan and jump to Deepening.
 3. Classify domain:
    - software/code/API/db/repo/deploy work -> continue here
@@ -42,7 +44,7 @@ A ready plan has:
 
 ## Phase 1: Research
 
-Always inspect local code, tests, docs, conventions, `docs/specs/index.yml` for living product intent, `docs/decisions/index.yml` for prior decisions, `docs/solutions/` for prior learnings, and `docs/standards/index.yml` when present. Treat the standards index as the standards registry: infer its schema, select relevant referenced markdown standards by path/tag/glob/domain, and read only applicable standards. Discover user-named tools/resources before substituting alternatives. Decide on external research when APIs, libraries, standards, laws, pricing, or current behavior may have changed; use primary sources. Capture:
+Always inspect local code, tests, docs, conventions, `docs/features/index.yml` for living product intent, `docs/decisions/index.yml` for prior decisions, `docs/solutions/` for prior learnings, and `docs/standards/index.yml` when present. Treat the standards index as the standards registry: infer its schema, select relevant referenced markdown standards by path/tag/glob/domain, and read only applicable standards. Discover user-named tools/resources before substituting alternatives. Decide on external research when APIs, libraries, standards, laws, pricing, or current behavior may have changed; use primary sources. Capture:
 
 - relevant files and patterns
 - applicable specs and decisions
@@ -65,7 +67,7 @@ Do not continue with hidden assumptions when a product decision would change the
 
 ## Phase 3: Structure
 
-Create `docs/plans/YYYY-MM-DD-###-slug-plan.md` for software plans. Keep paths repo-relative.
+Create software plans at `docs/features/<feature>/plan.md`. Keep paths repo-relative. If no feature exists yet, create or identify the feature spec first.
 
 Implementation units should be independently reviewable and ordered by dependency. Each unit includes:
 
@@ -77,6 +79,7 @@ Implementation units should be independently reviewable and ordered by dependenc
 - edge cases
 - implementation notes that guide, not prescribe code
 - dependencies and verification
+- ticket/story hints when useful: title, acceptance criteria, dependencies, labels/components
 
 Use optional diagrams or high-level pseudocode only when they clarify architecture. Put tangential cleanup in Deferred Work.
 
@@ -124,8 +127,11 @@ Before writing, check:
 - decisions include rationale
 - plan does not contain implementation progress state
 - plan does not duplicate living spec content except as traceability
+- plan can be converted into tickets by `ce-create-tickets` without inventing missing acceptance criteria
 
-After writing, summarize the file path, depth, major decisions, unresolved assumptions, and recommended next step (`ce-work`, `ce-brainstorm`, or manual review).
+After writing, ask whether the user wants engineering/human review for the plan. If yes, invoke `ce-request-human-review plan <plan path>`.
+
+Then summarize the plan file path, depth, major decisions, unresolved assumptions, whether human review was requested, and recommended next step (`ce-create-tickets <plan path>`, `ce-work <plan path>`, `ce-brainstorm`, or manual review).
 
 ## Deepening
 
