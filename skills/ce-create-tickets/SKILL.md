@@ -15,7 +15,6 @@ Read `docs/workflow/config.yml` first. Use:
 ```yaml
 ticket_creation:
   skill: <skill-name>
-  provider: linear|jira|github|manual|custom
 ```
 
 If `ticket_creation.skill` is blank, skip ticket creation and report that ticketing is disabled for this repo. If the config file is missing, treat ticket creation as disabled and offer to create the config only when the user wants ticketing enabled.
@@ -48,7 +47,7 @@ Use the target tool's native fields when available. Each ticket should include:
 - acceptance criteria
 - implementation notes only where useful
 - links to spec, plan, decisions, and standards
-- labels/components/priority when the plan or config provides them
+- labels/components/priority when the plan or target ticket tool implies them
 
 ## Rules
 

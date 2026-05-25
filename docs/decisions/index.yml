@@ -1,4 +1,13 @@
 decisions:
+  - path: docs/decisions/2026-05-25-simplify-slack-and-ticket-config.md
+    title: Simplify Slack and ticket configuration
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - configuration
+      - tickets
+      - slack
   - path: docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
     title: Use PR title and body templates
     date: 2026-05-25

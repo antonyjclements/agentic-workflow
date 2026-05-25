@@ -125,7 +125,7 @@ Each workflow step should return the artifact path or ID that becomes input to t
 - Read `docs/workflow/config.yml` before Slack research.
 - Use `research.slack.skill` when an enterprise environment configures a custom Slack skill.
 - If `research.slack.skill` is blank, use `ce-slack-research` with the default Slack discovery path.
-- Preserve source channels, dates, and workspace identifiers in Slack research summaries.
+- Preserve source channels, dates, and any available workspace identifiers in Slack research summaries.
 
 ### README Maintenance Gate
 

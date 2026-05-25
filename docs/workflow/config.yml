@@ -1,17 +1,8 @@
 ticket_creation:
-  provider: manual
   skill: ""
-  project_key: ""
-  team: ""
-  default_labels: []
-  default_priority: ""
-  story_template: default
 research:
   slack:
-    provider: manual
     skill: ""
-    workspace: ""
-    default_channels: []
 pull_request:
   template:
     title: ""

@@ -229,19 +229,10 @@ Ticket creation is configured in `docs/workflow/config.yml`:
 
 ```yaml
 ticket_creation:
-  provider: linear
   skill: linear
-  project_key: ""
-  team: ""
-  default_labels: []
-  default_priority: ""
-  story_template: default
 research:
   slack:
-    provider: manual
     skill: ""
-    workspace: ""
-    default_channels: []
 pull_request:
   template:
     title: ""
@@ -280,9 +271,9 @@ human_review:
       - engineering-github-user
 ```
 
-Set `ticket_creation.skill` to the skill or MCP-backed workflow the agent should use, such as a Linear skill, Jira skill, or custom repo skill. Leave it blank to skip ticket creation for that repo.
+Set `ticket_creation.skill` to the skill or MCP-backed workflow the agent should use, such as a Linear skill, Jira skill, or custom repo skill. Leave it blank to skip ticket creation for that repo. Put provider-specific defaults in that custom skill or the target ticket system, not in the base workflow config.
 
-Set `research.slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `ce-slack-research` discovery path.
+Set `research.slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `ce-slack-research` discovery path. Put workspace or channel defaults in that custom skill when a repo needs them.
 
 Set `pull_request.template.title` and `pull_request.template.body` when PR title/body text should follow organization templates. Each value should point to a markdown file by GitHub URL, raw GitHub URL, `file://` URL, absolute path, or repo-relative path. Leave either blank to use the default generated title or body for that part.
 

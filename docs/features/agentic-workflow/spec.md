@@ -27,6 +27,7 @@ related_decisions:
   - docs/decisions/2026-05-25-configure-pr-creation-skill.md
   - docs/decisions/2026-05-25-configure-commit-message-format.md
   - docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
+  - docs/decisions/2026-05-25-simplify-slack-and-ticket-config.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -78,7 +79,7 @@ The workflow routes:
 - A plan may be created from the spec, but the plan remains temporary execution scaffolding.
 - Plans live at `docs/features/<feature>/plan.md` until removed.
 - Plans are reviewed with `ce-doc-review` before human review, ticket creation, or implementation.
-- A plan may be turned into stories or tickets through `ce-create-tickets`, which uses `docs/workflow/config.yml` to choose the ticket creation skill. If `ticket_creation.skill` is blank, ticket creation is skipped.
+- A plan may be turned into stories or tickets through `ce-create-tickets`, which uses `docs/workflow/config.yml` to choose the ticket creation skill. If `ticket_creation.skill` is blank, ticket creation is skipped. Provider-specific ticket defaults belong in the configured skill or ticket system, not the base workflow config.
 - Implementation agents can pick up one ticket at a time with traceability back to the source plan and spec.
 - Agents may also start from only a ticket after checking out a repo; in that case they read repo guidance, fetch the ticket through the configured tool when available, load linked source artifacts, and verify the ticket does not conflict with living specs or decisions before editing.
 - During implementation, resolved ambiguity is logged with `ce-decision-log`.
@@ -108,7 +109,7 @@ The workflow routes:
 - Ticket creation can be routed through a configured skill in `docs/workflow/config.yml`.
 - PR title/body templates can be configured in `docs/workflow/config.yml`.
 - Commit message conventions can be enforced through `docs/workflow/config.yml`.
-- Slack research can be routed through a configured skill in `docs/workflow/config.yml`.
+- Slack research can be routed through a configured skill in `docs/workflow/config.yml`. Workspace or channel defaults belong in the configured skill, not the base workflow config.
 - Plan review runs before human review, ticket creation, or implementation.
 - Tickets include enough traceability for future agents to implement from the ticket alone after checkout.
 - Human review PR reviewer assignment can be configured in `docs/workflow/config.yml`.
@@ -152,3 +153,4 @@ The workflow routes:
 - `docs/decisions/2026-05-25-configure-pr-creation-skill.md`
 - `docs/decisions/2026-05-25-configure-commit-message-format.md`
 - `docs/decisions/2026-05-25-use-pr-title-and-body-templates.md`
+- `docs/decisions/2026-05-25-simplify-slack-and-ticket-config.md`

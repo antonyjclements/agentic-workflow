@@ -4,6 +4,7 @@ Last refreshed: 2026-05-25
 
 ## Active Decisions
 
+- [Simplify Slack and ticket configuration](../2026-05-25-simplify-slack-and-ticket-config.md) - Keep only routing hooks in the base config and leave provider-specific defaults to custom skills.
 - [Configure commit message format per repo](../2026-05-25-configure-commit-message-format.md) - Let repos enforce commit templates or delegate commits to enterprise-specific skills.
 - [Use PR title and body templates](../2026-05-25-use-pr-title-and-body-templates.md) - Let repos apply enterprise PR text standards through linked markdown templates while keeping the default PR creation flow.
 - [Add decision refresh maintenance](../2026-05-25-add-decision-refresh-maintenance.md) - Keep large decision registries navigable through derived indexes and summaries without rewriting old records.

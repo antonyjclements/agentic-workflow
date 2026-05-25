@@ -251,19 +251,10 @@ install_repo_files() {
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
   write_file_if_missing "$repo_dir/docs/workflow/config.yml" "ticket_creation:
-  provider: manual
   skill: \"\"
-  project_key: \"\"
-  team: \"\"
-  default_labels: []
-  default_priority: \"\"
-  story_template: default
 research:
   slack:
-    provider: manual
     skill: \"\"
-    workspace: \"\"
-    default_channels: []
 pull_request:
   template:
     title: \"\"
