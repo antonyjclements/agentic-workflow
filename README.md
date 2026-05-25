@@ -37,8 +37,10 @@ The installer:
   - `~/.windsurf/skills`
 - copies `AGENTS.md` into the target repo
 - copies `CLAUDE.md` into the target repo as a Claude Code shim containing `@AGENTS.md`
+- writes `.agentic-workflow-version`
 - creates repo-local indexes if missing:
   - `docs/product/prds/index.yml`
+  - `docs/brainstorms/index.yml`
   - `docs/features/index.yml`
   - `docs/standards/index.yml`
   - `docs/decisions/index.yml`
