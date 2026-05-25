@@ -30,14 +30,6 @@ post_pr:
   ci_monitor:
     provider: manual
     skill: ""
-    max_attempts: 3
-    poll_interval_seconds: 30
-    circleci:
-      vcs: github
-      org: ""
-      project: ""
-      branch: ""
-      token_env: CIRCLECI_CLI_TOKEN
 human_review:
   spec:
     reviewers: []

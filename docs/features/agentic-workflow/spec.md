@@ -28,6 +28,7 @@ related_decisions:
   - docs/decisions/2026-05-25-configure-commit-message-format.md
   - docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
   - docs/decisions/2026-05-25-simplify-slack-and-ticket-config.md
+  - docs/decisions/2026-05-25-delegate-ci-monitor-retry-policy.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -86,10 +87,10 @@ The workflow routes:
 - When the decision log becomes large or hard to scan, `ce-decisions-refresh` rebuilds the decision index and generates derived summaries without rewriting immutable decision records.
 - Before PR, `ce-spec-review` checks for drift between changed behavior and living specs.
 - Before push/PR, non-trivial changes receive `ce-code-review`.
-- After PR creation, `ce-monitor-pipeline` runs the configured CI monitor/fix loop when enabled.
+- After PR creation, `ce-monitor-pipeline` delegates to the configured CI monitor/fix skill when enabled.
 - Repos can configure `pull_request.template.title` and `pull_request.template.body` with markdown template file refs from GitHub URLs, raw GitHub URLs, `file://` URLs, absolute paths, or repo-relative paths. Blank values use the default generated title/body.
 - Repos can configure `git.commit.skill` to use an enterprise-specific commit skill. If blank, commit skills follow the configured template, scope requirements, allowed types, examples, repo instructions, or recent history.
-- CircleCI repos can configure `post_pr.ci_monitor.skill: ce-monitor-circleci` to watch branch pipelines and fix branch-caused failures until green or blocked.
+- CircleCI repos can configure `post_pr.ci_monitor.skill: ce-monitor-circleci` to watch branch pipelines and fix branch-caused failures until green or blocked. Retry limits, polling cadence, and CircleCI-specific settings are owned by the linked skill or optional `docs/workflow/circleci.yml`, not the default workflow config.
 - When a user correction reveals a reusable lesson, `ce-retrospective` stores the learning.
 - At natural pauses, agents run a capture checkpoint so users do not need to remember to invoke decision logging, retrospective learning, or compounding manually.
 - When a non-trivial problem is solved, `ce-compound` captures reusable knowledge; `ce-compound-refresh` keeps those solution docs current.
@@ -113,7 +114,7 @@ The workflow routes:
 - Plan review runs before human review, ticket creation, or implementation.
 - Tickets include enough traceability for future agents to implement from the ticket alone after checkout.
 - Human review PR reviewer assignment can be configured in `docs/workflow/config.yml`.
-- CircleCI pipeline monitoring can be routed through `ce-monitor-circleci` from `docs/workflow/config.yml`.
+- CircleCI pipeline monitoring can be routed through `ce-monitor-circleci` from `docs/workflow/config.yml` without adding retry, polling, or CircleCI-specific defaults to the base config.
 - Deprecated or unrelated skills are removed from the bundled skill set and installer-cleaned from global installs when practical.
 - PR-time shipping guidance includes a spec drift check for durable behavior changes.
 - PR-time shipping guidance includes an automated README update check.

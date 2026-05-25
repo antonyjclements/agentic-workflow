@@ -260,8 +260,6 @@ post_pr:
   ci_monitor:
     provider: github-actions
     skill: github:gh-fix-ci
-    max_attempts: 3
-    poll_interval_seconds: 30
 human_review:
   spec:
     reviewers:
@@ -279,7 +277,7 @@ Set `pull_request.template.title` and `pull_request.template.body` when PR title
 
 Set `git.commit.skill` when commits should route through an enterprise-specific skill. Leave it blank to use the default commit flow. The default flow follows `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present, then falls back to repo instructions and recent commit history.
 
-Set `post_pr.ci_monitor.skill` to the skill that should monitor and fix CI/CD after PR creation, such as a GitHub Actions, CircleCI, Jenkins, or custom pipeline skill. Leave it blank to skip post-PR monitoring.
+Set `post_pr.ci_monitor.skill` to the skill that should monitor and fix CI/CD after PR creation, such as a GitHub Actions, CircleCI, Jenkins, or custom pipeline skill. Leave it blank to skip post-PR monitoring. Retry limits and polling cadence belong to the linked monitor skill, not the base workflow config.
 
 For CircleCI:
 
@@ -288,14 +286,16 @@ post_pr:
   ci_monitor:
     provider: circleci
     skill: ce-monitor-circleci
-    max_attempts: 3
-    poll_interval_seconds: 30
-    circleci:
-      vcs: github
-      org: your-github-org
-      project: your-repo
-      branch: ""
-      token_env: CIRCLECI_CLI_TOKEN
+```
+
+CircleCI-specific settings are not part of the default `docs/workflow/config.yml`. `ce-monitor-circleci` will infer them from the git remote, PR URL, and `.circleci/config.yml` where possible. If a repo needs explicit settings, the skill can create `docs/workflow/circleci.yml`:
+
+```yaml
+vcs: github
+org: your-github-org
+project: your-repo
+branch: ""
+token_env: CIRCLECI_CLI_TOKEN
 ```
 
 Set `human_review.spec.reviewers` and `human_review.plan.reviewers` to GitHub usernames that should be requested on spec and plan sign-off PRs. Leave the lists empty to create review PRs without automatic reviewer assignment.
@@ -450,7 +450,7 @@ The configured monitor should:
 - inspect failing jobs/logs
 - fix branch-caused failures
 - push fixes
-- repeat until success, max attempts, or a real external blocker
+- repeat until success, the monitor skill's retry limit, or a real external blocker
 
 Example config:
 
@@ -459,14 +459,6 @@ post_pr:
   ci_monitor:
     provider: circleci
     skill: ce-monitor-circleci
-    max_attempts: 3
-    poll_interval_seconds: 30
-    circleci:
-      vcs: github
-      org: your-github-org
-      project: your-repo
-      branch: ""
-      token_env: CIRCLECI_CLI_TOKEN
 ```
 
 ### 11. Keep README.md current

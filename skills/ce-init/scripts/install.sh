@@ -282,14 +282,6 @@ post_pr:
   ci_monitor:
     provider: manual
     skill: \"\"
-    max_attempts: 3
-    poll_interval_seconds: 30
-    circleci:
-      vcs: github
-      org: \"\"
-      project: \"\"
-      branch: \"\"
-      token_env: CIRCLECI_CLI_TOKEN
 human_review:
   spec:
     reviewers: []
@@ -325,7 +317,7 @@ Target repo:   $repo_dir
 Next steps:
 1. Review AGENTS.md and CLAUDE.md.
 2. Configure docs/workflow/config.yml for commit messages, ticket creation, PR templates, human reviewers, and CI monitoring.
-   For CircleCI, set post_pr.ci_monitor.provider=circleci and skill=ce-monitor-circleci.
+   For CircleCI, set post_pr.ci_monitor.provider=circleci and skill=ce-monitor-circleci; ce-monitor-circleci will set up any CircleCI-specific config when needed.
 3. If this repo already has docs/features/*/spec.md, run: ce-index-features
 4. If starting from a PRD, run: ce-import-prd
 5. Continue the handoff chain: ce-brainstorm -> ce-spec-create -> ce-plan -> ce-create-tickets or ce-work.
