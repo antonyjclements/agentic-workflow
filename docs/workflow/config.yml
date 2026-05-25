@@ -12,6 +12,10 @@ research:
     skill: ""
     workspace: ""
     default_channels: []
+pull_request:
+  creation:
+    provider: default
+    skill: ""
 post_pr:
   ci_monitor:
     provider: manual

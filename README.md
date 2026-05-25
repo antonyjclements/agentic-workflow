@@ -240,6 +240,10 @@ research:
     skill: ""
     workspace: ""
     default_channels: []
+pull_request:
+  creation:
+    provider: default
+    skill: ""
 post_pr:
   ci_monitor:
     provider: github-actions
@@ -258,6 +262,8 @@ human_review:
 Set `ticket_creation.skill` to the skill or MCP-backed workflow the agent should use, such as a Linear skill, Jira skill, or custom repo skill. Leave it blank to skip ticket creation for that repo.
 
 Set `research.slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `ce-slack-research` discovery path.
+
+Set `pull_request.creation.skill` when PR creation should route through an enterprise-specific skill that applies organization standards. Leave it blank to use the default `ce-commit-push-pr` PR creation behavior.
 
 Set `post_pr.ci_monitor.skill` to the skill that should monitor and fix CI/CD after PR creation, such as a GitHub Actions, CircleCI, Jenkins, or custom pipeline skill. Leave it blank to skip post-PR monitoring.
 
@@ -396,7 +402,9 @@ If the answer is obvious and repo-local, the agent can write the record. If scop
 
 ### 10. Monitor CI after PR creation
 
-If post-PR monitoring is configured, `ce-commit-push-pr` should invoke `ce-monitor-pipeline` after creating or updating the PR.
+When creating a PR, `ce-commit-push-pr` first checks `docs/workflow/config.yml`. If `pull_request.creation.skill` is configured, it delegates PR creation to that enterprise skill. If it is blank, it uses the built-in GitHub CLI PR creation flow.
+
+If post-PR monitoring is configured, the PR creation flow should invoke `ce-monitor-pipeline` after creating or updating the PR.
 
 The configured monitor should:
 
@@ -521,7 +529,7 @@ AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/ce-init/scripts/instal
 - `ce-simplify-code`: simplify recently changed code while preserving behavior
 - `ce-code-review`: review code before PRs
 - `ce-commit`: create focused commits
-- `ce-commit-push-pr`: commit, push, create/update PRs, and invoke configured post-PR monitoring
+- `ce-commit-push-pr`: commit, push, create/update PRs through the default or configured PR creation skill, and invoke configured post-PR monitoring
 - `ce-monitor-pipeline`: run the configured post-PR CI monitor/fix loop
 - `ce-monitor-circleci`: monitor CircleCI pipelines and fix branch-caused failures
 - `ce-request-human-review`: create spec/plan sign-off PRs and request configured GitHub reviewers

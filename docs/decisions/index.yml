@@ -1,4 +1,12 @@
 decisions:
+  - path: docs/decisions/2026-05-25-configure-pr-creation-skill.md
+    title: Configure PR creation skill per repo
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - pull-requests
+      - configuration
   - path: docs/decisions/2026-05-25-add-decision-refresh-maintenance.md
     title: Add decision refresh maintenance
     date: 2026-05-25

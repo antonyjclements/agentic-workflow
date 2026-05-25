@@ -110,6 +110,19 @@ Then continue with the rest of the reference (Steps A through G) to compose the 
 
 ## Step 5: Apply PR
 
+Before creating or editing a PR, read `docs/workflow/config.yml` when it exists:
+
+```yaml
+pull_request:
+  creation:
+    provider: default|github|custom|manual
+    skill: <skill-name>
+```
+
+If `pull_request.creation.skill` is set and this is a new-PR full workflow, delegate PR creation to that skill instead of using the built-in `gh pr create` path. Pass the branch, base, commit range, proposed title, proposed body file, and validation summary. The custom skill is responsible for creating the PR according to enterprise standards and returning the PR URL.
+
+If `pull_request.creation.skill` is blank or missing, use the built-in behavior below.
+
 **Description-only mode** — print the title and body. Stop unless the user asks to apply.
 
 **New PR** (full workflow, no existing PR from Step 1) — apply per "Applying via gh" below using `gh pr create`. Report the URL.

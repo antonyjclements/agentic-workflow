@@ -24,6 +24,7 @@ related_decisions:
   - docs/decisions/2026-05-24-make-ce-init-the-install-source-of-truth.md
   - docs/decisions/2026-05-24-use-single-feature-plan-file.md
   - docs/decisions/2026-05-25-add-decision-refresh-maintenance.md
+  - docs/decisions/2026-05-25-configure-pr-creation-skill.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -51,6 +52,7 @@ The workflow routes:
 - immutable decisions to `docs/decisions/`
 - correction-driven learnings to `docs/learnings/` or `~/.agents/learnings/`
 - ticket creation routing to `docs/workflow/config.yml`
+- PR creation routing to `docs/workflow/config.yml`
 - post-PR CI/CD monitor routing to `docs/workflow/config.yml`
 - Slack research routing to `docs/workflow/config.yml`
 - CircleCI PR pipeline monitoring through `ce-monitor-circleci`
@@ -81,6 +83,7 @@ The workflow routes:
 - Before PR, `ce-spec-review` checks for drift between changed behavior and living specs.
 - Before push/PR, non-trivial changes receive `ce-code-review`.
 - After PR creation, `ce-monitor-pipeline` runs the configured CI monitor/fix loop when enabled.
+- Repos can configure `pull_request.creation.skill` to use an enterprise-specific PR creation skill. If blank, `ce-commit-push-pr` uses its built-in GitHub CLI flow.
 - CircleCI repos can configure `post_pr.ci_monitor.skill: ce-monitor-circleci` to watch branch pipelines and fix branch-caused failures until green or blocked.
 - When a user correction reveals a reusable lesson, `ce-retrospective` stores the learning.
 - At natural pauses, agents run a capture checkpoint so users do not need to remember to invoke decision logging, retrospective learning, or compounding manually.
@@ -99,6 +102,7 @@ The workflow routes:
 - Skills exist for spec creation, spec review, decision logging, standards discovery, and retrospective learning.
 - A skill exists to refresh decision indexes and summaries without making historical decision records mutable.
 - Ticket creation can be routed through a configured skill in `docs/workflow/config.yml`.
+- PR creation can be routed through a configured skill in `docs/workflow/config.yml`.
 - Slack research can be routed through a configured skill in `docs/workflow/config.yml`.
 - Plan review runs before human review, ticket creation, or implementation.
 - Tickets include enough traceability for future agents to implement from the ticket alone after checkout.
@@ -140,3 +144,4 @@ The workflow routes:
 - `docs/decisions/2026-05-24-make-ce-init-the-install-source-of-truth.md`
 - `docs/decisions/2026-05-24-use-single-feature-plan-file.md`
 - `docs/decisions/2026-05-25-add-decision-refresh-maintenance.md`
+- `docs/decisions/2026-05-25-configure-pr-creation-skill.md`

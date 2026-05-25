@@ -4,6 +4,7 @@ Last refreshed: 2026-05-25
 
 ## Active Decisions
 
+- [Configure PR creation skill per repo](../2026-05-25-configure-pr-creation-skill.md) - Let repos delegate PR creation to an enterprise-specific skill while keeping the default PR flow when blank.
 - [Add decision refresh maintenance](../2026-05-25-add-decision-refresh-maintenance.md) - Keep large decision registries navigable through derived indexes and summaries without rewriting old records.
 - [Use single feature plan file](../2026-05-24-use-single-feature-plan-file.md) - Save the active feature plan at `docs/features/<feature>/plan.md`.
 - [Make ce-init the install source of truth](../2026-05-24-make-ce-init-the-install-source-of-truth.md) - Keep installer artifacts under `skills/ce-init/` and support ticket-first implementation handoff.
