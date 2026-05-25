@@ -246,6 +246,25 @@ pull_request:
   creation:
     provider: default
     skill: ""
+git:
+  commit:
+    skill: ""
+    format: conventional
+    scope_required: false
+    template: "<type>(<scope>): <description>"
+    allowed_types:
+      - feat
+      - fix
+      - docs
+      - chore
+      - refactor
+      - test
+      - ci
+      - build
+      - perf
+      - style
+    examples:
+      - "docs(readme): update usage guide"
 post_pr:
   ci_monitor:
     provider: github-actions
@@ -266,6 +285,8 @@ Set `ticket_creation.skill` to the skill or MCP-backed workflow the agent should
 Set `research.slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `ce-slack-research` discovery path.
 
 Set `pull_request.creation.skill` when PR creation should route through an enterprise-specific skill that applies organization standards. Leave it blank to use the default `ce-commit-push-pr` PR creation behavior.
+
+Set `git.commit.skill` when commits should route through an enterprise-specific skill. Leave it blank to use the default commit flow. The default flow follows `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present, then falls back to repo instructions and recent commit history.
 
 Set `post_pr.ci_monitor.skill` to the skill that should monitor and fix CI/CD after PR creation, such as a GitHub Actions, CircleCI, Jenkins, or custom pipeline skill. Leave it blank to skip post-PR monitoring.
 
@@ -404,7 +425,20 @@ If the answer is obvious and repo-local, the agent can write the record. If scop
 
 ### 10. Monitor CI after PR creation
 
-When creating a PR, `ce-commit-push-pr` first checks `docs/workflow/config.yml`. If `pull_request.creation.skill` is configured, it delegates PR creation to that enterprise skill. If it is blank, it uses the built-in GitHub CLI PR creation flow.
+When committing, `ce-commit` and `ce-commit-push-pr` first check `docs/workflow/config.yml`. If `git.commit.skill` is configured, they delegate commit message generation or commit creation to that enterprise skill. If it is blank, they use the configured template and examples when present.
+
+For repos that require scoped conventional commits:
+
+```yaml
+git:
+  commit:
+    scope_required: true
+    template: "<type>(<scope>): <description>"
+    examples:
+      - "docs(readme): update usage guide"
+```
+
+When creating a PR, `ce-commit-push-pr` checks `pull_request.creation.skill`. If configured, it delegates PR creation to that enterprise skill. If it is blank, it uses the built-in GitHub CLI PR creation flow.
 
 If post-PR monitoring is configured, the PR creation flow should invoke `ce-monitor-pipeline` after creating or updating the PR.
 

@@ -65,9 +65,26 @@ If the current branch from the context above is empty, the repository is in deta
 
 Follow this priority order:
 
-1. **Repo conventions already in context** -- If project instructions (AGENTS.md, CLAUDE.md, or similar) are already loaded and specify commit message conventions, follow those. Do not re-read these files; they are loaded at session start.
-2. **Recent commit history** -- If no explicit convention is documented, examine the 10 most recent commits from Step 1. If a clear pattern emerges (e.g., conventional commits, ticket prefixes, emoji prefixes), match that pattern.
-3. **Default: conventional commits** -- If neither source provides a pattern, use conventional commit format: `type(scope): description` where type is one of `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`, `style`, `build`.
+1. **Workflow config** -- If `docs/workflow/config.yml` exists, read `git.commit`:
+
+```yaml
+git:
+  commit:
+    skill: ""
+    format: conventional
+    scope_required: false
+    template: "<type>(<scope>): <description>"
+    allowed_types: [feat, fix, docs, chore, refactor, test, ci, build, perf, style]
+    examples:
+      - "docs(readme): update usage guide"
+```
+
+If `git.commit.skill` is set, delegate commit creation or message generation to that skill and pass the staged/unstaged diff, branch, recent commits, configured template, allowed types, and examples. The custom skill must return the commit hash or the exact commit message to use.
+
+If `git.commit.template` or examples are set, follow them. Treat `scope_required: true` as requiring a non-empty scope. Keep placeholders literal in interpretation only; produce a real subject such as `docs(readme): update usage guide`.
+2. **Repo conventions already in context** -- If project instructions (AGENTS.md, CLAUDE.md, or similar) are already loaded and specify commit message conventions, follow those. Do not re-read these files; they are loaded at session start.
+3. **Recent commit history** -- If no explicit convention is documented, examine the 10 most recent commits from Step 1. If a clear pattern emerges (e.g., conventional commits, ticket prefixes, emoji prefixes), match that pattern.
+4. **Default: conventional commits** -- If neither source provides a pattern, use conventional commit format: `type(scope): description` where type is one of `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`, `style`, `build`.
 
 When using conventional commits, choose the type that most precisely describes the change (the type list above). Where `fix:` and `feat:` both seem to fit, default to `fix:`: a change that remedies broken or missing behavior is `fix:` even when implemented by adding code. Reserve `feat:` for capabilities the user could not previously accomplish. Other types remain primary when they fit better. The user may override for a specific change.
 

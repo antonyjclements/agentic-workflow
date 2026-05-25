@@ -16,6 +16,25 @@ pull_request:
   creation:
     provider: default
     skill: ""
+git:
+  commit:
+    skill: ""
+    format: conventional
+    scope_required: false
+    template: "<type>(<scope>): <description>"
+    allowed_types:
+      - feat
+      - fix
+      - docs
+      - chore
+      - refactor
+      - test
+      - ci
+      - build
+      - perf
+      - style
+    examples:
+      - "docs(readme): update usage guide"
 post_pr:
   ci_monitor:
     provider: manual

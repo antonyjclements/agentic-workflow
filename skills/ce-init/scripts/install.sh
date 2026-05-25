@@ -268,6 +268,25 @@ pull_request:
   creation:
     provider: default
     skill: \"\"
+git:
+  commit:
+    skill: \"\"
+    format: conventional
+    scope_required: false
+    template: \"<type>(<scope>): <description>\"
+    allowed_types:
+      - feat
+      - fix
+      - docs
+      - chore
+      - refactor
+      - test
+      - ci
+      - build
+      - perf
+      - style
+    examples:
+      - \"docs(readme): update usage guide\"
 post_pr:
   ci_monitor:
     provider: manual
@@ -314,7 +333,7 @@ Target repo:   $repo_dir
 
 Next steps:
 1. Review AGENTS.md and CLAUDE.md.
-2. Configure docs/workflow/config.yml for ticket creation, PR creation, human reviewers, and CI monitoring.
+2. Configure docs/workflow/config.yml for commit messages, ticket creation, PR creation, human reviewers, and CI monitoring.
    For CircleCI, set post_pr.ci_monitor.provider=circleci and skill=ce-monitor-circleci.
 3. If this repo already has docs/features/*/spec.md, run: ce-index-features
 4. If starting from a PRD, run: ce-import-prd

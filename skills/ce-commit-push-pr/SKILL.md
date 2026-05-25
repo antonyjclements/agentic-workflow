@@ -58,7 +58,25 @@ Note the existing PR URL from the PR check if `state: OPEN`. Step 5 uses it to r
 
 ## Step 2: Determine conventions
 
-Match repo style for commit messages and PR titles (project instructions in context > recent commits > conventional commits as default). With conventional commits, default to `fix:` over `feat:` when ambiguous — adding code to remedy broken or missing behavior is `fix:`. Reserve `feat:` for capabilities the user could not previously accomplish. The user may override.
+Read `docs/workflow/config.yml` when it exists. For commit messages, follow `git.commit` before falling back to repo history:
+
+```yaml
+git:
+  commit:
+    skill: ""
+    format: conventional
+    scope_required: false
+    template: "<type>(<scope>): <description>"
+    allowed_types: [feat, fix, docs, chore, refactor, test, ci, build, perf, style]
+    examples:
+      - "docs(readme): update usage guide"
+```
+
+If `git.commit.skill` is set, delegate commit creation or message generation to that configured skill and pass the diff, branch, recent commits, configured template, allowed types, examples, and PR intent. The custom skill must return the commit hash or the exact commit message to use before continuing to push/PR.
+
+If `git.commit.template` or examples are set, follow them. Treat `scope_required: true` as requiring a non-empty scope. Keep placeholders literal in interpretation only; produce a real subject such as `docs(readme): update usage guide`.
+
+For PR titles, match repo style (project instructions in context > recent commits > conventional commits as default). With conventional commits, default to `fix:` over `feat:` when ambiguous — adding code to remedy broken or missing behavior is `fix:`. Reserve `feat:` for capabilities the user could not previously accomplish. The user may override.
 
 If the branch changes durable behavior, workflow, API contracts, UX, or product intent, run a spec drift check before committing: read `docs/features/index.yml` when present, update affected specs or report why no spec applies, and log missing decisions with `ce-decision-log` when ambiguity was resolved.
 

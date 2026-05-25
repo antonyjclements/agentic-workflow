@@ -53,6 +53,7 @@ Use the repo as the source of truth for product intent, standards, and decisions
 - Use `ce-decisions-refresh` when `docs/decisions/` grows large, the decision index may be stale, or decision discoverability needs summaries/supersession cleanup.
 - Use `ce-retrospective` when user correction should change future agent behavior; log a decision as well if the correction establishes a durable repo fact.
 - Use `ce-create-tickets` after a plan when work should be broken into Linear, Jira, or another configured ticket system for implementation agents.
+- Use configured commit-message routing before committing. If `git.commit.skill` is blank, use the configured template/examples or the default commit behavior.
 - Use configured PR creation routing when opening pull requests. If `pull_request.creation.skill` is blank, use `ce-commit-push-pr` normally.
 - Use `ce-monitor-pipeline` after PR creation when `docs/workflow/config.yml` configures a post-PR CI monitor/fix skill.
 - A normal feature flow is: pasted/file/link PRD -> imported PRD artifact -> brainstorm requirements -> living feature spec -> temporary feature plan -> tickets/stories -> implementation agent picks up a ticket -> decisions logged as they happen -> spec review before PR.
@@ -93,6 +94,14 @@ Each workflow step should return the artifact path or ID that becomes input to t
 - Use `ce-work <ticket ID or URL>` as the implementation path for ticket-first sessions.
 - If the ticket is ambiguous or appears stale against the living spec, stop and surface the gap before implementing.
 - Preserve traceability in the final summary and PR body by naming the ticket, source spec, relevant decisions, and verification run.
+
+### Commit Message Routing
+
+- Read `docs/workflow/config.yml` before committing.
+- Use `git.commit.skill` as the configured enterprise commit skill when it is set.
+- If `git.commit.skill` is empty, follow `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present.
+- If the `git.commit` block is absent, fall back to repo instructions, recent commit history, then conventional commits.
+- A custom commit skill must return either the commit hash or the exact commit message to use.
 
 ### PR Creation Routing
 

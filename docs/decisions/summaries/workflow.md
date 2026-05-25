@@ -4,6 +4,7 @@ Last refreshed: 2026-05-25
 
 ## Active Decisions
 
+- [Configure commit message format per repo](../2026-05-25-configure-commit-message-format.md) - Let repos enforce commit templates or delegate commits to enterprise-specific skills.
 - [Configure PR creation skill per repo](../2026-05-25-configure-pr-creation-skill.md) - Let repos delegate PR creation to an enterprise-specific skill while keeping the default PR flow when blank.
 - [Add decision refresh maintenance](../2026-05-25-add-decision-refresh-maintenance.md) - Keep large decision registries navigable through derived indexes and summaries without rewriting old records.
 - [Use single feature plan file](../2026-05-24-use-single-feature-plan-file.md) - Save the active feature plan at `docs/features/<feature>/plan.md`.

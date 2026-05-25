@@ -1,4 +1,12 @@
 decisions:
+  - path: docs/decisions/2026-05-25-configure-commit-message-format.md
+    title: Configure commit message format per repo
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - git
+      - configuration
   - path: docs/decisions/2026-05-25-configure-pr-creation-skill.md
     title: Configure PR creation skill per repo
     date: 2026-05-25
