@@ -1,6 +1,6 @@
 ---
 name: ce-spec-create
-description: "Create or update living feature specs from PRDs, feature requests, existing behavior, or implementation changes. Use when the user says spec:create, create a spec, turn this PRD into a spec, write/update product intent, or needs a durable feature contract in docs/specs/."
+description: "Create or update living feature specs from clarified requirements, brainstorm outputs, existing behavior, or implementation changes. Use when the user says spec:create, create a spec, write/update product intent, or needs a durable feature contract in docs/features/<feature>/spec.md. For raw PRDs with ambiguity, use ce-brainstorm first."
 argument-hint: "[PRD path, feature request, existing feature path, or scope]"
 ---
 
@@ -10,23 +10,25 @@ Create durable feature intent that stays current with the code. A spec describes
 
 ## Storage
 
-- Specs live under `docs/specs/`.
-- `docs/specs/index.yml` is the entrypoint.
+- Specs live at `docs/features/<feature>/spec.md`.
+- `docs/features/index.yml` is the entrypoint.
 - Use one spec per feature or coherent capability.
-- Plans may reference specs, but specs do not contain task progress.
+- Plans may live at `docs/features/<feature>/plan.md` while active, but specs do not contain task progress.
 
 ## Workflow
 
-1. Read `docs/specs/index.yml` if present and find related specs.
-2. Gather source context: PRD/request, existing code, tests, product docs, standards, and recent decisions.
+1. Read `docs/features/index.yml` if present and find related specs.
+2. Gather source context: clarified requirements, brainstorm docs, imported PRDs, existing code, tests, product docs, standards, and recent decisions.
 3. Define the feature boundary, users, current behavior, non-goals, acceptance criteria, and open questions.
-4. Create or update the smallest relevant spec file.
+4. Create or update the smallest relevant feature spec file at `docs/features/<feature>/spec.md`.
 5. Link related decision records from `docs/decisions/` when they exist.
-6. Update `docs/specs/index.yml` without disrupting its existing schema.
+6. Update `docs/features/index.yml` without disrupting its existing schema.
+7. Ask whether the user wants product/human review for the spec. If yes, invoke `ce-request-human-review spec <spec path>`.
 
 ## Rules
 
 - Living intent stays alive; plans expire; decisions are logged separately.
+- Raw PRDs usually go through `ce-brainstorm` first. Use this skill directly only when ambiguity is resolved, intentionally preserved as open questions, or the user explicitly asks for a spec draft.
 - Preserve unresolved ambiguity as `Open Questions / TODOs`; do not hide product assumptions.
 - Do not add implementation task lists, story breakdowns, progress state, or transient plans.
 - Keep paths repo-relative.
@@ -69,9 +71,10 @@ related_decisions: []
 ## Default Index Format
 
 ```yaml
-specs:
-  - path: docs/specs/<slug>.md
+features:
+  - key: <feature-folder>
     title: <Feature Name>
+    spec: docs/features/<feature-folder>/spec.md
     status: active
     tags:
       - <tag>
@@ -79,4 +82,4 @@ specs:
 
 ## Final Output
 
-Report the spec path, index update, open questions, and any decisions that should be logged.
+Report the spec path, index update, open questions, any decisions that should be logged, whether human review was requested, and next step: `ce-plan <spec path>` when implementation planning is needed.

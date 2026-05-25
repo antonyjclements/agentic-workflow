@@ -17,6 +17,8 @@ Use when:
 - a user correction changes durable repo behavior
 - the user says `decision:log`, "log this decision", or "record why"
 
+Agents should proactively suggest this skill at natural pauses when a decision has been made but not recorded. If the decision and repo scope are explicit, log it without waiting for the user to name the skill. Ask one concise question only when the decision, scope, privacy, or related spec is unclear.
+
 Use `ce-retrospective` instead for reusable agent-process lessons. If both apply, write a decision for the repo fact and a learning for the future agent behavior.
 
 ## Storage
@@ -27,7 +29,7 @@ Use `ce-retrospective` instead for reusable agent-process lessons. If both apply
 
 ## Workflow
 
-1. Read `docs/decisions/index.yml` and relevant `docs/specs/` entries if present.
+1. Read `docs/decisions/index.yml` and relevant `docs/features/` specs if present.
 2. Identify the decision, context, alternatives, consequences, owner/source, and related specs.
 3. If the actual decision is unclear, ask one blocking question.
 4. Create `docs/decisions/YYYY-MM-DD-<slug>.md`.

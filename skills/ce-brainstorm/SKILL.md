@@ -1,12 +1,14 @@
 ---
 name: ce-brainstorm
-description: 'Explore requirements and approaches through collaborative dialogue, then write a right-sized requirements document. Use when the user says "let''s brainstorm", "what should we build", or "help me think through X", presents a vague or ambitious feature request, or seems unsure about scope or direction -- even without explicitly asking to brainstorm.'
+description: 'Explore requirements and approaches through collaborative dialogue, then write a right-sized requirements document. Use when the user says "let''s brainstorm", "what should we build", or "help me think through X", presents a PRD, vague or ambitious feature request, or seems unsure about scope or direction -- even without explicitly asking to brainstorm.'
 argument-hint: "[feature idea or problem to explore]"
 ---
 
 # Brainstorm a Feature or Improvement
 
 Current year: 2026. Brainstorming defines what to build; `ce-plan` defines how. Output is a requirements document, not code. Use repo-relative paths only.
+
+PRDs usually contain implicit ambiguity and open questions. Treat PRD intake as a brainstorm/requirements step by default; if the PRD is pasted or linked, use `ce-import-prd` first so the historical source artifact is preserved. Once product behavior is explicit enough, hand off the requirements doc path to `ce-spec-create` to write the living feature spec.
 
 ## Interaction
 
@@ -33,7 +35,7 @@ Ask one question at a time. Prefer concise single-select choices; use multi-sele
    - brief alignment for simple low-risk work
    - standard requirements for normal feature/problem work
    - deep exploration for ambiguous, strategic, cross-cutting, or high-risk work
-6. Gather context from user, repo, docs, learnings, and named resources. Use web/current research when outside facts may have changed.
+6. Gather context from user, repo, imported PRDs under `docs/product/prds/`, docs, learnings, and named resources. Use web/current research when outside facts may have changed.
 7. Explore:
    - actors/users
    - problem and evidence
@@ -84,4 +86,4 @@ Before finishing, verify:
 - implementation details are absent unless needed
 - paths are repo-relative
 
-Final response: doc path, major decisions, open questions, and recommended next step.
+Final response: requirements doc path, major decisions, open questions, and recommended next step. For PRD intake, the usual next step is `ce-spec-create <requirements doc path>` once blocking ambiguity is resolved.

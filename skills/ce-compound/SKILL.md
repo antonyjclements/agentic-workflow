@@ -8,6 +8,8 @@ argument-hint: "[optional: brief context] [mode:headless] "
 
 Document a recently solved problem in `docs/solutions/` while context is fresh.
 
+Agents should proactively suggest this skill after solving a non-trivial problem, especially when the root cause, debugging path, integration detail, or prevention pattern would help a future agent or engineer. Do not wait for the user to remember to ask.
+
 ## Modes
 
 Strip `mode:headless` from `$ARGUMENTS` before using the remainder as context.

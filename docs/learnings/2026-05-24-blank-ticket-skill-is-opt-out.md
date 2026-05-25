@@ -1,0 +1,30 @@
+---
+title: Blank ticket skill is an opt-out
+scope: repo
+created: 2026-05-24
+trigger: correction
+tags:
+  - workflow
+  - tickets
+  - configuration
+---
+
+# Blank Ticket Skill Is an Opt-Out
+
+## Lesson
+
+When `ticket_creation.skill` is blank in `docs/workflow/config.yml`, treat ticket creation as disabled instead of asking the user to choose a ticketing skill.
+
+## Applies When
+
+- Creating stories or tickets from a plan.
+- Installing or documenting the default workflow config.
+
+## Do Instead
+
+- Skip ticket creation and report that ticketing is disabled.
+- Ask for a ticket skill only when the user explicitly wants ticketing enabled or a configured skill is unavailable.
+
+## Evidence
+
+- User clarified that if the ticket creation skill is left blank, ticket creation can be skipped.

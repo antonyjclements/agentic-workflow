@@ -19,7 +19,7 @@ If headless lacks a path: `Review failed: headless mode requires a document path
 
 ## Phase 1: Document
 
-Read provided path or, in interactive mode, ask/find most recent doc in `docs/brainstorms/` or `docs/plans/`.
+Read provided path or, in interactive mode, ask/find most recent doc in `docs/brainstorms/` or `docs/features/*/plan.md`.
 
 If `docs/standards/index.yml` exists, read it and load standards relevant to the document type, referenced files, and domain. Use these standards as review criteria.
 
@@ -28,7 +28,7 @@ Classify by content shape, not path:
 - requirements: actors, flows, acceptance examples, R/A/F/AE IDs, user/business behavior, scope, success criteria, few/no implementation units
 - plan: implementation units/U IDs, files, approach, test scenarios, technical decisions, sequencing
 
-Path is only tie-breaker (`docs/brainstorms` -> requirements, `docs/plans` -> plan). If genuinely ambiguous, default to requirements.
+Path is only tie-breaker (`docs/brainstorms` -> requirements, `docs/features/*/plan.md` -> plan). If genuinely ambiguous, default to requirements.
 
 ## Reviewers
 

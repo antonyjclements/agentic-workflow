@@ -1,0 +1,9 @@
+features:
+  - key: agentic-workflow
+    title: Spec-Driven Agentic Workflow
+    spec: docs/features/agentic-workflow/spec.md
+    status: active
+    tags:
+      - workflow
+      - specs
+      - decisions

@@ -1,6 +1,6 @@
 ---
 name: ce-spec-review
-description: "Review code, docs, or PR changes against living specs in docs/specs/ and catch drift before shipping. Use when the user says spec:review, review specs, check spec drift, before PRs, or after implementation changes that may alter feature behavior."
+description: "Review code, docs, or PR changes against living feature specs in docs/features/<feature>/spec.md and catch drift before shipping. Use when the user says spec:review, review specs, check spec drift, before PRs, or after implementation changes that may alter feature behavior."
 argument-hint: "[optional diff range, PR ref, spec path, or feature scope]"
 ---
 
@@ -10,7 +10,7 @@ Verify that shipped behavior and living specs agree. Fix clear drift when asked;
 
 ## Workflow
 
-1. Inspect the change range or current diff, plus `docs/specs/index.yml`.
+1. Inspect the change range or current diff, plus `docs/features/index.yml`.
 2. Map touched code/docs/tests to relevant specs using index metadata, paths, tags, filenames, and product area.
 3. Read only the relevant specs and any linked decisions.
 4. Compare implemented behavior, tests, and docs against the spec.
@@ -19,7 +19,7 @@ Verify that shipped behavior and living specs agree. Fix clear drift when asked;
    - **Spec stale**: implementation changed durable behavior; update the spec or report the exact needed edit.
    - **Implementation drift**: code contradicts the spec; flag the code path and expected behavior.
    - **Decision missing**: ambiguity was resolved in code but not recorded; invoke or recommend `ce-decision-log`.
-6. Update `docs/specs/index.yml` if spec metadata changes.
+6. Update `docs/features/index.yml` if spec metadata changes.
 
 ## Review Checks
 
@@ -28,7 +28,8 @@ Verify that shipped behavior and living specs agree. Fix clear drift when asked;
 - Open questions remain visible until resolved.
 - Decisions are immutable records under `docs/decisions/`, not buried inside plans.
 - Applicable standards from `docs/standards/index.yml` are followed or called out.
-- Temporary plans under `docs/plans/` are not treated as source of truth.
+- Temporary plans at `docs/features/<feature>/plan.md` are not treated as source of truth.
+- `README.md` is updated when user-facing setup, commands, configuration, architecture, or workflow behavior changed.
 
 ## Output
 

@@ -32,7 +32,7 @@ If the user asks for a quick/fast/light review and no programmatic mode flag is 
    - Otherwise compare current branch to merge-base with upstream/main.
 2. Collect files, diff (`-U10`), and untracked files.
 3. If `docs/standards/index.yml` exists, read it as the standards registry. Infer schema, map changed files/domains to referenced markdown standards, and load only applicable standards. Include them in reviewer context and synthesis.
-4. Protect pipeline artifacts from deletion findings: `docs/brainstorms/*`, `docs/plans/*.md`, `docs/solutions/*.md`.
+4. Protect pipeline artifacts from deletion findings unless the workflow explicitly says they expire: `docs/brainstorms/*`, active `docs/features/*/plan.md`, `docs/solutions/*.md`.
 
 Headless must stop if no scope is determinable: `Review failed (headless mode). Reason: no diff scope detected. Re-invoke with a branch name, PR number, or base:<ref>.`
 

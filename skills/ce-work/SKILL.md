@@ -12,11 +12,23 @@ Execute a plan, spec, or bare work request through implementation, verification,
 
 `$ARGUMENTS` may be:
 
+- ticket/story identifier or URL
 - plan/spec path
 - bare work description
-- blank: use latest active plan in `docs/plans/`
+- blank: use latest active plan at `docs/features/*/plan.md`
 
 ## Phase 0: Triage
+
+If ticket/story: read it through the configured ticketing tool when available, then load linked spec, plan, decisions, and standards before editing.
+
+Ticket-first sessions are valid. If the agent starts from only a ticket ID/URL after checking out the repo:
+
+1. Read `AGENTS.md` and `docs/workflow/config.yml`.
+2. Use the configured ticketing skill/tool when available to fetch the ticket.
+3. Load linked source artifacts from the ticket: spec, plan, decisions, standards, acceptance criteria, and test expectations.
+4. If links are missing, search `docs/features/`, `docs/decisions/`, and `docs/standards/` for the likely feature area before editing.
+5. If ticket requirements conflict with the living spec or decisions, stop and surface the mismatch before implementing.
+6. Preserve traceability in the final summary and PR body.
 
 If plan/spec: read it fully, then continue.
 
@@ -32,6 +44,8 @@ If bare prompt:
 ## Phase 1: Understand and Set Up
 
 For plans, treat the plan as a decision artifact, not a script. Extract implementation units, requirements, files, test scenarios, verification, execution notes, standards references, implementation-time unknowns, scope boundaries, references, and deferred work. Ask only for ambiguity that would change the implementation.
+
+For tickets, treat the ticket as the execution unit. Preserve traceability back to the linked plan/spec and update ticket status only when the configured ticket tool/workflow supports it and the user expects that behavior.
 
 If the plan does not mention standards and `docs/standards/index.yml` exists, load the relevant standards before editing. Standards are enforceable project guidance unless they conflict with higher-priority instructions; call out conflicts instead of silently ignoring them.
 
@@ -77,6 +91,7 @@ Before finishing:
 - inspect `git diff`
 - remove debug code, dead code, and accidental churn
 - ensure docs/config/tests match behavior
+- update `README.md` when user-facing setup, commands, configuration, architecture, or workflow behavior changed
 - check the diff against applicable standards from `docs/standards/index.yml`
 - run `ce-code-review` for non-trivial or risky changes when time/context allows
 - address safe findings; surface judgment calls
@@ -86,6 +101,10 @@ Before finishing:
 Only when implementation and verification are complete:
 
 - mark active plan completed if applicable
+- run a capture checkpoint:
+  - log durable decisions with `ce-decision-log`
+  - capture correction-driven lessons with `ce-retrospective`
+  - suggest `ce-compound` for non-trivial solved problems or reusable patterns
 - summarize changed files and behavior
 - list tests/checks run and failures
 - identify residual risks or follow-ups

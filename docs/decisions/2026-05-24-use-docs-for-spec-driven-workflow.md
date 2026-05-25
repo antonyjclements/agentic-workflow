@@ -7,7 +7,7 @@ tags:
   - documentation
   - installer
 related_specs:
-  - docs/specs/spec-driven-agentic-workflow.md
+  - docs/features/agentic-workflow/spec.md
 supersedes: []
 ---
 
@@ -19,7 +19,7 @@ The spec-driven development model needs living specs, encoded standards, immutab
 
 ## Decision
 
-Use `docs/specs/`, `docs/standards/`, `docs/decisions/`, and `docs/learnings/` as the default repo-local registries. Keep `AGENTS.md` as the portable agent orientation file.
+Use `docs/features/`, `docs/standards/`, `docs/decisions/`, and `docs/learnings/` as the default repo-local registries. Keep `AGENTS.md` as the portable agent orientation file.
 
 ## Consequences
 
@@ -32,4 +32,4 @@ The installer can create a consistent `docs/` structure in any target repo. Repo
 
 ## Links
 
-- `docs/specs/spec-driven-agentic-workflow.md`
+- `docs/features/agentic-workflow/spec.md`

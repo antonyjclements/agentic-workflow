@@ -24,7 +24,7 @@ This workflow drives the browser exclusively through the `agent-browser` CLI. Do
   command -v agent-browser >/dev/null 2>&1 && echo "Ready" || echo "NOT INSTALLED"
   ```
 
-  If not installed, run the `ce-setup` skill to install dependencies, then resume. Do not continue without it.
+  If not installed, tell the user to install `agent-browser`, then resume. Do not continue without it.
 
 ## Reusing Compound-Engineering Skills
 
@@ -33,7 +33,6 @@ This workflow drives the browser exclusively through the `agent-browser` CLI. Do
 | When | Skill | Why |
 |------|-------|-----|
 | Phase 0 isolation | `ce-worktree` | Run the dogfood in an isolated worktree so the main checkout stays clean. |
-| agent-browser missing | `ce-setup` | Installs `agent-browser` and other deps. |
 | A failure's root cause is non-obvious | `ce-debug` | Systematic root-cause analysis instead of guess-and-check. |
 | Committing each fix | `ce-commit` | Consistent, well-scoped commit messages. |
 | A bug reveals a reusable lesson | `ce-compound` | Capture the learning so the team compounds knowledge. |
