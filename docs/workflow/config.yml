@@ -13,9 +13,9 @@ research:
     workspace: ""
     default_channels: []
 pull_request:
-  creation:
-    provider: default
-    skill: ""
+  template:
+    title: ""
+    body: ""
 git:
   commit:
     skill: ""

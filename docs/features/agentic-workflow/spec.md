@@ -26,6 +26,7 @@ related_decisions:
   - docs/decisions/2026-05-25-add-decision-refresh-maintenance.md
   - docs/decisions/2026-05-25-configure-pr-creation-skill.md
   - docs/decisions/2026-05-25-configure-commit-message-format.md
+  - docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -53,7 +54,7 @@ The workflow routes:
 - immutable decisions to `docs/decisions/`
 - correction-driven learnings to `docs/learnings/` or `~/.agents/learnings/`
 - ticket creation routing to `docs/workflow/config.yml`
-- PR creation routing to `docs/workflow/config.yml`
+- PR title/body template routing to `docs/workflow/config.yml`
 - commit message routing to `docs/workflow/config.yml`
 - post-PR CI/CD monitor routing to `docs/workflow/config.yml`
 - Slack research routing to `docs/workflow/config.yml`
@@ -85,7 +86,7 @@ The workflow routes:
 - Before PR, `ce-spec-review` checks for drift between changed behavior and living specs.
 - Before push/PR, non-trivial changes receive `ce-code-review`.
 - After PR creation, `ce-monitor-pipeline` runs the configured CI monitor/fix loop when enabled.
-- Repos can configure `pull_request.creation.skill` to use an enterprise-specific PR creation skill. If blank, `ce-commit-push-pr` uses its built-in GitHub CLI flow.
+- Repos can configure `pull_request.template.title` and `pull_request.template.body` with markdown template file refs from GitHub URLs, raw GitHub URLs, `file://` URLs, absolute paths, or repo-relative paths. Blank values use the default generated title/body.
 - Repos can configure `git.commit.skill` to use an enterprise-specific commit skill. If blank, commit skills follow the configured template, scope requirements, allowed types, examples, repo instructions, or recent history.
 - CircleCI repos can configure `post_pr.ci_monitor.skill: ce-monitor-circleci` to watch branch pipelines and fix branch-caused failures until green or blocked.
 - When a user correction reveals a reusable lesson, `ce-retrospective` stores the learning.
@@ -105,7 +106,7 @@ The workflow routes:
 - Skills exist for spec creation, spec review, decision logging, standards discovery, and retrospective learning.
 - A skill exists to refresh decision indexes and summaries without making historical decision records mutable.
 - Ticket creation can be routed through a configured skill in `docs/workflow/config.yml`.
-- PR creation can be routed through a configured skill in `docs/workflow/config.yml`.
+- PR title/body templates can be configured in `docs/workflow/config.yml`.
 - Commit message conventions can be enforced through `docs/workflow/config.yml`.
 - Slack research can be routed through a configured skill in `docs/workflow/config.yml`.
 - Plan review runs before human review, ticket creation, or implementation.
@@ -150,3 +151,4 @@ The workflow routes:
 - `docs/decisions/2026-05-25-add-decision-refresh-maintenance.md`
 - `docs/decisions/2026-05-25-configure-pr-creation-skill.md`
 - `docs/decisions/2026-05-25-configure-commit-message-format.md`
+- `docs/decisions/2026-05-25-use-pr-title-and-body-templates.md`

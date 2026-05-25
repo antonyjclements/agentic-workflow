@@ -243,9 +243,9 @@ research:
     workspace: ""
     default_channels: []
 pull_request:
-  creation:
-    provider: default
-    skill: ""
+  template:
+    title: ""
+    body: ""
 git:
   commit:
     skill: ""
@@ -284,7 +284,7 @@ Set `ticket_creation.skill` to the skill or MCP-backed workflow the agent should
 
 Set `research.slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `ce-slack-research` discovery path.
 
-Set `pull_request.creation.skill` when PR creation should route through an enterprise-specific skill that applies organization standards. Leave it blank to use the default `ce-commit-push-pr` PR creation behavior.
+Set `pull_request.template.title` and `pull_request.template.body` when PR title/body text should follow organization templates. Each value should point to a markdown file by GitHub URL, raw GitHub URL, `file://` URL, absolute path, or repo-relative path. Leave either blank to use the default generated title or body for that part.
 
 Set `git.commit.skill` when commits should route through an enterprise-specific skill. Leave it blank to use the default commit flow. The default flow follows `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present, then falls back to repo instructions and recent commit history.
 
@@ -438,7 +438,18 @@ git:
       - "docs(readme): update usage guide"
 ```
 
-When creating a PR, `ce-commit-push-pr` checks `pull_request.creation.skill`. If configured, it delegates PR creation to that enterprise skill. If it is blank, it uses the built-in GitHub CLI PR creation flow.
+When creating a PR, `ce-commit-push-pr` checks `pull_request.template`. If configured, it loads the referenced markdown title/body templates and fills known placeholders before creating the PR with the built-in GitHub CLI flow. If blank, it uses the normal generated title and body.
+
+Example:
+
+```yaml
+pull_request:
+  template:
+    title: "https://github.com/acme/engineering-standards/blob/main/pr-title.md"
+    body: "file:///Users/me/templates/pr-body.md"
+```
+
+Useful template placeholders include `{default_title}`, `{default_body}`, `{summary}`, `{what_changed}`, `{validation}`, `{risks}`, `{ticket}`, `{spec}`, `{decisions}`, and `{badge}`.
 
 If post-PR monitoring is configured, the PR creation flow should invoke `ce-monitor-pipeline` after creating or updating the PR.
 
@@ -565,7 +576,7 @@ AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/ce-init/scripts/instal
 - `ce-simplify-code`: simplify recently changed code while preserving behavior
 - `ce-code-review`: review code before PRs
 - `ce-commit`: create focused commits
-- `ce-commit-push-pr`: commit, push, create/update PRs through the default or configured PR creation skill, and invoke configured post-PR monitoring
+- `ce-commit-push-pr`: commit, push, create/update PRs with optional configured title/body templates, and invoke configured post-PR monitoring
 - `ce-monitor-pipeline`: run the configured post-PR CI monitor/fix loop
 - `ce-monitor-circleci`: monitor CircleCI pipelines and fix branch-caused failures
 - `ce-request-human-review`: create spec/plan sign-off PRs and request configured GitHub reviewers

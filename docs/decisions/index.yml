@@ -1,4 +1,12 @@
 decisions:
+  - path: docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
+    title: Use PR title and body templates
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - pull-requests
+      - configuration
   - path: docs/decisions/2026-05-25-configure-commit-message-format.md
     title: Configure commit message format per repo
     date: 2026-05-25
@@ -10,11 +18,13 @@ decisions:
   - path: docs/decisions/2026-05-25-configure-pr-creation-skill.md
     title: Configure PR creation skill per repo
     date: 2026-05-25
-    status: active
+    status: superseded
     tags:
       - workflow
       - pull-requests
       - configuration
+    superseded_by:
+      - docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
   - path: docs/decisions/2026-05-25-add-decision-refresh-maintenance.md
     title: Add decision refresh maintenance
     date: 2026-05-25

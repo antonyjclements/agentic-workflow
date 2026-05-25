@@ -54,7 +54,7 @@ Use the repo as the source of truth for product intent, standards, and decisions
 - Use `ce-retrospective` when user correction should change future agent behavior; log a decision as well if the correction establishes a durable repo fact.
 - Use `ce-create-tickets` after a plan when work should be broken into Linear, Jira, or another configured ticket system for implementation agents.
 - Use configured commit-message routing before committing. If `git.commit.skill` is blank, use the configured template/examples or the default commit behavior.
-- Use configured PR creation routing when opening pull requests. If `pull_request.creation.skill` is blank, use `ce-commit-push-pr` normally.
+- Use configured PR templates when opening pull requests. If `pull_request.template.title` or `pull_request.template.body` is blank, use the normal generated title/body for that part.
 - Use `ce-monitor-pipeline` after PR creation when `docs/workflow/config.yml` configures a post-PR CI monitor/fix skill.
 - A normal feature flow is: pasted/file/link PRD -> imported PRD artifact -> brainstorm requirements -> living feature spec -> temporary feature plan -> tickets/stories -> implementation agent picks up a ticket -> decisions logged as they happen -> spec review before PR.
 
@@ -103,12 +103,13 @@ Each workflow step should return the artifact path or ID that becomes input to t
 - If the `git.commit` block is absent, fall back to repo instructions, recent commit history, then conventional commits.
 - A custom commit skill must return either the commit hash or the exact commit message to use.
 
-### PR Creation Routing
+### PR Template Routing
 
 - Read `docs/workflow/config.yml` before creating PRs.
-- Use `pull_request.creation.skill` as the configured enterprise PR creation skill when it is set.
-- If `pull_request.creation.skill` is empty, use the default `ce-commit-push-pr` behavior.
-- A custom PR creation skill must still preserve the workflow contract: commit/push appropriate changes, create or update the PR, return the PR URL, and allow `ce-monitor-pipeline` to run afterward when configured.
+- Use `pull_request.template.title` and `pull_request.template.body` when a repo configures enterprise PR title/body templates.
+- Template values may be `https://github.com/...` URLs, raw GitHub URLs, `file://...` URLs, absolute paths, or repo-relative paths to markdown files.
+- If a template value is blank, use the default generated title or body for that part.
+- A template customizes PR text only. PR creation still uses the normal `ce-commit-push-pr` flow and must return the PR URL so `ce-monitor-pipeline` can run afterward when configured.
 
 ### CI/CD Routing
 
@@ -185,7 +186,7 @@ Use the Compound Engineering skills as the default workflow router when availabl
 - Use `ce-spec-review` before creating a PR when behavior, workflow, API contracts, UX, or product intent changed.
 - Use `ce-test-browser` for web UI changes that need browser verification.
 - Use `ce-commit` when the user asks to commit.
-- Use `ce-commit-push-pr` when the user asks to push, ship, or open a PR, unless `pull_request.creation.skill` configures a custom PR creation skill.
+- Use `ce-commit-push-pr` when the user asks to push, ship, or open a PR. Apply configured `pull_request.template` title/body templates when present.
 - Use `ce-monitor-pipeline` after PR creation when post-PR CI monitoring is configured.
 - Use `ce-monitor-circleci` through `ce-monitor-pipeline` for CircleCI PR pipeline monitoring and branch-caused CI fixes.
 

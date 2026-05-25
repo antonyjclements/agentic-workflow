@@ -132,14 +132,26 @@ Before creating or editing a PR, read `docs/workflow/config.yml` when it exists:
 
 ```yaml
 pull_request:
-  creation:
-    provider: default|github|custom|manual
-    skill: <skill-name>
+  template:
+    title: <markdown-template-ref>
+    body: <markdown-template-ref>
 ```
 
-If `pull_request.creation.skill` is set and this is a new-PR full workflow, delegate PR creation to that skill instead of using the built-in `gh pr create` path. Pass the branch, base, commit range, proposed title, proposed body file, and validation summary. The custom skill is responsible for creating the PR according to enterprise standards and returning the PR URL.
+Template refs may be:
 
-If `pull_request.creation.skill` is blank or missing, use the built-in behavior below.
+- `https://github.com/<org>/<repo>/blob/<ref>/<path>.md`
+- `https://raw.githubusercontent.com/<org>/<repo>/<ref>/<path>.md`
+- `file:///absolute/path/to/template.md`
+- an absolute local path
+- a repo-relative local path
+
+If `pull_request.template.title` is set, load that markdown file and use it to shape the PR title. If it contains frontmatter `title:` or a first non-empty heading, use that as the title template; otherwise use the file text as the title template. Replace obvious placeholders such as `{type}`, `{scope}`, `{description}`, `{branch}`, `{ticket}`, `{summary}`, and `{default_title}` when the values are known. If a placeholder cannot be resolved, remove it cleanly or fall back to the generated title.
+
+If `pull_request.template.body` is set, load that markdown file and use it as the PR body template. Replace obvious placeholders such as `{summary}`, `{what_changed}`, `{validation}`, `{risks}`, `{ticket}`, `{spec}`, `{decisions}`, `{default_body}`, and `{badge}` when the values are known. If the template includes `{default_body}`, insert the generated body there; otherwise fill the template sections directly using the generated PR evidence.
+
+For GitHub `blob` URLs, convert to the matching `raw.githubusercontent.com` URL before fetching. For `file://` URLs and local paths, read from disk. If a configured template cannot be loaded, report the problem and fall back to the generated title/body rather than blocking PR creation.
+
+Templates customize PR text only. PR creation still uses the built-in behavior below.
 
 **Description-only mode** — print the title and body. Stop unless the user asks to apply.
 

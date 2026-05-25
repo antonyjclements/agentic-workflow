@@ -5,7 +5,7 @@ Last refreshed: 2026-05-25
 ## Active Decisions
 
 - [Configure commit message format per repo](../2026-05-25-configure-commit-message-format.md) - Let repos enforce commit templates or delegate commits to enterprise-specific skills.
-- [Configure PR creation skill per repo](../2026-05-25-configure-pr-creation-skill.md) - Let repos delegate PR creation to an enterprise-specific skill while keeping the default PR flow when blank.
+- [Use PR title and body templates](../2026-05-25-use-pr-title-and-body-templates.md) - Let repos apply enterprise PR text standards through linked markdown templates while keeping the default PR creation flow.
 - [Add decision refresh maintenance](../2026-05-25-add-decision-refresh-maintenance.md) - Keep large decision registries navigable through derived indexes and summaries without rewriting old records.
 - [Use single feature plan file](../2026-05-24-use-single-feature-plan-file.md) - Save the active feature plan at `docs/features/<feature>/plan.md`.
 - [Make ce-init the install source of truth](../2026-05-24-make-ce-init-the-install-source-of-truth.md) - Keep installer artifacts under `skills/ce-init/` and support ticket-first implementation handoff.
@@ -26,6 +26,7 @@ Last refreshed: 2026-05-25
 - [Use docs/ for spec-driven workflow registries](../2026-05-24-use-docs-for-spec-driven-workflow.md) -> [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md)
 - [Support feature spec indexes](../2026-05-24-support-feature-spec-indexes.md) -> [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md)
 - [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md) -> [Use single feature plan file](../2026-05-24-use-single-feature-plan-file.md)
+- [Configure PR creation skill per repo](../2026-05-25-configure-pr-creation-skill.md) -> [Use PR title and body templates](../2026-05-25-use-pr-title-and-body-templates.md)
 
 ## Open Follow-ups
 
