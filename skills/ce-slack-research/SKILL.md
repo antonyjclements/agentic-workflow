@@ -34,13 +34,10 @@ Read `docs/workflow/config.yml` first. Slack research can be routed through an e
 ```yaml
 research:
   slack:
-    provider: manual
     skill: ""
-    workspace: ""
-    default_channels: []
 ```
 
-If `research.slack.skill` is set, invoke that skill with the user's topic, workspace, and default channel hints. Use this when an enterprise environment exposes Slack through a custom MCP-backed or internal skill.
+If `research.slack.skill` is set, invoke that skill with the user's topic. Use this when an enterprise environment exposes Slack through a custom MCP-backed or internal skill.
 
 If `research.slack.skill` is blank, dispatch `ce-slack-researcher` with the user's topic as the task prompt. Omit the `mode` parameter so the user's configured permission settings apply.
 

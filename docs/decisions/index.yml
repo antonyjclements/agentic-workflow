@@ -1,4 +1,30 @@
 decisions:
+  - path: docs/decisions/2026-05-25-delegate-ci-monitor-retry-policy.md
+    title: Delegate CI monitor retry policy
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - ci
+      - configuration
+  - path: docs/decisions/2026-05-25-move-circleci-settings-out-of-default-config.md
+    title: Move CircleCI settings out of default config
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - ci
+      - circleci
+      - configuration
+  - path: docs/decisions/2026-05-25-simplify-slack-and-ticket-config.md
+    title: Simplify Slack and ticket configuration
+    date: 2026-05-25
+    status: active
+    tags:
+      - workflow
+      - configuration
+      - tickets
+      - slack
   - path: docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
     title: Use PR title and body templates
     date: 2026-05-25
@@ -60,11 +86,13 @@ decisions:
   - path: docs/decisions/2026-05-24-add-circleci-pipeline-monitor-skill.md
     title: Add CircleCI pipeline monitor skill
     date: 2026-05-24
-    status: active
+    status: superseded
     tags:
       - workflow
       - ci
       - circleci
+    superseded_by:
+      - docs/decisions/2026-05-25-move-circleci-settings-out-of-default-config.md
   - path: docs/decisions/2026-05-24-add-ce-init-installer-skill.md
     title: Add ce-init installer skill
     date: 2026-05-24

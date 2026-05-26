@@ -4,13 +4,15 @@ Last refreshed: 2026-05-25
 
 ## Active Decisions
 
+- [Delegate CI monitor retry policy](../2026-05-25-delegate-ci-monitor-retry-policy.md) - Keep retry counts and polling cadence inside the linked CI monitor skill instead of the base workflow config.
+- [Move CircleCI settings out of default config](../2026-05-25-move-circleci-settings-out-of-default-config.md) - Keep CircleCI-specific values out of the base workflow config and let `ce-monitor-circleci` infer or set them up when needed.
+- [Simplify Slack and ticket configuration](../2026-05-25-simplify-slack-and-ticket-config.md) - Keep only routing hooks in the base config and leave provider-specific defaults to custom skills.
 - [Configure commit message format per repo](../2026-05-25-configure-commit-message-format.md) - Let repos enforce commit templates or delegate commits to enterprise-specific skills.
 - [Use PR title and body templates](../2026-05-25-use-pr-title-and-body-templates.md) - Let repos apply enterprise PR text standards through linked markdown templates while keeping the default PR creation flow.
 - [Add decision refresh maintenance](../2026-05-25-add-decision-refresh-maintenance.md) - Keep large decision registries navigable through derived indexes and summaries without rewriting old records.
 - [Use single feature plan file](../2026-05-24-use-single-feature-plan-file.md) - Save the active feature plan at `docs/features/<feature>/plan.md`.
 - [Make ce-init the install source of truth](../2026-05-24-make-ce-init-the-install-source-of-truth.md) - Keep installer artifacts under `skills/ce-init/` and support ticket-first implementation handoff.
 - [Curate bundled skills and enforce README updates](../2026-05-24-curate-skills-and-enforce-readme-updates.md) - Keep the bundled workflow skill set focused and require README updates for user-facing workflow changes.
-- [Add CircleCI pipeline monitor skill](../2026-05-24-add-circleci-pipeline-monitor-skill.md) - Route CircleCI PR pipeline monitoring through `ce-monitor-circleci`.
 - [Add ce-init installer skill](../2026-05-24-add-ce-init-installer-skill.md) - Install repo-local workflow files through a portable `ce-init` skill.
 - [Add human review gates for specs and plans](../2026-05-24-add-human-review-gates-for-specs-and-plans.md) - Support configured GitHub reviewer requests for spec and plan sign-off PRs.
 - [Blank ticket skill skips ticket creation](../2026-05-24-blank-ticket-skill-skips-ticket-creation.md) - Treat a blank `ticket_creation.skill` as ticketing disabled.
@@ -27,6 +29,7 @@ Last refreshed: 2026-05-25
 - [Support feature spec indexes](../2026-05-24-support-feature-spec-indexes.md) -> [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md)
 - [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md) -> [Use single feature plan file](../2026-05-24-use-single-feature-plan-file.md)
 - [Configure PR creation skill per repo](../2026-05-25-configure-pr-creation-skill.md) -> [Use PR title and body templates](../2026-05-25-use-pr-title-and-body-templates.md)
+- [Add CircleCI pipeline monitor skill](../2026-05-24-add-circleci-pipeline-monitor-skill.md) -> [Move CircleCI settings out of default config](../2026-05-25-move-circleci-settings-out-of-default-config.md)
 
 ## Open Follow-ups
 

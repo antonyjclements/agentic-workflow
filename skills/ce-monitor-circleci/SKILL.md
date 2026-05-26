@@ -10,24 +10,36 @@ Run the CircleCI post-PR monitor/fix loop.
 
 ## Configuration
 
-Read `docs/workflow/config.yml` first:
+Read `docs/workflow/config.yml` first for generic post-PR routing:
 
 ```yaml
 post_pr:
   ci_monitor:
     provider: circleci
     skill: ce-monitor-circleci
-    max_attempts: 3
-    poll_interval_seconds: 30
-    circleci:
-      vcs: github
-      org: ""
-      project: ""
-      branch: ""
-      token_env: CIRCLECI_CLI_TOKEN
 ```
 
-Use `CIRCLECI_CLI_TOKEN` by default. Never print token values.
+CircleCI-specific settings are optional and should not be added to `docs/workflow/config.yml` by default. If repo-specific CircleCI config is needed, use `docs/workflow/circleci.yml`:
+
+```yaml
+vcs: github
+org: ""
+project: ""
+branch: ""
+token_env: CIRCLECI_CLI_TOKEN
+```
+
+If `docs/workflow/circleci.yml` is missing, first try to infer `vcs`, `org`, and `project` from `git remote get-url origin`, the PR URL, and `.circleci/config.yml`. If inference is incomplete and CircleCI monitoring cannot continue, ask concise setup questions and offer to create `docs/workflow/circleci.yml`.
+
+Ask for only missing values:
+
+- `vcs`: default to `github` when the remote is GitHub.
+- `org`: GitHub/CircleCI organization or owner.
+- `project`: repository/project name.
+- `branch`: leave blank unless this repo needs an override.
+- `token_env`: default to `CIRCLECI_CLI_TOKEN`.
+
+Never print token values.
 
 ## CircleCI CLI Surface
 
@@ -45,19 +57,20 @@ The CLI does not provide a complete PR pipeline watch/log workflow. For live pip
 ## Workflow
 
 1. Resolve the target PR, branch, and current commit SHA from the argument, `gh pr view`, `git branch --show-current`, or config.
-2. Read `docs/workflow/config.yml` and apply defaults:
-   - `max_attempts`: 3
-   - `poll_interval_seconds`: 30
-   - `circleci.vcs`: `github`
-   - `circleci.token_env`: `CIRCLECI_CLI_TOKEN`
+2. Read `docs/workflow/config.yml`, then read optional `docs/workflow/circleci.yml` if it exists. Apply skill-owned defaults:
+   - retry attempts: 3
+   - poll interval: 30 seconds
+   - `vcs`: `github`
+   - `token_env`: `CIRCLECI_CLI_TOKEN`
 3. Verify local setup:
    - run `circleci version`
    - run `circleci diagnostic --skip-update-check` when network/auth is available
    - run `circleci config validate .circleci/config.yml` if the config file exists
 4. Resolve the CircleCI project slug:
-   - prefer `circleci.vcs`, `circleci.org`, and `circleci.project`
+   - prefer `docs/workflow/circleci.yml` values
    - otherwise infer org/project from `git remote get-url origin`
    - use slug form `gh/<org>/<repo>` for GitHub unless repo evidence shows another provider
+   - if required values are still missing, ask for them and offer to write `docs/workflow/circleci.yml`
 5. Find the relevant pipeline:
    - prefer a pipeline ID or URL supplied by the user
    - otherwise query CircleCI API v2 for recent branch pipelines on the project slug
@@ -69,7 +82,7 @@ The CLI does not provide a complete PR pipeline watch/log workflow. For live pip
    - fix only branch-caused issues
    - run the narrowest meaningful local verification
    - commit and push the fix when the surrounding workflow permits it
-8. Repeat until success, `max_attempts` is reached, or the failure is blocked by external infrastructure, credentials, quota, flaky dependency, or default-branch breakage.
+8. Repeat until success, the skill-owned retry limit is reached, or the failure is blocked by external infrastructure, credentials, quota, flaky dependency, or default-branch breakage.
 
 ## API Fallback
 
@@ -95,7 +108,7 @@ Use JSON parsing with `jq` when available. If `jq` is absent, keep parsing minim
 - Do not rerun or trigger pipelines unless the user asked or the workflow clearly requires a pushed fix.
 - Do not fix unrelated default-branch failures.
 - Preserve user changes; stage only files involved in the CI fix.
-- If CircleCI is unreachable, auth is missing, or the project cannot be resolved, stop with the blocker and the exact config field needed.
+- If CircleCI is unreachable, auth is missing, or the project cannot be resolved, stop with the blocker and the exact value needed for `docs/workflow/circleci.yml`.
 
 ## Output
 

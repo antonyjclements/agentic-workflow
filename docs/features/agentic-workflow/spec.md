@@ -27,6 +27,8 @@ related_decisions:
   - docs/decisions/2026-05-25-configure-pr-creation-skill.md
   - docs/decisions/2026-05-25-configure-commit-message-format.md
   - docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
+  - docs/decisions/2026-05-25-simplify-slack-and-ticket-config.md
+  - docs/decisions/2026-05-25-delegate-ci-monitor-retry-policy.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -78,17 +80,17 @@ The workflow routes:
 - A plan may be created from the spec, but the plan remains temporary execution scaffolding.
 - Plans live at `docs/features/<feature>/plan.md` until removed.
 - Plans are reviewed with `ce-doc-review` before human review, ticket creation, or implementation.
-- A plan may be turned into stories or tickets through `ce-create-tickets`, which uses `docs/workflow/config.yml` to choose the ticket creation skill. If `ticket_creation.skill` is blank, ticket creation is skipped.
+- A plan may be turned into stories or tickets through `ce-create-tickets`, which uses `docs/workflow/config.yml` to choose the ticket creation skill. If `ticket_creation.skill` is blank, ticket creation is skipped. Provider-specific ticket defaults belong in the configured skill or ticket system, not the base workflow config.
 - Implementation agents can pick up one ticket at a time with traceability back to the source plan and spec.
 - Agents may also start from only a ticket after checking out a repo; in that case they read repo guidance, fetch the ticket through the configured tool when available, load linked source artifacts, and verify the ticket does not conflict with living specs or decisions before editing.
 - During implementation, resolved ambiguity is logged with `ce-decision-log`.
 - When the decision log becomes large or hard to scan, `ce-decisions-refresh` rebuilds the decision index and generates derived summaries without rewriting immutable decision records.
 - Before PR, `ce-spec-review` checks for drift between changed behavior and living specs.
 - Before push/PR, non-trivial changes receive `ce-code-review`.
-- After PR creation, `ce-monitor-pipeline` runs the configured CI monitor/fix loop when enabled.
+- After PR creation, `ce-monitor-pipeline` delegates to the configured CI monitor/fix skill when enabled.
 - Repos can configure `pull_request.template.title` and `pull_request.template.body` with markdown template file refs from GitHub URLs, raw GitHub URLs, `file://` URLs, absolute paths, or repo-relative paths. Blank values use the default generated title/body.
 - Repos can configure `git.commit.skill` to use an enterprise-specific commit skill. If blank, commit skills follow the configured template, scope requirements, allowed types, examples, repo instructions, or recent history.
-- CircleCI repos can configure `post_pr.ci_monitor.skill: ce-monitor-circleci` to watch branch pipelines and fix branch-caused failures until green or blocked.
+- CircleCI repos can configure `post_pr.ci_monitor.skill: ce-monitor-circleci` to watch branch pipelines and fix branch-caused failures until green or blocked. Retry limits, polling cadence, and CircleCI-specific settings are owned by the linked skill or optional `docs/workflow/circleci.yml`, not the default workflow config.
 - When a user correction reveals a reusable lesson, `ce-retrospective` stores the learning.
 - At natural pauses, agents run a capture checkpoint so users do not need to remember to invoke decision logging, retrospective learning, or compounding manually.
 - When a non-trivial problem is solved, `ce-compound` captures reusable knowledge; `ce-compound-refresh` keeps those solution docs current.
@@ -108,11 +110,11 @@ The workflow routes:
 - Ticket creation can be routed through a configured skill in `docs/workflow/config.yml`.
 - PR title/body templates can be configured in `docs/workflow/config.yml`.
 - Commit message conventions can be enforced through `docs/workflow/config.yml`.
-- Slack research can be routed through a configured skill in `docs/workflow/config.yml`.
+- Slack research can be routed through a configured skill in `docs/workflow/config.yml`. Workspace or channel defaults belong in the configured skill, not the base workflow config.
 - Plan review runs before human review, ticket creation, or implementation.
 - Tickets include enough traceability for future agents to implement from the ticket alone after checkout.
 - Human review PR reviewer assignment can be configured in `docs/workflow/config.yml`.
-- CircleCI pipeline monitoring can be routed through `ce-monitor-circleci` from `docs/workflow/config.yml`.
+- CircleCI pipeline monitoring can be routed through `ce-monitor-circleci` from `docs/workflow/config.yml` without adding retry, polling, or CircleCI-specific defaults to the base config.
 - Deprecated or unrelated skills are removed from the bundled skill set and installer-cleaned from global installs when practical.
 - PR-time shipping guidance includes a spec drift check for durable behavior changes.
 - PR-time shipping guidance includes an automated README update check.
@@ -152,3 +154,4 @@ The workflow routes:
 - `docs/decisions/2026-05-25-configure-pr-creation-skill.md`
 - `docs/decisions/2026-05-25-configure-commit-message-format.md`
 - `docs/decisions/2026-05-25-use-pr-title-and-body-templates.md`
+- `docs/decisions/2026-05-25-simplify-slack-and-ticket-config.md`

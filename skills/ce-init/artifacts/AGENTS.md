@@ -116,8 +116,10 @@ Each workflow step should return the artifact path or ID that becomes input to t
 - Read `docs/workflow/config.yml` before post-PR pipeline monitoring.
 - Use `post_pr.ci_monitor.skill` as the configured CI monitor/fix skill. Typical values are a GitHub Actions, CircleCI, Jenkins, or custom repo skill.
 - For CircleCI repos, use `ce-monitor-circleci` when `post_pr.ci_monitor.provider` is `circleci` and `post_pr.ci_monitor.skill` is `ce-monitor-circleci`.
+- Do not put CircleCI-specific settings in `docs/workflow/config.yml` by default. `ce-monitor-circleci` should infer settings or set up optional `docs/workflow/circleci.yml` when needed.
+- Do not put retry limits, polling cadence, or timeouts in `docs/workflow/config.yml`; the linked monitor skill owns those details.
 - If `post_pr.ci_monitor.skill` is empty, skip post-PR monitoring; blank means CI monitoring is disabled for the repo.
-- If configured, invoke `ce-monitor-pipeline` after PR creation and loop until the pipeline succeeds, the configured max attempts is reached, or the failure is genuinely blocked.
+- If configured, invoke `ce-monitor-pipeline` after PR creation and let the linked monitor skill loop until success, its own retry limit, or a genuine blocker.
 - Fix only failures caused by the current branch. Do not hide external, flaky, credential, quota, or default-branch failures.
 
 ### Slack Research Routing
@@ -125,7 +127,7 @@ Each workflow step should return the artifact path or ID that becomes input to t
 - Read `docs/workflow/config.yml` before Slack research.
 - Use `research.slack.skill` when an enterprise environment configures a custom Slack skill.
 - If `research.slack.skill` is blank, use `ce-slack-research` with the default Slack discovery path.
-- Preserve source channels, dates, and workspace identifiers in Slack research summaries.
+- Preserve source channels, dates, and any available workspace identifiers in Slack research summaries.
 
 ### README Maintenance Gate
 

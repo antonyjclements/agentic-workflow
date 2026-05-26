@@ -17,11 +17,11 @@ post_pr:
   ci_monitor:
     provider: github-actions|circleci|jenkins|custom|manual
     skill: <skill-name>
-    max_attempts: 3
-    poll_interval_seconds: 30
 ```
 
 If `post_pr.ci_monitor.skill` is blank, skip monitoring and report that post-PR CI monitoring is disabled for this repo.
+
+Retry counts, polling cadence, timeouts, and provider-specific settings belong to the delegated monitor skill. Do not read `max_attempts` or `poll_interval_seconds` from `docs/workflow/config.yml`.
 
 For CircleCI, configure:
 
@@ -30,15 +30,9 @@ post_pr:
   ci_monitor:
     provider: circleci
     skill: ce-monitor-circleci
-    max_attempts: 3
-    poll_interval_seconds: 30
-    circleci:
-      vcs: github
-      org: ""
-      project: ""
-      branch: ""
-      token_env: CIRCLECI_CLI_TOKEN
 ```
+
+CircleCI-specific settings do not live in `docs/workflow/config.yml` by default. `ce-monitor-circleci` discovers them from git remotes and `.circleci/config.yml`, or sets up optional `docs/workflow/circleci.yml` when needed.
 
 ## Workflow
 
@@ -52,11 +46,11 @@ post_pr:
    - fix only issues caused by this branch
    - run relevant local verification where practical
    - commit and push the fix when the surrounding workflow permits it
-7. Repeat until success, `max_attempts` is reached, or the failure is blocked by external credentials, infrastructure, flakes, quota, or unrelated default-branch issues.
+7. Let the delegated skill repeat until success, its own retry limit is reached, or the failure is blocked by external credentials, infrastructure, flakes, quota, or unrelated default-branch issues.
 
 ## Rules
 
-- Do not loop indefinitely. Default `max_attempts` is 3 when config is absent or invalid.
+- Do not loop indefinitely. The delegated monitor skill owns retry limits and polling cadence.
 - Preserve user changes; do not sweep unrelated files into fix commits.
 - Do not mask flaky or external failures as fixed.
 - If the configured skill is unavailable, report the missing skill and stop instead of guessing a provider.
