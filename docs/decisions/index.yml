@@ -1,4 +1,47 @@
 decisions:
+  - path: docs/decisions/2026-05-28-use-verb-object-skill-names.md
+    title: Use verb-object skill names
+    date: 2026-05-28
+    status: active
+    tags:
+      - workflow
+      - skills
+      - naming
+  - path: docs/decisions/2026-05-28-use-prd-lifecycle-statuses-and-cleanup.md
+    title: Use PRD lifecycle statuses and cleanup archived artifacts
+    date: 2026-05-28
+    status: active
+    tags:
+      - workflow
+      - prd
+      - cleanup
+      - artifacts
+  - path: docs/decisions/2026-05-28-rename-skills-to-aw-prefix.md
+    title: Rename skills to aw prefix
+    date: 2026-05-28
+    status: active
+    tags:
+      - workflow
+      - skills
+      - naming
+  - path: docs/decisions/2026-05-28-add-dedicated-prd-creation-skill.md
+    title: Add dedicated PRD creation skill
+    date: 2026-05-28
+    status: active
+    tags:
+      - workflow
+      - prd
+      - skills
+      - templates
+  - path: docs/decisions/2026-05-28-combine-brainstorm-and-spec-creation.md
+    title: Combine brainstorm and spec creation
+    date: 2026-05-28
+    status: active
+    tags:
+      - workflow
+      - prd
+      - specs
+      - brainstorming
   - path: docs/decisions/2026-05-25-delegate-ci-monitor-retry-policy.md
     title: Delegate CI monitor retry policy
     date: 2026-05-25
@@ -154,11 +197,13 @@ decisions:
   - path: docs/decisions/2026-05-24-use-brainstorm-for-prd-intake.md
     title: Use brainstorm for PRD intake
     date: 2026-05-24
-    status: active
+    status: superseded
     tags:
       - workflow
       - prd
       - specs
+    superseded_by:
+      - docs/decisions/2026-05-28-combine-brainstorm-and-spec-creation.md
   - path: docs/decisions/2026-05-24-import-prds-as-historical-source-artifacts.md
     title: Import PRDs as historical source artifacts
     date: 2026-05-24

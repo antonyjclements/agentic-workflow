@@ -13,19 +13,19 @@ The goal is not to adopt a framework. The goal is to make your repo the source o
 
 ## Quick Start
 
-Use the `ce-init` skill to install the workflow into a target repo:
+Use the `aw-init` skill to install the workflow into a target repo:
 
 ```text
-Use ce-init to install agentic-workflow into /path/to/target/repo.
+Use aw-init to install agentic-workflow into /path/to/target/repo.
 ```
 
 From a clone of this repo, the same installer is available inside the skill:
 
 ```bash
-skills/ce-init/scripts/install.sh --repo /path/to/target/repo
+skills/aw-init/scripts/install.sh --repo /path/to/target/repo
 ```
 
-There is intentionally no root `AGENTS.md`, `CLAUDE.md`, or `scripts/install.sh` in this repository. `ce-init` is the source of truth for install artifacts and installer behavior.
+There is intentionally no root `AGENTS.md`, `CLAUDE.md`, or `scripts/install.sh` in this repository. `aw-init` is the source of truth for install artifacts and installer behavior.
 
 The installer:
 
@@ -45,6 +45,8 @@ The installer:
   - `docs/standards/index.yml`
   - `docs/decisions/index.yml`
   - `docs/learnings/index.yml`
+- creates repo-local PRD template if missing:
+  - `docs/product/prds/template.md`
 - creates repo-local workflow config if missing:
   - `docs/workflow/config.yml`
 - creates global learning storage at `~/.agents/learnings/index.yml`
@@ -74,14 +76,14 @@ This means `docs/workflow/config.yml` should use skill names, not filesystem pat
 To skip symlink creation:
 
 ```bash
-skills/ce-init/scripts/install.sh --skip-skill-links --repo /path/to/repo
+skills/aw-init/scripts/install.sh --skip-skill-links --repo /path/to/repo
 ```
 
 ## Mental Model
 
 Use five kinds of durable context:
 
-- **PRDs** preserve external product input as historical source artifacts.
+- **PRDs** preserve external product input or authored product requirements as source artifacts.
 - **Specs** describe what a feature is now.
 - **Standards** describe how work should be done here.
 - **Decisions** record why a choice was made.
@@ -90,7 +92,7 @@ Use five kinds of durable context:
 The rule:
 
 - If it describes intent, keep it alive.
-- If it is a PRD, preserve it as historical input.
+- If it is an imported PRD, preserve it as historical input. If it is authored in-repo, treat it as product input for specs.
 - If it describes a plan, let it expire.
 - If it describes a decision, log it immutably.
 
@@ -106,6 +108,7 @@ docs/
   product/
     prds/
       index.yml
+      template.md   # optional repo-defined template for authored PRDs
   brainstorms/
     index.yml
   features/
@@ -127,18 +130,18 @@ docs/
 
 ## How To Use It
 
-### 1. Start with PRD intake or a spec
+### 1. Start with PRD intake, discovery, or a spec
 
-When you have a PRD from pasted content, a local file, markdown, or a document link, first preserve it with `ce-import-prd`.
+When you have a PRD from pasted content, a local file, markdown, or a document link, first preserve it with `aw-import-prd`.
 
 Example prompts:
 
 ```text
-Use ce-import-prd to create a PRD from this Google Doc.
+Use aw-import-prd to create a PRD from this Google Doc.
 ```
 
 ```text
-Use ce-import-prd to save this pasted PRD.
+Use aw-import-prd to save this pasted PRD.
 ```
 
 Imported PRDs are historical source artifacts:
@@ -147,19 +150,19 @@ Imported PRDs are historical source artifacts:
 docs/product/prds/<date>-<slug>.md
 ```
 
-Then pass the imported PRD path to `ce-brainstorm` unless the PRD is already clear and you explicitly want a spec draft. PRDs often contain implicit ambiguity, assumptions, and open questions.
+Then pass the imported PRD path to `aw-brainstorm` unless the PRD is already clear and you explicitly want a spec draft. PRDs often contain implicit ambiguity, assumptions, and open questions. `aw-brainstorm` resolves that ambiguity and creates or updates the living feature spec in the same run.
 
 ```text
-Use ce-brainstorm with docs/product/prds/2026-05-24-checkout-redesign.md.
+Use aw-brainstorm with docs/product/prds/2026-05-24-checkout-redesign.md.
 ```
 
-After ambiguity is resolved or intentionally captured as open questions, use `ce-spec-create` to write the living feature spec.
+For a raw idea that should become a living spec, start with `aw-brainstorm` directly:
 
 ```text
-Use ce-spec-create to turn the brainstorm output into docs/features/checkout/spec.md.
+Use aw-brainstorm to explore account recovery and create the living spec.
 ```
 
-For existing behavior that needs documentation, `ce-spec-create` can be used directly:
+For existing behavior or already-clear requirements, `aw-create-spec` can still be used directly:
 
 ```text
 Analyze the checkout flow and create a spec for how it works today.
@@ -171,20 +174,39 @@ Specs are stored by feature:
 docs/features/<feature>/spec.md
 ```
 
-They are indexed by `docs/features/index.yml`. To generate or refresh that index, ask the agent to use `ce-index-features`:
+They are indexed by `docs/features/index.yml`. To generate or refresh that index, ask the agent to use `aw-index-features`:
 
 ```text
-Use ce-index-features to generate docs/features/index.yml.
+Use aw-index-features to generate docs/features/index.yml.
 ```
+
+Use `aw-create-prd` when you want an authored PRD instead of immediately committing intent to a living spec:
+
+```text
+Use aw-create-prd to turn this idea into a PRD draft.
+```
+
+`aw-create-prd` uses `docs/product/prds/template.md` when a repo provides one, otherwise it falls back to its bundled template.
+
+PRD lifecycle statuses are:
+
+- `imported`: external PRD preserved as source input
+- `draft`: authored PRD still being shaped
+- `ready-for-spec`: stable enough to promote into a living spec
+- `promoted`: a living spec has been created from the PRD
+- `superseded`: replaced before promotion by newer product input
+- `archived`: safe to remove from the working tree with `aw-clean-artifacts`
+
+When a spec is created from a PRD, the agent marks the PRD `promoted` and links `promoted_to` to the spec. The PRD body stays unchanged. To remove old artifacts, mark them `archived` and run `aw-clean-artifacts`; git history is the long-term archive.
 
 ### 2. Discover or enforce standards
 
-If a repo has repeated conventions, ask the agent to use `ce-discover-standards`.
+If a repo has repeated conventions, ask the agent to use `aw-discover-standards`.
 
 Example prompts:
 
 ```text
-Use ce-discover-standards to document our API handler conventions.
+Use aw-discover-standards to document our API handler conventions.
 ```
 
 ```text
@@ -200,25 +222,25 @@ For multi-step work, ask for a plan after the spec exists.
 Example prompt:
 
 ```text
-Use ce-plan to plan the implementation from docs/features/mfa/spec.md.
+Use aw-plan to plan the implementation from docs/features/mfa/spec.md.
 ```
 
 Plans are execution scaffolding. They live at `docs/features/<feature>/plan.md` and should be removed when they are no longer active.
 
-After a plan is created, run `ce-doc-review` before human review, ticket creation, or implementation. It catches plan coherence, feasibility, scope, and role-specific issues while the plan is still cheap to change.
+After a plan is created, run `aw-review-doc` before human review, ticket creation, or implementation. It catches plan coherence, feasibility, scope, and role-specific issues while the plan is still cheap to change.
 
 ```text
-Use ce-doc-review on docs/features/mfa/plan.md before we create tickets.
+Use aw-review-doc on docs/features/mfa/plan.md before we create tickets.
 ```
 
 ### 4. Implement the work
 
-If the plan should become work items, ask the agent to use `ce-create-tickets` before implementation.
+If the plan should become work items, ask the agent to use `aw-create-tickets` before implementation.
 
 Example prompts:
 
 ```text
-Use ce-create-tickets to turn docs/features/mfa/plan.md into stories.
+Use aw-create-tickets to turn docs/features/mfa/plan.md into stories.
 ```
 
 ```text
@@ -271,7 +293,7 @@ human_review:
 
 Set `ticket_creation.skill` to the skill or MCP-backed workflow the agent should use, such as a Linear skill, Jira skill, or custom repo skill. Leave it blank to skip ticket creation for that repo. Put provider-specific defaults in that custom skill or the target ticket system, not in the base workflow config.
 
-Set `research.slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `ce-slack-research` discovery path. Put workspace or channel defaults in that custom skill when a repo needs them.
+Set `research.slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `aw-research-slack` discovery path. Put workspace or channel defaults in that custom skill when a repo needs them.
 
 Set `pull_request.template.title` and `pull_request.template.body` when PR title/body text should follow organization templates. Each value should point to a markdown file by GitHub URL, raw GitHub URL, `file://` URL, absolute path, or repo-relative path. Leave either blank to use the default generated title or body for that part.
 
@@ -285,10 +307,10 @@ For CircleCI:
 post_pr:
   ci_monitor:
     provider: circleci
-    skill: ce-monitor-circleci
+    skill: aw-monitor-circleci
 ```
 
-CircleCI-specific settings are not part of the default `docs/workflow/config.yml`. `ce-monitor-circleci` will infer them from the git remote, PR URL, and `.circleci/config.yml` where possible. If a repo needs explicit settings, the skill can create `docs/workflow/circleci.yml`:
+CircleCI-specific settings are not part of the default `docs/workflow/config.yml`. `aw-monitor-circleci` will infer them from the git remote, PR URL, and `.circleci/config.yml` where possible. If a repo needs explicit settings, the skill can create `docs/workflow/circleci.yml`:
 
 ```yaml
 vcs: github
@@ -302,23 +324,23 @@ Set `human_review.spec.reviewers` and `human_review.plan.reviewers` to GitHub us
 
 ### Human review gates
 
-After `ce-spec-create`, the agent should ask whether you want product/human review of the spec. If yes, it runs:
+After `aw-brainstorm` or `aw-create-spec` creates or updates a spec, the agent should ask whether you want product/human review of the spec. If yes, it runs:
 
 ```text
-ce-request-human-review spec docs/features/<feature>/spec.md
+aw-request-human-review spec docs/features/<feature>/spec.md
 ```
 
-After `ce-plan`, the agent should ask whether you want engineering/human review of the plan. If yes, it runs:
+After `aw-plan`, the agent should ask whether you want engineering/human review of the plan. If yes, it runs:
 
 ```text
-ce-request-human-review plan docs/features/<feature>/plan.md
+aw-request-human-review plan docs/features/<feature>/plan.md
 ```
 
 That skill commits the artifact set, opens a GitHub PR, and requests configured reviewers from `docs/workflow/config.yml`.
 
 ### 5. Pick up a ticket
 
-Ask the agent to execute with `ce-work`, or make a direct implementation request.
+Ask the agent to execute with `aw-work`, or make a direct implementation request.
 
 A ticket can also be the first thing a later agent sees after checking out the repo. That is expected. The agent should read `AGENTS.md`, load `docs/workflow/config.yml`, fetch the ticket through the configured ticket tool when available, then follow ticket links back to the source spec, plan, decisions, standards, acceptance criteria, and tests.
 
@@ -336,12 +358,12 @@ During implementation, the agent should:
 
 ### 6. Log decisions as they happen
 
-When ambiguity is resolved, ask the agent to use `ce-decision-log`.
+When ambiguity is resolved, ask the agent to use `aw-log-decision`.
 
 Example prompts:
 
 ```text
-Use ce-decision-log to record that MFA recovery codes are single-use.
+Use aw-log-decision to record that MFA recovery codes are single-use.
 ```
 
 ```text
@@ -352,22 +374,22 @@ Decision records live in `docs/decisions/` and are indexed in `docs/decisions/in
 
 Do not edit old decision records to change history. Create a new decision that supersedes the old one.
 
-When the decision folder gets large or the index looks stale, use `ce-decisions-refresh`.
+When the decision folder gets large or the index looks stale, use `aw-refresh-decisions`.
 
 ```text
-Use ce-decisions-refresh to rebuild the decision index and create summaries for large areas.
+Use aw-refresh-decisions to rebuild the decision index and create summaries for large areas.
 ```
 
 That skill preserves immutable decision files, refreshes `docs/decisions/index.yml`, flags metadata gaps, follows supersession chains, and creates derived summaries under `docs/decisions/summaries/` when useful.
 
 ### 7. Review specs before shipping
 
-Before opening a PR, ask the agent to use `ce-spec-review`.
+Before opening a PR, ask the agent to use `aw-review-spec`.
 
 Example prompts:
 
 ```text
-Use ce-spec-review to check this branch for spec drift.
+Use aw-review-spec to check this branch for spec drift.
 ```
 
 ```text
@@ -383,12 +405,12 @@ The review should catch:
 
 ### 8. Capture corrections as learnings
 
-When you correct an agent and the correction should matter in the future, the agent should use `ce-retrospective`.
+When you correct an agent and the correction should matter in the future, the agent should use `aw-record-retrospective`.
 
 Example prompts:
 
 ```text
-Use ce-retrospective to save that learning for this repo.
+Use aw-record-retrospective to save that learning for this repo.
 ```
 
 ```text
@@ -416,7 +438,7 @@ If the answer is obvious and repo-local, the agent can write the record. If scop
 
 ### 10. Monitor CI after PR creation
 
-When committing, `ce-commit` and `ce-commit-push-pr` first check `docs/workflow/config.yml`. If `git.commit.skill` is configured, they delegate commit message generation or commit creation to that enterprise skill. If it is blank, they use the configured template and examples when present.
+When committing, `aw-commit` and `aw-commit-push-pr` first check `docs/workflow/config.yml`. If `git.commit.skill` is configured, they delegate commit message generation or commit creation to that enterprise skill. If it is blank, they use the configured template and examples when present.
 
 For repos that require scoped conventional commits:
 
@@ -429,7 +451,7 @@ git:
       - "docs(readme): update usage guide"
 ```
 
-When creating a PR, `ce-commit-push-pr` checks `pull_request.template`. If configured, it loads the referenced markdown title/body templates and fills known placeholders before creating the PR with the built-in GitHub CLI flow. If blank, it uses the normal generated title and body.
+When creating a PR, `aw-commit-push-pr` checks `pull_request.template`. If configured, it loads the referenced markdown title/body templates and fills known placeholders before creating the PR with the built-in GitHub CLI flow. If blank, it uses the normal generated title and body.
 
 Example:
 
@@ -442,7 +464,7 @@ pull_request:
 
 Useful template placeholders include `{default_title}`, `{default_body}`, `{summary}`, `{what_changed}`, `{validation}`, `{risks}`, `{ticket}`, `{spec}`, `{decisions}`, and `{badge}`.
 
-If post-PR monitoring is configured, the PR creation flow should invoke `ce-monitor-pipeline` after creating or updating the PR.
+If post-PR monitoring is configured, the PR creation flow should invoke `aw-monitor-pipeline` after creating or updating the PR.
 
 The configured monitor should:
 
@@ -458,7 +480,7 @@ Example config:
 post_pr:
   ci_monitor:
     provider: circleci
-    skill: ce-monitor-circleci
+    skill: aw-monitor-circleci
 ```
 
 ### 11. Keep README.md current
@@ -478,24 +500,23 @@ Before commit or PR, the agent should explicitly check whether the diff changes 
 ### New Feature
 
 ```text
-Use ce-import-prd to persist the pasted/file/link PRD.
-Use ce-brainstorm with the imported PRD path to clarify requirements.
-Use ce-spec-create with the requirements doc path to create/update the feature spec.
-Use ce-plan with the feature spec path to plan implementation.
-Use ce-create-tickets with the plan path to turn the plan into stories.
-Have an agent pick up the first ticket ID/URL with ce-work.
-Use ce-decision-log for any choices we make during build.
-Use ce-spec-review before opening the PR.
+Use aw-import-prd to persist the pasted/file/link PRD.
+Use aw-brainstorm with the imported PRD path to clarify requirements and create/update the feature spec.
+Use aw-plan with the feature spec path to plan implementation.
+Use aw-create-tickets with the plan path to turn the plan into stories.
+Have an agent pick up the first ticket ID/URL with aw-work.
+Use aw-log-decision for any choices we make during build.
+Use aw-review-spec before opening the PR.
 Run the capture checkpoint.
 Update README.md if setup, commands, config, or workflow behavior changed.
-Use ce-commit-push-pr to commit, push, and create the PR.
-If configured, ce-monitor-pipeline watches CI and fixes failures until green.
+Use aw-commit-push-pr to commit, push, and create the PR.
+If configured, aw-monitor-pipeline watches CI and fixes failures until green.
 ```
 
 ### Ticket-First Implementation
 
 ```text
-Use ce-work with ENG-123.
+Use aw-work with ENG-123.
 Read AGENTS.md and docs/workflow/config.yml.
 Fetch the ticket with the configured ticket skill/tool.
 Load linked source artifacts: spec, plan, decisions, standards, and acceptance criteria.
@@ -507,73 +528,73 @@ Summarize the ticket, source spec, decisions, and checks run.
 ### Existing Feature Discovery
 
 ```text
-Analyze the current billing flow and use ce-spec-create to document how it works today.
-Use ce-discover-standards to capture any repeated billing conventions you find.
+Analyze the current billing flow and use aw-create-spec to document how it works today.
+Use aw-discover-standards to capture any repeated billing conventions you find.
 ```
 
 ### Correction During a Session
 
 ```text
 Actually, that behavior should be parent-controlled, not child-controlled.
-Use ce-retrospective if this should affect future agent behavior, and use ce-decision-log if it changes the product contract.
+Use aw-record-retrospective if this should affect future agent behavior, and use aw-log-decision if it changes the product contract.
 ```
 
 ### PR Readiness
 
 ```text
-Run ce-spec-review and ce-code-review, then update any stale specs or missing decisions before creating the PR.
+Run aw-review-spec and aw-review-code, then update any stale specs or missing decisions before creating the PR.
 ```
 
 ## Installer Options
 
 ```bash
-skills/ce-init/scripts/install.sh --repo .                      # install into current repo
-skills/ce-init/scripts/install.sh --repo ~/Code/app --force     # overwrite repo-local AGENTS.md and indexes
-skills/ce-init/scripts/install.sh --skip-repo                   # install global skills only
-skills/ce-init/scripts/install.sh --skip-skill-links --repo .   # do not link Claude/Codeium/Windsurf skill dirs
-skills/ce-init/scripts/install.sh --skip-skills --repo ~/Code/app
-skills/ce-init/scripts/install.sh --skills-dir ~/.codex/skills  # alternate global skill dir
-skills/ce-init/scripts/install.sh --learnings-dir ~/.agents/learnings
+skills/aw-init/scripts/install.sh --repo .                      # install into current repo
+skills/aw-init/scripts/install.sh --repo ~/Code/app --force     # overwrite repo-local AGENTS.md and indexes
+skills/aw-init/scripts/install.sh --skip-repo                   # install global skills only
+skills/aw-init/scripts/install.sh --skip-skill-links --repo .   # do not link Claude/Codeium/Windsurf skill dirs
+skills/aw-init/scripts/install.sh --skip-skills --repo ~/Code/app
+skills/aw-init/scripts/install.sh --skills-dir ~/.codex/skills  # alternate global skill dir
+skills/aw-init/scripts/install.sh --learnings-dir ~/.agents/learnings
 ```
 
 Environment overrides:
 
 ```bash
-AGENTIC_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/ce-init/scripts/install.sh --repo .
-AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/ce-init/scripts/install.sh --repo .
+AGENTIC_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/aw-init/scripts/install.sh --repo .
+AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/install.sh --repo .
 ```
 
 ## Included Skills
 
-- `ce-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, and global learnings index
-- `ce-import-prd`: persist pasted/file/link PRDs in `docs/product/prds/`
-- `ce-brainstorm`: clarify ambiguous PRDs and requirements before specs
-- `ce-spec-create`: create or update living feature specs in `docs/features/<feature>/spec.md`
-- `ce-index-features`: generate `docs/features/index.yml` from `docs/features/<feature>/spec.md`
-- `ce-plan`: create implementation plans from specs or requirements
-- `ce-doc-review`: review requirements and plans before handoff
-- `ce-spec-review`: catch drift between implementation and specs before shipping
-- `ce-create-tickets`: turn plans into configured Linear/Jira/custom implementation tickets
-- `ce-work`: implement plans, tickets, specs, or concrete requests
-- `ce-debug`: investigate and fix bugs systematically
-- `ce-simplify-code`: simplify recently changed code while preserving behavior
-- `ce-code-review`: review code before PRs
-- `ce-commit`: create focused commits
-- `ce-commit-push-pr`: commit, push, create/update PRs with optional configured title/body templates, and invoke configured post-PR monitoring
-- `ce-monitor-pipeline`: run the configured post-PR CI monitor/fix loop
-- `ce-monitor-circleci`: monitor CircleCI pipelines and fix branch-caused failures
-- `ce-request-human-review`: create spec/plan sign-off PRs and request configured GitHub reviewers
-- `ce-decision-log`: record immutable decisions in `docs/decisions/`
-- `ce-decisions-refresh`: refresh decision indexes and summaries without rewriting immutable decision records
-- `ce-discover-standards`: extract repeated codebase conventions into `docs/standards/`
-- `ce-retrospective`: capture correction-driven learnings in `docs/learnings/` or `~/.agents/learnings/`
-- `ce-compound`: capture reusable solved-problem knowledge
-- `ce-compound-refresh`: refresh stale solution docs
-- `ce-resolve-pr-feedback`: resolve PR review comments
-- `ce-test-browser`: run browser tests for web changes
-- `ce-worktree`: create isolated git worktrees
-- `ce-dogfood-beta`: run a heavier browser QA pass when desired
-- `ce-slack-research`: research organizational context from Slack, optionally routed through a configured enterprise Slack skill
+- `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, and global learnings index
+- `aw-import-prd`: persist pasted/file/link PRDs in `docs/product/prds/`
+- `aw-create-prd`: author PRDs from ideas, brainstorms, or notes using a repo-defined template when available
+- `aw-clean-artifacts`: remove workflow artifacts marked `status: archived`
+- `aw-brainstorm`: clarify ambiguous PRDs or ideas and create the right artifact, usually a living feature spec
+- `aw-create-spec`: directly create or update living feature specs in `docs/features/<feature>/spec.md`
+- `aw-index-features`: generate `docs/features/index.yml` from `docs/features/<feature>/spec.md`
+- `aw-plan`: create implementation plans from specs or requirements
+- `aw-review-doc`: review requirements and plans before handoff
+- `aw-review-spec`: catch drift between implementation and specs before shipping
+- `aw-create-tickets`: turn plans into configured Linear/Jira/custom implementation tickets
+- `aw-work`: implement plans, tickets, specs, or concrete requests
+- `aw-debug`: investigate and fix bugs systematically
+- `aw-simplify-code`: simplify recently changed code while preserving behavior
+- `aw-review-code`: review code before PRs
+- `aw-commit`: create focused commits
+- `aw-commit-push-pr`: commit, push, create/update PRs with optional configured title/body templates, and invoke configured post-PR monitoring
+- `aw-monitor-pipeline`: run the configured post-PR CI monitor/fix loop
+- `aw-monitor-circleci`: monitor CircleCI pipelines and fix branch-caused failures
+- `aw-request-human-review`: create spec/plan sign-off PRs and request configured GitHub reviewers
+- `aw-log-decision`: record immutable decisions in `docs/decisions/`
+- `aw-refresh-decisions`: refresh decision indexes and summaries without rewriting immutable decision records
+- `aw-discover-standards`: extract repeated codebase conventions into `docs/standards/`
+- `aw-record-retrospective`: capture correction-driven learnings in `docs/learnings/` or `~/.agents/learnings/`
+- `aw-capture-solution`: capture reusable solved-problem knowledge
+- `aw-refresh-solutions`: refresh stale solution docs
+- `aw-resolve-pr-feedback`: resolve PR review comments
+- `aw-create-worktree`: create isolated git worktrees
+- `aw-research-slack`: research organizational context from Slack, optionally routed through a configured enterprise Slack skill
 
 The repo carries a curated skill set under `skills/`. Deprecated or unrelated skills should be removed rather than kept for completeness.
 
@@ -581,10 +602,10 @@ The repo carries a curated skill set under `skills/`. Deprecated or unrelated sk
 
 When changing this workflow:
 
-- update `skills/ce-init/artifacts/AGENTS.md` if agent routing changes
+- update `skills/aw-init/artifacts/AGENTS.md` if agent routing changes
 - update or add skills under `skills/`
-- update `skills/ce-init/scripts/install.sh` if repo-local structure changes
+- update `skills/aw-init/scripts/install.sh` if repo-local structure changes
 - update this README so humans know how to use the system
-- keep install guidance sourced from `ce-init`
-- run `bash -n skills/ce-init/scripts/install.sh`
+- keep install guidance sourced from `aw-init`
+- run `bash -n skills/aw-init/scripts/install.sh`
 - run `bash scripts/test-install.sh`

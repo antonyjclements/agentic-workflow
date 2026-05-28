@@ -32,6 +32,7 @@ assert_repo_install() {
   assert_file "$target_repo/CLAUDE.md"
   assert_file "$target_repo/.agentic-workflow-version"
   assert_file "$target_repo/docs/product/prds/index.yml"
+  assert_file "$target_repo/docs/product/prds/template.md"
   assert_file "$target_repo/docs/brainstorms/index.yml"
   assert_file "$target_repo/docs/features/index.yml"
   assert_file "$target_repo/docs/standards/index.yml"
@@ -43,19 +44,19 @@ assert_repo_install() {
 export HOME="$tmp_root/home"
 mkdir -p "$HOME"
 
-ce_init_target="$tmp_root/ce-init-target"
-ce_init_skills="$tmp_root/ce-init-skills"
-ce_init_learnings="$tmp_root/ce-init-learnings"
+aw_init_target="$tmp_root/aw-init-target"
+aw_init_skills="$tmp_root/aw-init-skills"
+aw_init_learnings="$tmp_root/aw-init-learnings"
 
-"$repo_root/skills/ce-init/scripts/install.sh" \
-  --repo "$ce_init_target" \
-  --skills-dir "$ce_init_skills" \
-  --learnings-dir "$ce_init_learnings" \
+"$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$aw_init_target" \
+  --skills-dir "$aw_init_skills" \
+  --learnings-dir "$aw_init_learnings" \
   --force
 
-assert_repo_install "$ce_init_target"
-assert_file "$ce_init_skills/ce-init/SKILL.md"
-assert_file "$ce_init_learnings/index.yml"
+assert_repo_install "$aw_init_target"
+assert_file "$aw_init_skills/aw-init/SKILL.md"
+assert_file "$aw_init_learnings/index.yml"
 assert_symlink "$HOME/.claude/skills"
 assert_symlink "$HOME/.codeium/skills"
 assert_symlink "$HOME/.windsurf/skills"
@@ -64,9 +65,9 @@ bundled_skills="$tmp_root/bundled-skills"
 bundled_target="$tmp_root/bundled-target"
 bundled_learnings="$tmp_root/bundled-learnings"
 mkdir -p "$bundled_skills"
-cp -R "$repo_root/skills/ce-init" "$bundled_skills/ce-init"
+cp -R "$repo_root/skills/aw-init" "$bundled_skills/aw-init"
 
-"$bundled_skills/ce-init/scripts/install.sh" \
+"$bundled_skills/aw-init/scripts/install.sh" \
   --repo "$bundled_target" \
   --skills-dir "$bundled_skills" \
   --learnings-dir "$bundled_learnings" \
