@@ -4,6 +4,7 @@ Last refreshed: 2026-05-28
 
 ## Active Decisions
 
+- [Keep aw-init repo-local](../2026-05-28-keep-aw-init-repo-local.md) - Limit `aw-init` to target-repo agent files and workflow scaffolding, leaving skill installation to the runtime.
 - [Use verb-object skill names](../2026-05-28-use-verb-object-skill-names.md) - Keep multi-word `aw-*` skill names in action-first form.
 - [Use PRD lifecycle statuses and cleanup archived artifacts](../2026-05-28-use-prd-lifecycle-statuses-and-cleanup.md) - Track PRD promotion/archive state explicitly and remove only artifacts marked archived.
 - [Rename skills to aw prefix](../2026-05-28-rename-skills-to-aw-prefix.md) - Use `aw-*` as the canonical Agentic Workflow skill namespace and remove unneeded browser QA skills.
@@ -23,12 +24,12 @@ Last refreshed: 2026-05-28
 - [Blank ticket skill skips ticket creation](../2026-05-24-blank-ticket-skill-skips-ticket-creation.md) - Treat a blank `ticket_creation.skill` as ticketing disabled.
 - [Configure post-PR CI monitoring skill per repo](../2026-05-24-configure-post-pr-ci-monitoring.md) - Use `docs/workflow/config.yml` to choose the post-PR CI monitor.
 - [Configure ticket creation skill per repo](../2026-05-24-configure-ticket-creation-skill.md) - Use `docs/workflow/config.yml` to choose the ticket creation workflow.
-- [Use ~/.agents/skills as canonical skill directory](../2026-05-24-use-agents-skills-as-canonical-skill-directory.md) - Install skills once under `~/.agents/skills` and expose them to supported runtimes.
 - [Import PRDs as historical source artifacts](../2026-05-24-import-prds-as-historical-source-artifacts.md) - Preserve PRDs under `docs/product/prds/` as historical inputs.
 - [Proactively prompt for knowledge capture](../2026-05-24-proactively-prompt-for-knowledge-capture.md) - Run lightweight capture checkpoints at natural pauses.
 
 ## Superseded Decisions
 
+- [Use ~/.agents/skills as canonical skill directory](../2026-05-24-use-agents-skills-as-canonical-skill-directory.md) -> [Keep aw-init repo-local](../2026-05-28-keep-aw-init-repo-local.md)
 - [Use docs/ for spec-driven workflow registries](../2026-05-24-use-docs-for-spec-driven-workflow.md) -> [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md)
 - [Support feature spec indexes](../2026-05-24-support-feature-spec-indexes.md) -> [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md)
 - [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md) -> [Use single feature plan file](../2026-05-24-use-single-feature-plan-file.md)

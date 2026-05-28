@@ -17,14 +17,6 @@ assert_file() {
   fi
 }
 
-assert_symlink() {
-  local path="$1"
-  if [ ! -L "$path" ]; then
-    echo "missing expected symlink: $path" >&2
-    exit 1
-  fi
-}
-
 assert_repo_install() {
   local target_repo="$1"
 
@@ -41,42 +33,23 @@ assert_repo_install() {
   assert_file "$target_repo/docs/workflow/config.yml"
 }
 
-export HOME="$tmp_root/home"
-mkdir -p "$HOME"
-
 aw_init_target="$tmp_root/aw-init-target"
-aw_init_skills="$tmp_root/aw-init-skills"
-aw_init_learnings="$tmp_root/aw-init-learnings"
 
 "$repo_root/skills/aw-init/scripts/install.sh" \
   --repo "$aw_init_target" \
-  --skills-dir "$aw_init_skills" \
-  --learnings-dir "$aw_init_learnings" \
   --force
 
 assert_repo_install "$aw_init_target"
-assert_file "$aw_init_skills/aw-init/SKILL.md"
-assert_file "$aw_init_learnings/index.yml"
-assert_symlink "$HOME/.claude/skills"
-assert_symlink "$HOME/.codeium/skills"
-assert_symlink "$HOME/.windsurf/skills"
 
-bundled_skills="$tmp_root/bundled-skills"
+bundled_skill="$tmp_root/bundled-skill"
 bundled_target="$tmp_root/bundled-target"
-bundled_learnings="$tmp_root/bundled-learnings"
-mkdir -p "$bundled_skills"
-cp -R "$repo_root/skills/aw-init" "$bundled_skills/aw-init"
+mkdir -p "$bundled_skill"
+cp -R "$repo_root/skills/aw-init/." "$bundled_skill"
 
-"$bundled_skills/aw-init/scripts/install.sh" \
+"$bundled_skill/scripts/install.sh" \
   --repo "$bundled_target" \
-  --skills-dir "$bundled_skills" \
-  --learnings-dir "$bundled_learnings" \
   --force
 
 assert_repo_install "$bundled_target"
-assert_file "$bundled_learnings/index.yml"
-assert_symlink "$HOME/.claude/skills"
-assert_symlink "$HOME/.codeium/skills"
-assert_symlink "$HOME/.windsurf/skills"
 
 echo "installer smoke test passed"

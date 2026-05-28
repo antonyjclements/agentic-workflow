@@ -23,7 +23,7 @@ Install repo-local agentic-workflow files into a target repository.
 <skill-dir>/scripts/install.sh --repo <target-repo>
 ```
 
-3. The bundled installer is the source of truth. It installs skills globally when a skills source is available, links supported runtimes, and installs repo-local artifacts.
+3. The bundled installer is the source of truth for repo-local artifacts only. It does not install, remove, or link skills.
 4. If `AGENTS.md` or `CLAUDE.md` already exists, the script prompts before overriding unless `--force` is passed.
 5. After install, summarize changed/preserved files and next steps.
 

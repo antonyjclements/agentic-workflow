@@ -29,12 +29,6 @@ There is intentionally no root `AGENTS.md`, `CLAUDE.md`, or `scripts/install.sh`
 
 The installer:
 
-- installs all skills globally to `~/.agents/skills`
-- removes deprecated bundled skills such as `lfg`
-- symlinks runtime skill directories to `~/.agents/skills` when safe:
-  - `~/.claude/skills`
-  - `~/.codeium/skills`
-  - `~/.windsurf/skills`
 - copies `AGENTS.md` into the target repo
 - copies `CLAUDE.md` into the target repo as a Claude Code shim containing `@AGENTS.md`
 - writes `.agentic-workflow-version`
@@ -49,35 +43,14 @@ The installer:
   - `docs/product/prds/template.md`
 - creates repo-local workflow config if missing:
   - `docs/workflow/config.yml`
-- creates global learning storage at `~/.agents/learnings/index.yml`
 
 Existing repo files are preserved unless you pass `--force`.
 
-Existing non-symlink skill directories are preserved. If a runtime already has its own real `skills` directory, the installer will not replace it.
+`aw-init` does not install, remove, or link skills. Skill installation is handled outside the repo initializer by the agent runtime or skill manager.
 
-## Cross-Agent Skill Install
+## Skill Availability
 
-The canonical skill install location is:
-
-```text
-~/.agents/skills
-```
-
-The installer then exposes that same directory to other agents by creating symlinks:
-
-```text
-~/.claude/skills -> ~/.agents/skills
-~/.codeium/skills -> ~/.agents/skills
-~/.windsurf/skills -> ~/.agents/skills
-```
-
-This means `docs/workflow/config.yml` should use skill names, not filesystem paths. Each runtime still has to support loading skills from its configured skills directory.
-
-To skip symlink creation:
-
-```bash
-skills/aw-init/scripts/install.sh --skip-skill-links --repo /path/to/repo
-```
+This repo carries the curated skill source under `skills/`. Install or expose those skills through the mechanism your agent runtime supports, then use `aw-init` only to scaffold the target repository's agent files and workflow directories.
 
 ## Mental Model
 
@@ -550,23 +523,11 @@ Run aw-review-spec and aw-review-code, then update any stale specs or missing de
 ```bash
 skills/aw-init/scripts/install.sh --repo .                      # install into current repo
 skills/aw-init/scripts/install.sh --repo ~/Code/app --force     # overwrite repo-local AGENTS.md and indexes
-skills/aw-init/scripts/install.sh --skip-repo                   # install global skills only
-skills/aw-init/scripts/install.sh --skip-skill-links --repo .   # do not link Claude/Codeium/Windsurf skill dirs
-skills/aw-init/scripts/install.sh --skip-skills --repo ~/Code/app
-skills/aw-init/scripts/install.sh --skills-dir ~/.codex/skills  # alternate global skill dir
-skills/aw-init/scripts/install.sh --learnings-dir ~/.agents/learnings
-```
-
-Environment overrides:
-
-```bash
-AGENTIC_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/aw-init/scripts/install.sh --repo .
-AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/install.sh --repo .
 ```
 
 ## Included Skills
 
-- `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, and global learnings index
+- `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, and PRD template
 - `aw-import-prd`: persist pasted/file/link PRDs in `docs/product/prds/`
 - `aw-create-prd`: author PRDs from ideas, brainstorms, or notes using a repo-defined template when available
 - `aw-clean-artifacts`: remove workflow artifacts marked `status: archived`

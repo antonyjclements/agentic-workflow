@@ -5,38 +5,26 @@ AGENTIC_WORKFLOW_VERSION="0.2.0"
 
 usage() {
   cat <<'USAGE'
-Install agentic-workflow globally and into a target repository.
+Install agentic-workflow files into a target repository.
 
 Usage:
-  install.sh [--repo PATH] [--skills-dir PATH] [--learnings-dir PATH] [--force] [--skip-skills] [--skip-skill-links] [--skip-repo]
+  install.sh [--repo PATH] [--force]
 
 Defaults:
-  --repo          current directory
-  --skills-dir    ~/.agents/skills
-  --learnings-dir ~/.agents/learnings
-  skill links     ~/.claude/skills, ~/.codeium/skills, ~/.windsurf/skills
+  --repo current directory
 
 What it does:
-  1. Installs skills globally when a skills source is available.
-  2. Installs AGENTS.md and CLAUDE.md into the repo root.
-  3. Symlinks Claude Code, Codeium, and Windsurf skill dirs to the global skills directory when safe.
-  4. Creates repo-local docs/product/prds, docs/brainstorms, docs/features, docs/standards, docs/decisions, docs/learnings, and docs/workflow config if missing.
-  5. Writes .agentic-workflow-version.
-  6. Creates global ~/.agents/learnings/index.yml if missing.
-  7. Prints recommended next steps.
+  1. Installs AGENTS.md and CLAUDE.md into the repo root.
+  2. Creates repo-local docs/product/prds, docs/brainstorms, docs/features, docs/standards, docs/decisions, docs/learnings, and docs/workflow config if missing.
+  3. Writes .agentic-workflow-version.
+  4. Prints recommended next steps.
 
 Existing files are preserved unless --force is passed.
-Existing non-symlink skill directories are always preserved.
 USAGE
 }
 
 repo_dir="$(pwd)"
-skills_dir="${AGENTIC_WORKFLOW_SKILLS_DIR:-$HOME/.agents/skills}"
-learnings_dir="${AGENTIC_WORKFLOW_LEARNINGS_DIR:-$HOME/.agents/learnings}"
 force=0
-skip_skills=0
-skip_skill_links=0
-skip_repo=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -45,30 +33,8 @@ while [ "$#" -gt 0 ]; do
       repo_dir="$2"
       shift 2
       ;;
-    --skills-dir)
-      [ "$#" -ge 2 ] || { echo "Missing value for --skills-dir" >&2; exit 2; }
-      skills_dir="$2"
-      shift 2
-      ;;
-    --learnings-dir)
-      [ "$#" -ge 2 ] || { echo "Missing value for --learnings-dir" >&2; exit 2; }
-      learnings_dir="$2"
-      shift 2
-      ;;
     --force)
       force=1
-      shift
-      ;;
-    --skip-skills)
-      skip_skills=1
-      shift
-      ;;
-    --skip-skill-links)
-      skip_skill_links=1
-      shift
-      ;;
-    --skip-repo)
-      skip_repo=1
       shift
       ;;
     -h|--help)
@@ -86,7 +52,6 @@ done
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 skill_dir="$(cd "$script_dir/.." && pwd)"
 artifact_dir="$skill_dir/artifacts"
-source_dir="$(cd "$script_dir/../../.." && pwd)"
 
 prompt_overwrite() {
   local dest="$1"
@@ -134,170 +99,6 @@ write_file_if_missing() {
   fi
   printf '%s\n' "$content" > "$dest"
   echo "write: $dest"
-}
-
-install_skills() {
-  local source_skills_dir=""
-
-  if [ -d "$source_dir/skills" ]; then
-    source_skills_dir="$source_dir/skills"
-  elif [ -d "$(dirname "$skill_dir")" ]; then
-    source_skills_dir="$(dirname "$skill_dir")"
-  fi
-
-  mkdir -p "$skills_dir"
-
-  for deprecated_skill in \
-    lfg \
-    ce-agent-native-architecture \
-    ce-agent-native-audit \
-    ce-clean-gone-branches \
-    ce-demo-reel \
-    ce-dhh-rails-style \
-    ce-frontend-design \
-    ce-gemini-imagegen \
-    ce-ideate \
-    ce-optimize \
-    ce-polish-beta \
-    ce-product-pulse \
-    ce-proof \
-    ce-release-notes \
-    ce-report-bug \
-    ce-riffrec-feedback-analysis \
-    ce-sessions \
-    ce-setup \
-    ce-strategy \
-    ce-test-xcode \
-    ce-update \
-    ce-work-beta \
-    ce-brainstorm \
-    ce-code-review \
-    ce-commit \
-    ce-commit-push-pr \
-    ce-compound \
-    ce-compound-refresh \
-    ce-create-prd \
-    ce-create-tickets \
-    ce-debug \
-    ce-decision-log \
-    ce-decisions-refresh \
-    ce-discover-standards \
-    ce-doc-review \
-    ce-dogfood-beta \
-    ce-import-prd \
-    ce-index-features \
-    ce-init \
-    ce-monitor-circleci \
-    ce-monitor-pipeline \
-    ce-plan \
-    ce-request-human-review \
-    ce-resolve-pr-feedback \
-    ce-retrospective \
-    ce-simplify-code \
-    ce-slack-research \
-    ce-spec-create \
-    ce-spec-review \
-    ce-test-browser \
-    ce-work \
-    ce-worktree \
-    aw-dogfood-beta \
-    aw-test-browser \
-    aw-code-review \
-    aw-compound \
-    aw-compound-refresh \
-    aw-decision-log \
-    aw-decisions-refresh \
-    aw-doc-review \
-    aw-slack-research \
-    aw-spec-create \
-    aw-spec-review \
-    aw-worktree \
-    aw-agent-native-architecture \
-    aw-agent-native-audit \
-    aw-clean-gone-branches \
-    aw-demo-reel \
-    aw-dhh-rails-style \
-    aw-frontend-design \
-    aw-gemini-imagegen \
-    aw-ideate \
-    aw-optimize \
-    aw-polish-beta \
-    aw-product-pulse \
-    aw-proof \
-    aw-release-notes \
-    aw-report-bug \
-    aw-riffrec-feedback-analysis \
-    aw-sessions \
-    aw-setup \
-    aw-strategy \
-    aw-test-xcode \
-    aw-update \
-    aw-work-beta; do
-    if [ -e "$skills_dir/$deprecated_skill" ]; then
-      rm -rf "$skills_dir/$deprecated_skill"
-      echo "skill removed: $deprecated_skill"
-    fi
-  done
-
-  if [ -z "$source_skills_dir" ]; then
-    echo "skills preserve: no source skills directory found"
-    return 0
-  fi
-
-  if [ "$(cd "$source_skills_dir" && pwd)" = "$(cd "$skills_dir" && pwd)" ]; then
-    echo "skills preserve: $skills_dir"
-    return 0
-  fi
-
-  for skill_path in "$source_skills_dir"/*; do
-    [ -d "$skill_path" ] || continue
-    [ -f "$skill_path/SKILL.md" ] || continue
-    local skill_name
-    local dest
-    skill_name="$(basename "$skill_path")"
-    dest="$skills_dir/$skill_name"
-    rm -rf "$dest"
-    mkdir -p "$(dirname "$dest")"
-    cp -R "$skill_path" "$dest"
-    echo "skill: $skill_name -> $dest"
-  done
-}
-
-link_skill_dir() {
-  local link_path="$1"
-  mkdir -p "$(dirname "$link_path")"
-
-  if [ -L "$link_path" ]; then
-    local current_target
-    current_target="$(readlink "$link_path")"
-    if [ "$current_target" = "$skills_dir" ]; then
-      echo "skill-link preserve: $link_path -> $skills_dir"
-      return 0
-    fi
-    if [ "$force" -eq 1 ]; then
-      rm "$link_path"
-      ln -s "$skills_dir" "$link_path"
-      echo "skill-link: $link_path -> $skills_dir"
-      return 0
-    fi
-    echo "skill-link preserve: $link_path -> $current_target"
-    return 0
-  fi
-
-  if [ -e "$link_path" ]; then
-    echo "skill-link preserve existing non-symlink: $link_path"
-    return 0
-  fi
-
-  ln -s "$skills_dir" "$link_path"
-  echo "skill-link: $link_path -> $skills_dir"
-}
-
-install_skill_links() {
-  mkdir -p "$skills_dir"
-  link_skill_dir "$HOME/.claude/skills"
-  link_skill_dir "$HOME/.codeium/skills"
-  link_skill_dir "$HOME/.windsurf/skills"
 }
 
 install_repo_files() {
@@ -353,29 +154,12 @@ human_review:
     reviewers: []"
 }
 
-install_global_learnings() {
-  write_file_if_missing "$learnings_dir/index.yml" "learnings: []"
-}
-
-if [ "$skip_skills" -ne 1 ]; then
-  install_skills
-  if [ "$skip_skill_links" -ne 1 ]; then
-    install_skill_links
-  fi
-fi
-
-if [ "$skip_repo" -ne 1 ]; then
-  install_repo_files
-fi
-
-install_global_learnings
+install_repo_files
 
 cat <<EOF
 
 Installed agentic-workflow.
 
-Global skills: $skills_dir
-Global learnings: $learnings_dir
 Target repo:   $repo_dir
 
 Next steps:

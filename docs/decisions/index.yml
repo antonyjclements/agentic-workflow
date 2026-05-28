@@ -1,4 +1,12 @@
 decisions:
+  - path: docs/decisions/2026-05-28-keep-aw-init-repo-local.md
+    title: Keep aw-init repo-local
+    date: 2026-05-28
+    status: active
+    tags:
+      - workflow
+      - installer
+      - skills
   - path: docs/decisions/2026-05-28-use-verb-object-skill-names.md
     title: Use verb-object skill names
     date: 2026-05-28
@@ -179,7 +187,9 @@ decisions:
   - path: docs/decisions/2026-05-24-use-agents-skills-as-canonical-skill-directory.md
     title: Use ~/.agents/skills as canonical skill directory
     date: 2026-05-24
-    status: active
+    status: superseded
+    superseded_by:
+      - docs/decisions/2026-05-28-keep-aw-init-repo-local.md
     tags:
       - workflow
       - installer

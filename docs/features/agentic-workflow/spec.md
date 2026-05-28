@@ -33,6 +33,7 @@ related_decisions:
   - docs/decisions/2026-05-28-add-dedicated-prd-creation-skill.md
   - docs/decisions/2026-05-28-rename-skills-to-aw-prefix.md
   - docs/decisions/2026-05-28-use-prd-lifecycle-statuses-and-cleanup.md
+  - docs/decisions/2026-05-28-keep-aw-init-repo-local.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -49,7 +50,7 @@ Agentic Workflow should make spec-driven development portable across repositorie
 
 ## Current Behavior
 
-The workflow uses `AGENTS.md` as the portable orientation and routing file. The installer copies that file into a target repo, installs skills globally under `~/.agents/skills`, symlinks supported agent runtime skill directories to that canonical location when safe, writes `.agentic-workflow-version`, creates repo-local indexes for PRDs, brainstorms, features, standards, decisions, and learnings, and installs an editable PRD template at `docs/product/prds/template.md`.
+The workflow uses `AGENTS.md` as the portable orientation and routing file. The installer copies that file into a target repo, writes `.agentic-workflow-version`, creates repo-local indexes for PRDs, brainstorms, features, standards, decisions, and learnings, and installs an editable PRD template at `docs/product/prds/template.md`. Skill installation, removal, and runtime skill linking are outside `aw-init`.
 
 The workflow routes:
 
@@ -69,6 +70,7 @@ The workflow routes:
 - CircleCI PR pipeline monitoring through `aw-monitor-circleci`
 - human review routing to `docs/workflow/config.yml`
 - repo initialization only through `aw-init`
+- repo initialization limited to `AGENTS.md`, `CLAUDE.md`, `.agentic-workflow-version`, and workflow directory/index/template scaffolding
 - canonical bundled skill names under the `aw-*` prefix
 - multi-word bundled skill names in `aw-<verb>-<object>` form
 - README maintenance as a required check when user-facing workflow behavior changes
@@ -114,7 +116,7 @@ The workflow routes:
 
 - New installs create `.agentic-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/brainstorms/index.yml`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/decisions/index.yml`, and `docs/learnings/index.yml`.
 - New installs include `AGENTS.md` and `CLAUDE.md`; `CLAUDE.md` delegates to `AGENTS.md`.
-- New installs place skills in `~/.agents/skills` and, when safe, symlink `~/.claude/skills`, `~/.codeium/skills`, and `~/.windsurf/skills` to that directory.
+- New installs do not install, remove, or link skills.
 - The agentic-workflow repository itself does not require root-level `AGENTS.md`, `CLAUDE.md`, or `scripts/install.sh`; `aw-init` owns those artifacts.
 - Agents can discover and use the spec, standard, decision, and learning registries from `AGENTS.md`.
 - Repos using `docs/features/<feature>/spec.md` can generate a feature index.
@@ -133,8 +135,8 @@ The workflow routes:
 - Tickets include enough traceability for future agents to implement from the ticket alone after checkout.
 - Human review PR reviewer assignment can be configured in `docs/workflow/config.yml`.
 - CircleCI pipeline monitoring can be routed through `aw-monitor-circleci` from `docs/workflow/config.yml` without adding retry, polling, or CircleCI-specific defaults to the base config.
-- Deprecated or unrelated skills are removed from the bundled skill set and installer-cleaned from global installs when practical.
-- Bundled skills use the `aw-*` prefix, and old `ce-*` skills are removed from global installs during `aw-init`.
+- Deprecated or unrelated skills are removed from the bundled skill set.
+- Bundled skills use the `aw-*` prefix.
 - PR-time shipping guidance includes a spec drift check for durable behavior changes.
 - PR-time shipping guidance includes an automated README update check.
 - PR-time shipping guidance includes code review before push/PR and optional post-PR CI monitoring until success or blocker.
@@ -178,3 +180,4 @@ The workflow routes:
 - `docs/decisions/2026-05-28-add-dedicated-prd-creation-skill.md`
 - `docs/decisions/2026-05-28-rename-skills-to-aw-prefix.md`
 - `docs/decisions/2026-05-28-use-prd-lifecycle-statuses-and-cleanup.md`
+- `docs/decisions/2026-05-28-keep-aw-init-repo-local.md`
