@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- AGENTIC_WORKFLOW_VERSION=0.2.0 -->
+<!-- AGENTIC_WORKFLOW_VERSION=0.3.0 -->
 
 This file guides coding agents working in this repository. Follow it in addition to system, developer, and user instructions.
 
@@ -48,6 +48,7 @@ Use the repo as the source of truth for product intent, standards, and decisions
 
 - Use `aw-import-prd` when the user asks to create/import a PRD from pasted content, a local file, or a document link.
 - Use `aw-create-prd` when the user asks to author, draft, create, or update a PRD from an idea, brainstorm, notes, or clarified product direction.
+- Use `aw-upgrade` when an existing Agentic Workflow install needs to move to the current version or migrate `docs/workflow/config.yml`.
 - Use `aw-clean-artifacts` when the user asks to remove archived workflow artifacts. Only artifacts marked `status: archived` should be deleted.
 - Use `aw-brainstorm` as the default PRD or idea intake path because PRDs and raw ideas often contain implicit ambiguity and open questions. It should usually clarify and create/update the living spec in the same run.
 - Use `aw-create-spec` when clear requirements, existing behavior, or implementation changes need to become a living feature spec without exploratory discovery.
@@ -57,10 +58,63 @@ Use the repo as the source of truth for product intent, standards, and decisions
 - Use `aw-refresh-decisions` when `docs/decisions/` grows large, the decision index may be stale, or decision discoverability needs summaries/supersession cleanup.
 - Use `aw-record-retrospective` when user correction should change future agent behavior; log a decision as well if the correction establishes a durable repo fact.
 - Use `aw-create-tickets` after a plan when work should be broken into Linear, Jira, or another configured ticket system for implementation agents.
-- Use configured commit-message routing before committing. If `git.commit.skill` is blank, use the configured template/examples or the default commit behavior.
+- Use configured workflow step routing before delegating to another workflow skill.
+- Use configured commit-message formatting before committing.
 - Use configured PR templates when opening pull requests. If `pull_request.template.title` or `pull_request.template.body` is blank, use the normal generated title/body for that part.
 - Use `aw-monitor-pipeline` after PR creation when `docs/workflow/config.yml` configures a post-PR CI monitor/fix skill.
 - A normal feature flow is: pasted/file/link PRD -> imported PRD artifact -> brainstorm/discovery creates or updates the living feature spec -> temporary feature plan -> tickets/stories -> implementation agent picks up a ticket -> decisions logged as they happen -> spec review before PR.
+
+### Workflow Step Routing
+
+Read `docs/workflow/config.yml` before invoking a configurable workflow step. Use `workflow.steps.<step>.skill` when it is set; blank or missing values mean use the bundled default skill.
+
+Supported default step keys:
+
+- `import_prd`: `aw-import-prd`
+- `create_prd`: `aw-create-prd`
+- `brainstorm`: `aw-brainstorm`
+- `create_spec`: `aw-create-spec`
+- `index_features`: `aw-index-features`
+- `review_spec`: `aw-review-spec`
+- `request_human_review`: `aw-request-human-review`
+- `plan`: `aw-plan`
+- `review_plan`: `aw-review-doc`
+- `create_tickets`: `aw-create-tickets`
+- `work`: `aw-work`
+- `debug`: `aw-debug`
+- `create_worktree`: `aw-create-worktree`
+- `simplify_code`: `aw-simplify-code`
+- `review_code`: `aw-review-code`
+- `check_workflow_compliance`: `aw-check-workflow-compliance`
+- `commit`: `aw-commit`
+- `commit_push_pr`: `aw-commit-push-pr`
+- `monitor_pipeline`: `aw-monitor-pipeline`
+- `monitor_circleci`: `aw-monitor-circleci`
+- `log_decision`: `aw-log-decision`
+- `record_retrospective`: `aw-record-retrospective`
+- `capture_solution`: `aw-capture-solution`
+- `refresh_solutions`: `aw-refresh-solutions`
+- `refresh_decisions`: `aw-refresh-decisions`
+- `discover_standards`: `aw-discover-standards`
+- `research_slack`: `aw-research-slack`
+- `clean_artifacts`: `aw-clean-artifacts`
+- `resolve_pr_feedback`: `aw-resolve-pr-feedback`
+
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` have been replaced by `workflow.steps`. If they appear in older repos, migrate them to the matching `workflow.steps.<step>.skill` entry instead of supporting both shapes. Non-skill configuration fields remain authoritative, including `git.commit.format`, `pull_request.template`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
+
+Custom replacement skills must preserve the default step contract: accept the same handoff artifact or identifier, read relevant workflow config, return the expected artifact path/ID/result, and report unsupported behavior clearly.
+
+### Upgrade Existing Installs
+
+Use `aw-upgrade` for existing installs before asking users to hand-edit workflow config.
+
+- Dry-run first so the user can inspect migrated `docs/workflow/config.yml`.
+- Apply only after the user approves, unless they already explicitly requested applying the upgrade.
+- The upgrade backs up the old config, writes the migrated config, and updates `.agentic-workflow-version`.
+- Use the installer's `--remote` option when refreshing skills or repo-local agent instructions without a local `agentic-workflow` clone.
+- Use `--source-url` to pin an upgrade to a branch, tag, release archive, or internal mirror.
+- Preserve unknown fields and non-skill configuration.
+- Stop for manual review when old and new routing fields conflict.
 
 ### Artifact Handoff Contract
 
@@ -87,9 +141,9 @@ Each workflow step should return the artifact path or ID that becomes input to t
 ### Ticket Creation Routing
 
 - Read `docs/workflow/config.yml` before creating tickets.
-- Use `ticket_creation.skill` as the configured ticket creation skill. Typical values are a Linear skill, a Jira skill, or a custom repo skill.
-- If `ticket_creation.skill` is empty, skip ticket creation; blank means ticketing is disabled for the repo.
-- If `ticket_creation.skill` is set but unavailable, report the missing skill and ask whether to draft tickets in markdown or update the config.
+- Use `workflow.steps.create_tickets.skill` when a repo replaces the bundled ticket creation step with a Linear, Jira, or custom ticketing skill.
+- If `workflow.steps.create_tickets.skill` is blank or missing, use `aw-create-tickets` as the default step. The default step drafts the ticket split and reports that no external ticketing system is configured.
+- If the configured custom ticket creation skill is unavailable, report the missing skill and ask whether to draft tickets in markdown or update the config.
 - Tickets should trace back to the source spec, plan, relevant decisions, applicable standards, acceptance criteria, dependencies, and test expectations.
 
 ### Ticket Implementation Handoff
@@ -105,10 +159,10 @@ Each workflow step should return the artifact path or ID that becomes input to t
 ### Commit Message Routing
 
 - Read `docs/workflow/config.yml` before committing.
-- Use `git.commit.skill` as the configured enterprise commit skill when it is set.
-- If `git.commit.skill` is empty, follow `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present.
+- Use `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` when a repo replaces the bundled commit or commit/push/PR step.
+- Follow `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present.
 - If the `git.commit` block is absent, fall back to repo instructions, recent commit history, then conventional commits.
-- A custom commit skill must return either the commit hash or the exact commit message to use.
+- A custom commit step must return either the commit hash or the exact commit message to use.
 
 ### PR Template Routing
 
@@ -121,20 +175,37 @@ Each workflow step should return the artifact path or ID that becomes input to t
 ### CI/CD Routing
 
 - Read `docs/workflow/config.yml` before post-PR pipeline monitoring.
-- Use `post_pr.ci_monitor.skill` as the configured CI monitor/fix skill. Typical values are a GitHub Actions, CircleCI, Jenkins, or custom repo skill.
-- For CircleCI repos, use `aw-monitor-circleci` when `post_pr.ci_monitor.provider` is `circleci` and `post_pr.ci_monitor.skill` is `aw-monitor-circleci`.
+- Use `workflow.steps.monitor_pipeline.skill` when a repo replaces the bundled provider-neutral pipeline monitor step.
+- Use `workflow.steps.monitor_circleci.skill` when a repo replaces the bundled CircleCI-specific monitor step.
+- For CircleCI repos, set `post_pr.ci_monitor.provider: circleci` and use `workflow.steps.monitor_circleci.skill` only when replacing `aw-monitor-circleci`.
 - Do not put CircleCI-specific settings in `docs/workflow/config.yml` by default. `aw-monitor-circleci` should infer settings or set up optional `docs/workflow/circleci.yml` when needed.
 - Do not put retry limits, polling cadence, or timeouts in `docs/workflow/config.yml`; the linked monitor skill owns those details.
-- If `post_pr.ci_monitor.skill` is empty, skip post-PR monitoring; blank means CI monitoring is disabled for the repo.
+- If `post_pr.ci_monitor.provider` is `manual` or absent, skip post-PR monitoring; `manual` means CI monitoring is disabled for the repo.
 - If configured, invoke `aw-monitor-pipeline` after PR creation and let the linked monitor skill loop until success, its own retry limit, or a genuine blocker.
 - Fix only failures caused by the current branch. Do not hide external, flaky, credential, quota, or default-branch failures.
 
 ### Slack Research Routing
 
 - Read `docs/workflow/config.yml` before Slack research.
-- Use `research.slack.skill` when an enterprise environment configures a custom Slack skill.
-- If `research.slack.skill` is blank, use `aw-research-slack` with the default Slack discovery path.
+- Use `workflow.steps.research_slack.skill` when an enterprise environment configures a custom Slack research step.
+- If `workflow.steps.research_slack.skill` is blank or missing, use `aw-research-slack` with the default Slack discovery path.
 - Preserve source channels, dates, and any available workspace identifiers in Slack research summaries.
+
+### Implementation Test Policy
+
+Read `workflow.implementation.test_policy` before implementation. Blank or missing values default to `acceptance-first`.
+
+Supported values:
+
+- `acceptance-first`: map spec or ticket acceptance criteria to automated tests or explicit manual checks before implementation where feasible.
+- `tdd`: write the narrowest failing automated test before feature code where feasible, then implement and refactor.
+- `bdd`: express behavior scenarios before implementation, using Given/When/Then form when helpful, then map them to tests or manual checks.
+- `characterization-first`: capture current behavior with tests before changing legacy or unclear behavior.
+- `test-after`: implementation may come first, but tests or a clear no-test rationale are still required.
+- `manual-verification`: document manual checks instead of requiring automated tests.
+- `none`: no tests are required by repo policy, but final summaries must state that explicit policy.
+
+`aw-work` and replacement work skills must report the effective test policy, tests added/updated/run, manual checks, acceptance coverage, and justified exceptions.
 
 ### README Maintenance Gate
 
@@ -153,7 +224,7 @@ Do not rely on the user to remember capture skills. At natural pauses, proactive
 - After solving a problem that creates reusable team knowledge, run or offer `aw-capture-solution`; this is part of the feedback loop, not an optional flourish.
 - When the decision log becomes hard to scan or the index may be stale, run or offer `aw-refresh-decisions`.
 - Periodically run `aw-refresh-solutions` to keep accumulated solution docs current and remove stale guidance.
-- Before finalizing non-trivial work or before commit/PR, run a quick capture check: decisions made, corrections learned, reusable solution found, spec drift reviewed.
+- Before finalizing non-trivial work, run a quick capture check: decisions made, corrections learned, reusable solution found, spec drift reviewed.
 - Auto-run capture when the user explicitly asks to remember, record, log, document, or make it durable. Ask one concise question when scope, privacy, or global-vs-repo placement is unclear.
 - Skip capture for trivial edits, unsupported conclusions, secrets, sensitive incident details, or one-off preferences the user says are temporary.
 
@@ -194,6 +265,7 @@ Use the Compound Engineering skills as the default workflow router when availabl
 
 - Use `aw-review-code` before creating a PR or after non-trivial changes.
 - Use `aw-review-spec` before creating a PR when behavior, workflow, API contracts, UX, or product intent changed.
+- Use `aw-check-workflow-compliance` after pushing and before PR creation for non-trivial changes when workflow routing, implementation test policy, acceptance coverage, README updates, or review gates need verification.
 - Use `aw-commit` when the user asks to commit.
 - Use `aw-commit-push-pr` when the user asks to push, ship, or open a PR. Apply configured `pull_request.template` title/body templates when present.
 - Use `aw-monitor-pipeline` after PR creation when post-PR CI monitoring is configured.
@@ -221,15 +293,16 @@ For a normal feature request:
 4. Use `aw-create-spec` directly only when the requirements are already clear, existing behavior needs documentation, or the user explicitly wants a spec draft.
 5. If the work is multi-step or risky, run `aw-plan`.
 6. Run `aw-review-doc` on the plan before human review, ticket creation, or implementation.
-7. If work should be queued, create tickets with `aw-create-tickets` using `docs/workflow/config.yml`.
+7. If work should be queued, create tickets with the configured `create_tickets` step.
 8. Execute with `aw-work`, normally by picking up one ticket at a time.
 9. Log decisions with `aw-log-decision` as ambiguity is resolved.
 10. Verify with relevant tests, browser checks, simulator checks, or builds.
 11. Update `README.md` when user-facing setup, commands, configuration, architecture, or workflow behavior changes.
 12. Review with `aw-review-spec` and `aw-review-code` before push/PR for non-trivial changes.
 13. Run the capture checkpoint: `aw-log-decision`, `aw-record-retrospective`, or `aw-capture-solution` when appropriate.
-14. Commit/PR only when the user asks.
-15. After PR creation, run `aw-monitor-pipeline` if configured.
+14. Commit/push/PR only when the user asks.
+15. After push and before PR creation, run the configured `check_workflow_compliance` step for non-trivial changes.
+16. After PR creation, run `aw-monitor-pipeline` if configured.
 
 For a bug:
 
@@ -252,6 +325,7 @@ For a bug:
 - Run the narrowest meaningful tests first, then broader checks when risk warrants.
 - If tests cannot run, explain why and what should be run next.
 - For behavior changes, prefer adding tests near existing related coverage.
+- For implementation work, follow `workflow.implementation.test_policy` and report tests, manual checks, coverage, and exceptions.
 - For UI changes, verify rendered behavior when practical, not just compilation.
 - Follow any testing standards referenced by `docs/standards/index.yml`.
 

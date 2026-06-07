@@ -24,6 +24,8 @@ Install repo-local agentic-workflow files into a target repository.
 ```
 
 3. The bundled installer is the source of truth. It installs skills globally when a skills source is available, links supported runtimes, and installs repo-local artifacts.
+   - When running from an installed `aw-init` skill without a local `agentic-workflow` clone, use `--remote`.
+   - Use `--source-url` to pin a GitHub branch/tag archive or internal mirror.
 4. If `AGENTS.md` or `CLAUDE.md` already exists, the script prompts before overriding unless `--force` is passed.
 5. After install, summarize changed/preserved files and next steps.
 

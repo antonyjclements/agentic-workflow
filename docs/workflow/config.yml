@@ -1,15 +1,71 @@
-ticket_creation:
-  skill: ""
-research:
-  slack:
-    skill: ""
+workflow:
+  implementation:
+    test_policy: acceptance-first
+  steps:
+    import_prd:
+      skill: ""
+    create_prd:
+      skill: ""
+    brainstorm:
+      skill: ""
+    create_spec:
+      skill: ""
+    index_features:
+      skill: ""
+    review_spec:
+      skill: ""
+    request_human_review:
+      skill: ""
+    plan:
+      skill: ""
+    review_plan:
+      skill: ""
+    create_tickets:
+      skill: ""
+    work:
+      skill: ""
+    debug:
+      skill: ""
+    create_worktree:
+      skill: ""
+    simplify_code:
+      skill: ""
+    review_code:
+      skill: ""
+    check_workflow_compliance:
+      skill: ""
+    commit:
+      skill: ""
+    commit_push_pr:
+      skill: ""
+    monitor_pipeline:
+      skill: ""
+    monitor_circleci:
+      skill: ""
+    log_decision:
+      skill: ""
+    record_retrospective:
+      skill: ""
+    capture_solution:
+      skill: ""
+    refresh_solutions:
+      skill: ""
+    refresh_decisions:
+      skill: ""
+    discover_standards:
+      skill: ""
+    research_slack:
+      skill: ""
+    clean_artifacts:
+      skill: ""
+    resolve_pr_feedback:
+      skill: ""
 pull_request:
   template:
     title: ""
     body: ""
 git:
   commit:
-    skill: ""
     format: conventional
     scope_required: false
     template: "<type>(<scope>): <description>"
@@ -29,7 +85,6 @@ git:
 post_pr:
   ci_monitor:
     provider: manual
-    skill: ""
 human_review:
   spec:
     reviewers: []

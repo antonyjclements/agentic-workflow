@@ -71,6 +71,12 @@ Do not create a worktree for single-task work that can happen on a branch in the
 
 `aw-work` and `aw-review-code` offer this skill as an option. When the user selects "worktree" in those flows, invoke `bash "${CLAUDE_SKILL_DIR:-.}/scripts/worktree-manager.sh" create <branch>` with a meaningful branch name derived from the work description (e.g., `feat/crowd-sniff`, `fix/email-validation`). Avoid auto-generated names like `worktree-jolly-beaming-raven` that obscure the work.
 
+After creating the worktree, read `docs/workflow/config.yml` in the worktree and continue with the configured work step:
+
+- use `workflow.steps.work.skill` when set
+- otherwise use `aw-work`
+- apply `workflow.implementation.test_policy`, defaulting to `acceptance-first` when blank or missing
+
 ## Troubleshooting
 
 **"Worktree already exists"**: the path is already in use. Either switch to it (`cd .worktrees/<branch>`) or remove it (`git worktree remove .worktrees/<branch>`) before recreating.

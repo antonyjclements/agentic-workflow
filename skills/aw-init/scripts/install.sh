@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-AGENTIC_WORKFLOW_VERSION="0.2.0"
+DEFAULT_REMOTE_SOURCE_URL="https://github.com/antonyjclements/agentic-workflow/archive/refs/heads/main.tar.gz"
 
 usage() {
   cat <<'USAGE'
 Install agentic-workflow globally and into a target repository.
 
 Usage:
-  install.sh [--repo PATH] [--skills-dir PATH] [--learnings-dir PATH] [--force] [--skip-skills] [--skip-skill-links] [--skip-repo]
+  install.sh [--repo PATH] [--skills-dir PATH] [--learnings-dir PATH] [--force] [--skip-skills] [--skip-skill-links] [--skip-repo] [--remote] [--source-url URL]
 
 Defaults:
   --repo          current directory
   --skills-dir    ~/.agents/skills
   --learnings-dir ~/.agents/learnings
+  --source-url    https://github.com/antonyjclements/agentic-workflow/archive/refs/heads/main.tar.gz
   skill links     ~/.claude/skills, ~/.codeium/skills, ~/.windsurf/skills
 
 What it does:
@@ -27,6 +28,7 @@ What it does:
 
 Existing files are preserved unless --force is passed.
 Existing non-symlink skill directories are always preserved.
+Use --remote or --source-url when running from an installed aw-init skill without a local agentic-workflow clone.
 USAGE
 }
 
@@ -37,6 +39,16 @@ force=0
 skip_skills=0
 skip_skill_links=0
 skip_repo=0
+use_remote=0
+source_url="${AGENTIC_WORKFLOW_SOURCE_URL:-}"
+remote_tmp_dir=""
+
+cleanup() {
+  if [ -n "$remote_tmp_dir" ] && [ -d "$remote_tmp_dir" ]; then
+    rm -rf "$remote_tmp_dir"
+  fi
+}
+trap cleanup EXIT
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -71,6 +83,19 @@ while [ "$#" -gt 0 ]; do
       skip_repo=1
       shift
       ;;
+    --remote)
+      use_remote=1
+      if [ -z "$source_url" ]; then
+        source_url="$DEFAULT_REMOTE_SOURCE_URL"
+      fi
+      shift
+      ;;
+    --source-url)
+      [ "$#" -ge 2 ] || { echo "Missing value for --source-url" >&2; exit 2; }
+      source_url="$2"
+      use_remote=1
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -87,6 +112,68 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 skill_dir="$(cd "$script_dir/.." && pwd)"
 artifact_dir="$skill_dir/artifacts"
 source_dir="$(cd "$script_dir/../../.." && pwd)"
+
+fetch_remote_source() {
+  local url="$1"
+  remote_tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/agentic-workflow-source.XXXXXX")"
+  local archive="$remote_tmp_dir/source.tar.gz"
+  local extract_dir="$remote_tmp_dir/extract"
+  mkdir -p "$extract_dir"
+
+  case "$url" in
+    file://*)
+      cp "${url#file://}" "$archive"
+      ;;
+    /*|.*)
+      cp "$url" "$archive"
+      ;;
+    *)
+      command -v curl >/dev/null 2>&1 || {
+        echo "remote source requires curl for URL: $url" >&2
+        exit 1
+      }
+      curl -fsSL "$url" -o "$archive"
+      ;;
+  esac
+
+  tar -xzf "$archive" -C "$extract_dir"
+
+  local candidate
+  candidate="$(find "$extract_dir" -maxdepth 3 -type d -name skills -print -quit)"
+  if [ -z "$candidate" ]; then
+    echo "remote source did not contain a skills directory: $url" >&2
+    exit 1
+  fi
+
+  source_dir="$(cd "$(dirname "$candidate")" && pwd)"
+  skill_dir="$source_dir/skills/aw-init"
+  artifact_dir="$skill_dir/artifacts"
+  echo "remote source: $url -> $source_dir"
+}
+
+resolve_source() {
+  if [ "$use_remote" -eq 1 ]; then
+    fetch_remote_source "$source_url"
+  fi
+
+  local version_file="$source_dir/aw-version.txt"
+  if [ ! -f "$version_file" ]; then
+    echo "missing workflow version source: $version_file" >&2
+    echo "Run from a current agentic-workflow source tree or use --remote/--source-url." >&2
+    exit 1
+  fi
+  AGENTIC_WORKFLOW_VERSION="$(sed -n '1p' "$version_file" | tr -d '[:space:]')"
+  if [ -z "$AGENTIC_WORKFLOW_VERSION" ]; then
+    echo "empty workflow version source: $version_file" >&2
+    exit 1
+  fi
+
+  if [ ! -d "$artifact_dir" ]; then
+    echo "missing installer artifacts: $artifact_dir" >&2
+    echo "Run from a local agentic-workflow clone or use --remote/--source-url." >&2
+    exit 1
+  fi
+}
 
 prompt_overwrite() {
   local dest="$1"
@@ -124,6 +211,16 @@ copy_prompted() {
   fi
 }
 
+copy_agents_prompted() {
+  local src="$1"
+  local dest="$2"
+  local temp_file
+  temp_file="$(mktemp "${TMPDIR:-/tmp}/agentic-workflow-agents.XXXXXX")"
+  sed "s/AGENTIC_WORKFLOW_VERSION=[^ ]*/AGENTIC_WORKFLOW_VERSION=$AGENTIC_WORKFLOW_VERSION/" "$src" > "$temp_file"
+  copy_prompted "$temp_file" "$dest"
+  rm -f "$temp_file"
+}
+
 write_file_if_missing() {
   local dest="$1"
   local content="$2"
@@ -146,6 +243,8 @@ install_skills() {
   fi
 
   mkdir -p "$skills_dir"
+  cp "$source_dir/aw-version.txt" "$skills_dir/aw-version.txt"
+  echo "version: $AGENTIC_WORKFLOW_VERSION -> $skills_dir/aw-version.txt"
 
   for deprecated_skill in \
     lfg \
@@ -303,7 +402,7 @@ install_skill_links() {
 install_repo_files() {
   mkdir -p "$repo_dir"
 
-  copy_prompted "$artifact_dir/AGENTS.md" "$repo_dir/AGENTS.md"
+  copy_agents_prompted "$artifact_dir/AGENTS.md" "$repo_dir/AGENTS.md"
   copy_prompted "$artifact_dir/CLAUDE.md" "$repo_dir/CLAUDE.md"
 
   write_file_if_missing "$repo_dir/.agentic-workflow-version" "$AGENTIC_WORKFLOW_VERSION"
@@ -314,18 +413,74 @@ install_repo_files() {
   write_file_if_missing "$repo_dir/docs/standards/index.yml" "standards: []"
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
-  write_file_if_missing "$repo_dir/docs/workflow/config.yml" "ticket_creation:
-  skill: \"\"
-research:
-  slack:
-    skill: \"\"
+  write_file_if_missing "$repo_dir/docs/workflow/config.yml" "workflow:
+  implementation:
+    test_policy: acceptance-first
+  steps:
+    import_prd:
+      skill: \"\"
+    create_prd:
+      skill: \"\"
+    brainstorm:
+      skill: \"\"
+    create_spec:
+      skill: \"\"
+    index_features:
+      skill: \"\"
+    review_spec:
+      skill: \"\"
+    request_human_review:
+      skill: \"\"
+    plan:
+      skill: \"\"
+    review_plan:
+      skill: \"\"
+    create_tickets:
+      skill: \"\"
+    work:
+      skill: \"\"
+    debug:
+      skill: \"\"
+    create_worktree:
+      skill: \"\"
+    simplify_code:
+      skill: \"\"
+    review_code:
+      skill: \"\"
+    check_workflow_compliance:
+      skill: \"\"
+    commit:
+      skill: \"\"
+    commit_push_pr:
+      skill: \"\"
+    monitor_pipeline:
+      skill: \"\"
+    monitor_circleci:
+      skill: \"\"
+    log_decision:
+      skill: \"\"
+    record_retrospective:
+      skill: \"\"
+    capture_solution:
+      skill: \"\"
+    refresh_solutions:
+      skill: \"\"
+    refresh_decisions:
+      skill: \"\"
+    discover_standards:
+      skill: \"\"
+    research_slack:
+      skill: \"\"
+    clean_artifacts:
+      skill: \"\"
+    resolve_pr_feedback:
+      skill: \"\"
 pull_request:
   template:
     title: \"\"
     body: \"\"
 git:
   commit:
-    skill: \"\"
     format: conventional
     scope_required: false
     template: \"<type>(<scope>): <description>\"
@@ -345,7 +500,6 @@ git:
 post_pr:
   ci_monitor:
     provider: manual
-    skill: \"\"
 human_review:
   spec:
     reviewers: []
@@ -356,6 +510,8 @@ human_review:
 install_global_learnings() {
   write_file_if_missing "$learnings_dir/index.yml" "learnings: []"
 }
+
+resolve_source
 
 if [ "$skip_skills" -ne 1 ]; then
   install_skills
@@ -380,10 +536,11 @@ Target repo:   $repo_dir
 
 Next steps:
 1. Review AGENTS.md and CLAUDE.md.
-2. Configure docs/workflow/config.yml for commit messages, ticket creation, PR templates, human reviewers, and CI monitoring.
-   For CircleCI, set post_pr.ci_monitor.provider=circleci and skill=aw-monitor-circleci; aw-monitor-circleci will set up any CircleCI-specific config when needed.
-3. If this repo already has docs/features/*/spec.md, run: aw-index-features
-4. If importing an external PRD, run: aw-import-prd. If authoring a PRD from an idea, run: aw-create-prd.
-5. Continue the handoff chain: aw-brainstorm -> aw-plan -> aw-create-tickets or aw-work. Use aw-create-spec directly only when requirements are already clear.
-6. Keep README.md updated when setup, commands, configuration, architecture, or workflow behavior changes.
+2. Configure docs/workflow/config.yml for workflow step overrides, implementation test policy, commit messages, PR templates, human reviewers, and CI monitoring.
+   For CircleCI, set post_pr.ci_monitor.provider=circleci; aw-monitor-circleci will set up any CircleCI-specific config when needed.
+3. If this is an existing install with an older docs/workflow/config.yml, run: aw-upgrade
+4. If this repo already has docs/features/*/spec.md, run: aw-index-features
+5. If importing an external PRD, run: aw-import-prd. If authoring a PRD from an idea, run: aw-create-prd.
+6. Continue the handoff chain: aw-brainstorm -> aw-plan -> aw-create-tickets or aw-work. Use aw-create-spec directly only when requirements are already clear.
+7. Keep README.md updated when setup, commands, configuration, architecture, or workflow behavior changes.
 EOF
