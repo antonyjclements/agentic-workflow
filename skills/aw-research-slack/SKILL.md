@@ -33,16 +33,16 @@ Read `docs/workflow/config.yml` first. Slack research can be routed through an e
 
 ```yaml
 workflow:
-  steps:
+  auxiliary:
     research_slack:
       skill: ""
 ```
 
-If `workflow.steps.research_slack.skill` is set, invoke that skill with the user's topic. Use this when an enterprise environment exposes Slack through a custom MCP-backed or internal skill.
+If `workflow.auxiliary.research_slack.skill` is set, invoke that skill with the user's topic. Use this when an enterprise environment exposes Slack through a custom MCP-backed or internal skill.
 
-If `workflow.steps.research_slack.skill` is blank or missing, dispatch `aw-slack-researcher` with the user's topic as the task prompt. Omit the `mode` parameter so the user's configured permission settings apply.
+If `workflow.auxiliary.research_slack.skill` is blank or missing, dispatch `aw-slack-researcher` with the user's topic as the task prompt. Omit the `mode` parameter so the user's configured permission settings apply.
 
-Removed legacy field: `research.slack.skill`. If it appears in an older repo, tell the user to migrate it to `workflow.steps.research_slack.skill`; do not keep supporting both config shapes.
+Removed legacy field: `research.slack.skill`. If it appears in an older repo, tell the user to migrate it to `workflow.auxiliary.research_slack.skill`; do not keep supporting both config shapes.
 
 The agent handles everything from here -- Slack MCP discovery, search execution, thread reads, and synthesis. It returns a digest with:
 

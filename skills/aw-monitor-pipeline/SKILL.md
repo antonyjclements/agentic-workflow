@@ -17,8 +17,6 @@ workflow:
   steps:
     monitor_pipeline:
       skill: ""
-    monitor_circleci:
-      skill: ""
 post_pr:
   ci_monitor:
     provider: github-actions|circleci|jenkins|custom|manual
@@ -33,10 +31,6 @@ Retry counts, polling cadence, timeouts, and provider-specific settings belong t
 For CircleCI, configure:
 
 ```yaml
-workflow:
-  steps:
-    monitor_circleci:
-      skill: ""
 post_pr:
   ci_monitor:
     provider: circleci
@@ -44,7 +38,7 @@ post_pr:
 
 CircleCI-specific settings do not live in `docs/workflow/config.yml` by default. `aw-monitor-circleci` discovers them from git remotes and `.circleci/config.yml`, or sets up optional `docs/workflow/circleci.yml` when needed.
 
-Removed legacy field: `post_pr.ci_monitor.skill`. If it appears in an older repo, tell the user to migrate it to `workflow.steps.monitor_pipeline.skill` or `workflow.steps.monitor_circleci.skill`; do not keep supporting both config shapes.
+Removed legacy field: `post_pr.ci_monitor.skill`. If it appears in an older repo, tell the user to migrate custom monitor skills to `workflow.steps.monitor_pipeline.skill` or bundled CircleCI monitoring to `post_pr.ci_monitor.provider: circleci`; do not keep supporting both config shapes.
 
 ## Workflow
 

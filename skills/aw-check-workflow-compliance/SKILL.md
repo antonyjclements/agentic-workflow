@@ -26,6 +26,7 @@ Read `docs/workflow/config.yml` first.
 - Use `workflow.steps.check_workflow_compliance.skill` only when a repo replaces this bundled compliance step.
 - Read `workflow.implementation.test_policy`; blank or missing values default to `acceptance-first`.
 - Read `workflow.steps.*.skill` to understand configured replacement steps. Do not use removed legacy skill-selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` for routing if they appear in older repos; report the migration path instead.
+- Read `workflow.auxiliary.*.skill` to understand configured helper skill replacements such as Slack research.
 - Treat non-skill configuration fields as authoritative, including `git.commit.*`, `pull_request.template.*`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
 
 ## Evidence To Gather
@@ -44,6 +45,7 @@ Read `docs/workflow/config.yml` first.
 Report findings when:
 
 - A configured `workflow.steps.<step>.skill` appears ignored without explanation.
+- A configured `workflow.auxiliary.<key>.skill` appears ignored without explanation.
 - A removed legacy skill-selector field is used as the active routing source.
 - The effective implementation test policy is missing from the work summary, PR inputs, or handoff evidence.
 - Acceptance criteria from the linked spec, plan, or ticket are not mapped to automated tests or explicit manual checks.

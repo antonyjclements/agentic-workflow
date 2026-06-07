@@ -27,7 +27,7 @@ Known legacy mappings:
 
 - `ticket_creation.skill` -> `workflow.steps.create_tickets.skill`
 - `git.commit.skill` -> `workflow.steps.commit.skill`
-- `research.slack.skill` -> `workflow.steps.research_slack.skill`
+- `research.slack.skill` -> `workflow.auxiliary.research_slack.skill`
 - custom `post_pr.ci_monitor.skill` -> `workflow.steps.monitor_pipeline.skill` and `post_pr.ci_monitor.provider: github-actions` when no provider was set
 - `post_pr.ci_monitor.skill: aw-monitor-circleci` -> `post_pr.ci_monitor.provider: circleci`
 

@@ -26,16 +26,18 @@ DEFAULT_STEPS = %w[
   commit
   commit_push_pr
   monitor_pipeline
-  monitor_circleci
   log_decision
   record_retrospective
   capture_solution
   refresh_solutions
   refresh_decisions
   discover_standards
-  research_slack
   clean_artifacts
   resolve_pr_feedback
+].freeze
+
+DEFAULT_AUXILIARY = %w[
+  research_slack
 ].freeze
 
 DEFAULT_CONFIG = {
@@ -43,7 +45,8 @@ DEFAULT_CONFIG = {
     "implementation" => {
       "test_policy" => "acceptance-first"
     },
-    "steps" => DEFAULT_STEPS.to_h { |step| [step, { "skill" => "" }] }
+    "steps" => DEFAULT_STEPS.to_h { |step| [step, { "skill" => "" }] },
+    "auxiliary" => DEFAULT_AUXILIARY.to_h { |skill| [skill, { "skill" => "" }] }
   },
   "pull_request" => {
     "template" => {
@@ -152,6 +155,23 @@ def assign_step(config, step, value, source, actions, conflicts)
   actions << "migrated #{source} -> workflow.steps.#{step}.skill"
 end
 
+def assign_auxiliary(config, key, value, source, actions, conflicts)
+  return if blank?(value)
+
+  workflow = ensure_hash(config, "workflow")
+  auxiliary = ensure_hash(workflow, "auxiliary")
+  target = ensure_hash(auxiliary, key)
+  existing = target["skill"]
+
+  if !blank?(existing) && existing != value
+    conflicts << "#{source} is #{value.inspect}, but workflow.auxiliary.#{key}.skill is already #{existing.inspect}"
+    return
+  end
+
+  target["skill"] = value
+  actions << "migrated #{source} -> workflow.auxiliary.#{key}.skill"
+end
+
 def delete_empty_path(hash, *keys)
   return unless keys.any?
 
@@ -220,7 +240,7 @@ delete_empty_path(config, "git", "commit")
 delete_empty_path(config, "git")
 
 research_skill = dig_hash(existing, "research", "slack", "skill")
-assign_step(config, "research_slack", research_skill, "research.slack.skill", actions, conflicts)
+assign_auxiliary(config, "research_slack", research_skill, "research.slack.skill", actions, conflicts)
 config.dig("research", "slack")&.delete("skill")
 delete_empty_path(config, "research", "slack")
 delete_empty_path(config, "research")
@@ -235,7 +255,7 @@ unless blank?(ci_skill)
       ensure_hash(ensure_hash(config, "post_pr"), "ci_monitor")["provider"] = "circleci"
     end
     if ci_skill != "aw-monitor-circleci"
-      assign_step(config, "monitor_circleci", ci_skill, "post_pr.ci_monitor.skill", actions, conflicts)
+      assign_step(config, "monitor_pipeline", ci_skill, "post_pr.ci_monitor.skill", actions, conflicts)
     else
       actions << "migrated post_pr.ci_monitor.skill=aw-monitor-circleci -> post_pr.ci_monitor.provider=circleci"
     end
@@ -254,6 +274,11 @@ delete_empty_path(config, "post_pr")
 DEFAULT_STEPS.each do |step|
   step_config = ensure_hash(ensure_hash(ensure_hash(config, "workflow"), "steps"), step)
   step_config["skill"] = "" unless step_config.key?("skill")
+end
+
+DEFAULT_AUXILIARY.each do |key|
+  auxiliary_config = ensure_hash(ensure_hash(ensure_hash(config, "workflow"), "auxiliary"), key)
+  auxiliary_config["skill"] = "" unless auxiliary_config.key?("skill")
 end
 
 ensure_hash(ensure_hash(config, "workflow"), "implementation")["test_policy"] ||= "acceptance-first"
