@@ -455,8 +455,6 @@ install_repo_files() {
       skill: \"\"
     monitor_pipeline:
       skill: \"\"
-    monitor_circleci:
-      skill: \"\"
     log_decision:
       skill: \"\"
     record_retrospective:
@@ -469,11 +467,12 @@ install_repo_files() {
       skill: \"\"
     discover_standards:
       skill: \"\"
-    research_slack:
-      skill: \"\"
     clean_artifacts:
       skill: \"\"
     resolve_pr_feedback:
+      skill: \"\"
+  auxiliary:
+    research_slack:
       skill: \"\"
 pull_request:
   template:

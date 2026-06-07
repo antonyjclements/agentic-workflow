@@ -13,10 +13,6 @@ Run the CircleCI post-PR monitor/fix loop.
 Read `docs/workflow/config.yml` first for generic post-PR routing:
 
 ```yaml
-workflow:
-  steps:
-    monitor_circleci:
-      skill: ""
 post_pr:
   ci_monitor:
     provider: circleci

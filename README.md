@@ -75,11 +75,11 @@ ruby skills/aw-init/scripts/upgrade-config.rb --repo /path/to/target/repo --appl
 
 Applying the migration creates a timestamped backup beside the original config and writes the current `.agentic-workflow-version`.
 
-The config migrator preserves unknown fields, adds missing current defaults, and moves old skill selector fields into `workflow.steps`:
+The config migrator preserves unknown fields, adds missing current defaults, and moves old skill selector fields into `workflow.steps` or `workflow.auxiliary`:
 
 - `ticket_creation.skill` -> `workflow.steps.create_tickets.skill`
 - `git.commit.skill` -> `workflow.steps.commit.skill`
-- `research.slack.skill` -> `workflow.steps.research_slack.skill`
+- `research.slack.skill` -> `workflow.auxiliary.research_slack.skill`
 - custom `post_pr.ci_monitor.skill` -> `workflow.steps.monitor_pipeline.skill` and `post_pr.ci_monitor.provider: github-actions` when no provider was set
 - `post_pr.ci_monitor.skill: aw-monitor-circleci` -> `post_pr.ci_monitor.provider: circleci`
 
@@ -290,8 +290,7 @@ workflow:
       skill: ""
     monitor_pipeline:
       skill: ""
-    monitor_circleci:
-      skill: ""
+  auxiliary:
     research_slack:
       skill: ""
 pull_request:
@@ -330,6 +329,8 @@ human_review:
 
 Set `workflow.steps.<step>.skill` to replace a bundled workflow step with a custom skill. Blank values use the bundled default. The full default step map is documented in installed `AGENTS.md`.
 
+Set `workflow.auxiliary.<key>.skill` to replace helper skills that can be invoked by multiple workflow steps.
+
 Default workflow step keys:
 
 ```text
@@ -352,31 +353,35 @@ check_workflow_compliance -> aw-check-workflow-compliance
 commit -> aw-commit
 commit_push_pr -> aw-commit-push-pr
 monitor_pipeline -> aw-monitor-pipeline
-monitor_circleci -> aw-monitor-circleci
 log_decision -> aw-log-decision
 record_retrospective -> aw-record-retrospective
 capture_solution -> aw-capture-solution
 refresh_solutions -> aw-refresh-solutions
 refresh_decisions -> aw-refresh-decisions
 discover_standards -> aw-discover-standards
-research_slack -> aw-research-slack
 clean_artifacts -> aw-clean-artifacts
 resolve_pr_feedback -> aw-resolve-pr-feedback
 ```
 
-Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` are replaced by `workflow.steps`. Migrate old values to the matching `workflow.steps.<step>.skill` entry instead of maintaining both shapes.
+Auxiliary skill keys:
+
+```text
+research_slack -> aw-research-slack
+```
+
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill` are replaced by `workflow.auxiliary`. Migrate old values to the matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entry instead of maintaining both shapes.
 
 Set `workflow.implementation.test_policy` to choose how implementation work should map acceptance criteria to tests or checks. Supported values are `acceptance-first`, `tdd`, `bdd`, `characterization-first`, `test-after`, `manual-verification`, and `none`. Blank or missing values default to `acceptance-first`.
 
 Set `workflow.steps.create_tickets.skill` to a Linear, Jira, or custom ticketing step when external tickets should be created. Leave it blank to use the bundled `aw-create-tickets` drafting step, which reports the proposed ticket split without creating external tickets.
 
-Set `workflow.steps.research_slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `aw-research-slack` discovery path. Put workspace or channel defaults in that custom skill when a repo needs them.
+Set `workflow.auxiliary.research_slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `aw-research-slack` discovery path. Put workspace or channel defaults in that custom skill when a repo needs them.
 
 Set `pull_request.template.title` and `pull_request.template.body` when PR title/body text should follow organization templates. Each value should point to a markdown file by GitHub URL, raw GitHub URL, `file://` URL, absolute path, or repo-relative path. Leave either blank to use the default generated title or body for that part.
 
 Set `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` when commits or commit/push/PR should route through an enterprise-specific step. The bundled commit flow follows `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present, then falls back to repo instructions and recent commit history.
 
-Set `post_pr.ci_monitor.provider` to choose whether post-PR monitoring runs. `manual` disables monitoring. Use `workflow.steps.monitor_pipeline.skill` or `workflow.steps.monitor_circleci.skill` only when replacing the bundled monitoring step. Retry limits and polling cadence belong to the monitor skill, not the base workflow config.
+Set `post_pr.ci_monitor.provider` to choose whether post-PR monitoring runs. `manual` disables monitoring. Use `workflow.steps.monitor_pipeline.skill` only when replacing the bundled provider-neutral monitoring step. Retry limits and polling cadence belong to the monitor skill, not the base workflow config.
 
 For CircleCI:
 

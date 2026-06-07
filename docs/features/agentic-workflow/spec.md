@@ -100,7 +100,8 @@ The workflow routes:
 - Plans are reviewed with `aw-review-doc` before human review, ticket creation, or implementation.
 - A plan may be turned into stories or tickets through `aw-create-tickets`. Repos can replace that step through `workflow.steps.create_tickets.skill`; when it is blank, the bundled step drafts the ticket split without creating external tickets.
 - Repos can override skill-backed workflow steps through `workflow.steps.<step>.skill` in `docs/workflow/config.yml`. Blank step skill values use the bundled default skill. Configured custom skills must preserve the same workflow contract: read relevant workflow config, accept the same handoff artifact or identifier, return the expected artifact path or ID, and report any unsupported contract element.
-- Replaced legacy skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` are removed from default config and documentation. Existing repos migrate those values to matching `workflow.steps.<step>.skill` entries instead of preserving both shapes.
+- Repos can override auxiliary helper skills through `workflow.auxiliary.<key>.skill` in `docs/workflow/config.yml`. Auxiliary skills are helper capabilities invoked by one or more workflow steps rather than user-visible lifecycle stages.
+- Replaced legacy skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` are removed from default config and documentation. Existing repos migrate those values to matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entries instead of preserving both shapes.
 - Existing installs can use `aw-upgrade` to dry-run and apply workflow config migration. Applying migration backs up the prior `docs/workflow/config.yml`, writes the migrated current config, and updates `.agentic-workflow-version`.
 - Config migration preserves unknown fields and non-skill settings, adds missing current defaults, removes migrated legacy skill selector fields, and stops for manual review when old and new routing values conflict.
 - Existing installs can refresh skills and repo-local agent artifacts without a local clone by running the installer with `--remote` or a pinned `--source-url`. The remote source must contain the same repo layout as a GitHub archive of `agentic-workflow`.
@@ -127,11 +128,11 @@ The workflow routes:
 - After PR creation, `aw-monitor-pipeline` delegates to the configured CI monitor/fix skill when enabled.
 - Repos can configure `pull_request.template.title` and `pull_request.template.body` with markdown template file refs from GitHub URLs, raw GitHub URLs, `file://` URLs, absolute paths, or repo-relative paths. Blank values use the default generated title/body.
 - Repos can configure `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` to use enterprise-specific commit or shipping steps. If blank, commit skills follow the configured template, scope requirements, allowed types, examples, repo instructions, or recent history.
-- CircleCI repos can configure `post_pr.ci_monitor.provider: circleci` and optionally replace the CircleCI monitor through `workflow.steps.monitor_circleci.skill`. Retry limits, polling cadence, and CircleCI-specific settings are owned by the monitor skill or optional `docs/workflow/circleci.yml`, not the default workflow config.
+- CircleCI repos can configure `post_pr.ci_monitor.provider: circleci`; `aw-monitor-pipeline` routes to `aw-monitor-circleci`. Retry limits, polling cadence, and CircleCI-specific settings are owned by the monitor skill or optional `docs/workflow/circleci.yml`, not the default workflow config.
 - When a user correction reveals a reusable lesson, `aw-record-retrospective` stores the learning.
 - At natural pauses, agents run a capture checkpoint so users do not need to remember to invoke decision logging, retrospective learning, or compounding manually.
 - When a non-trivial problem is solved, `aw-capture-solution` captures reusable knowledge; `aw-refresh-solutions` keeps those solution docs current.
-- Slack research can be routed through a custom enterprise skill using `workflow.steps.research_slack.skill` in `docs/workflow/config.yml`.
+- Slack research can be routed through a custom enterprise helper skill using `workflow.auxiliary.research_slack.skill` in `docs/workflow/config.yml`.
 - Before commit/PR, agents check whether `README.md` needs an update and make that update when setup, commands, configuration, architecture, repo structure, or workflow behavior changed.
 
 ## Acceptance Criteria
@@ -162,17 +163,17 @@ The workflow routes:
 - Replaced step-specific skill selector fields are absent from installed default config and have documented migration paths to `workflow.steps`.
 - A bundled `aw-upgrade` skill exists for existing installs and runs workflow config migration in dry-run mode before applying changes.
 - Applying workflow config migration creates a timestamped backup, writes the migrated config, updates `.agentic-workflow-version`, preserves unknown fields, and removes migrated legacy skill selector fields.
-- Workflow config migration maps `ticket_creation.skill`, `git.commit.skill`, `research.slack.skill`, and `post_pr.ci_monitor.skill` to their current `workflow.steps` or provider equivalents, and reports conflicts instead of choosing between incompatible old and new values.
+- Workflow config migration maps `ticket_creation.skill`, `git.commit.skill`, `research.slack.skill`, and `post_pr.ci_monitor.skill` to their current `workflow.steps`, `workflow.auxiliary`, or provider equivalents, and reports conflicts instead of choosing between incompatible old and new values.
 - The installer supports a remote source path through `--remote`, `--source-url`, or `AGENTIC_WORKFLOW_SOURCE_URL` so installed repos can fetch updated skills and agent artifacts without a local clone.
 - A bundled `aw-check-workflow-compliance` skill exists and can be invoked after branch push and before PR creation to verify configured step routing, implementation test policy compliance, acceptance criteria coverage, README maintenance, review gate expectations, pushed-branch evidence, and PR-body readiness.
 - Workflow compliance checking produces actionable findings and justified exceptions without replacing CI, `aw-review-code`, or `aw-review-spec`.
 - PR title/body templates can be configured in `docs/workflow/config.yml`.
 - Commit message conventions can be enforced through `docs/workflow/config.yml`.
-- Slack research can be routed through a configured skill in `docs/workflow/config.yml`. Workspace or channel defaults belong in the configured skill, not the base workflow config.
+- Slack research can be routed through a configured auxiliary skill in `docs/workflow/config.yml`. Workspace or channel defaults belong in the configured skill, not the base workflow config.
 - Plan review runs before human review, ticket creation, or implementation.
 - Tickets include enough traceability for future agents to implement from the ticket alone after checkout.
 - Human review PR reviewer assignment can be configured in `docs/workflow/config.yml`.
-- CircleCI pipeline monitoring can be routed through `aw-monitor-circleci` from `docs/workflow/config.yml` without adding retry, polling, or CircleCI-specific defaults to the base config.
+- CircleCI pipeline monitoring can be routed through `aw-monitor-pipeline` with `post_pr.ci_monitor.provider: circleci`, without adding retry, polling, or CircleCI-specific defaults to the base config.
 - Deprecated or unrelated skills are removed from the bundled skill set and installer-cleaned from global installs when practical.
 - Bundled skills use the `aw-*` prefix, and old `ce-*` skills are removed from global installs during `aw-init`.
 - PR-time shipping guidance includes a spec drift check for durable behavior changes.

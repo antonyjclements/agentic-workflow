@@ -68,6 +68,8 @@ Use the repo as the source of truth for product intent, standards, and decisions
 
 Read `docs/workflow/config.yml` before invoking a configurable workflow step. Use `workflow.steps.<step>.skill` when it is set; blank or missing values mean use the bundled default skill.
 
+Auxiliary skills are helper capabilities that can be invoked by multiple workflow steps. Use `workflow.auxiliary.<key>.skill` when it is set; blank or missing values mean use the bundled default helper skill.
+
 Supported default step keys:
 
 - `import_prd`: `aw-import-prd`
@@ -89,18 +91,20 @@ Supported default step keys:
 - `commit`: `aw-commit`
 - `commit_push_pr`: `aw-commit-push-pr`
 - `monitor_pipeline`: `aw-monitor-pipeline`
-- `monitor_circleci`: `aw-monitor-circleci`
 - `log_decision`: `aw-log-decision`
 - `record_retrospective`: `aw-record-retrospective`
 - `capture_solution`: `aw-capture-solution`
 - `refresh_solutions`: `aw-refresh-solutions`
 - `refresh_decisions`: `aw-refresh-decisions`
 - `discover_standards`: `aw-discover-standards`
-- `research_slack`: `aw-research-slack`
 - `clean_artifacts`: `aw-clean-artifacts`
 - `resolve_pr_feedback`: `aw-resolve-pr-feedback`
 
-Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` have been replaced by `workflow.steps`. If they appear in older repos, migrate them to the matching `workflow.steps.<step>.skill` entry instead of supporting both shapes. Non-skill configuration fields remain authoritative, including `git.commit.format`, `pull_request.template`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
+Supported auxiliary skill keys:
+
+- `research_slack`: `aw-research-slack`
+
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` have been replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill` have been replaced by `workflow.auxiliary`. If they appear in older repos, migrate them to the matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entry instead of supporting both shapes. Non-skill configuration fields remain authoritative, including `git.commit.format`, `pull_request.template`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
 
 Custom replacement skills must preserve the default step contract: accept the same handoff artifact or identifier, read relevant workflow config, return the expected artifact path/ID/result, and report unsupported behavior clearly.
 
@@ -176,8 +180,7 @@ Each workflow step should return the artifact path or ID that becomes input to t
 
 - Read `docs/workflow/config.yml` before post-PR pipeline monitoring.
 - Use `workflow.steps.monitor_pipeline.skill` when a repo replaces the bundled provider-neutral pipeline monitor step.
-- Use `workflow.steps.monitor_circleci.skill` when a repo replaces the bundled CircleCI-specific monitor step.
-- For CircleCI repos, set `post_pr.ci_monitor.provider: circleci` and use `workflow.steps.monitor_circleci.skill` only when replacing `aw-monitor-circleci`.
+- For CircleCI repos, set `post_pr.ci_monitor.provider: circleci`; `aw-monitor-pipeline` routes to `aw-monitor-circleci`.
 - Do not put CircleCI-specific settings in `docs/workflow/config.yml` by default. `aw-monitor-circleci` should infer settings or set up optional `docs/workflow/circleci.yml` when needed.
 - Do not put retry limits, polling cadence, or timeouts in `docs/workflow/config.yml`; the linked monitor skill owns those details.
 - If `post_pr.ci_monitor.provider` is `manual` or absent, skip post-PR monitoring; `manual` means CI monitoring is disabled for the repo.
@@ -187,8 +190,8 @@ Each workflow step should return the artifact path or ID that becomes input to t
 ### Slack Research Routing
 
 - Read `docs/workflow/config.yml` before Slack research.
-- Use `workflow.steps.research_slack.skill` when an enterprise environment configures a custom Slack research step.
-- If `workflow.steps.research_slack.skill` is blank or missing, use `aw-research-slack` with the default Slack discovery path.
+- Use `workflow.auxiliary.research_slack.skill` when an enterprise environment configures a custom Slack research helper.
+- If `workflow.auxiliary.research_slack.skill` is blank or missing, use `aw-research-slack` with the default Slack discovery path.
 - Preserve source channels, dates, and any available workspace identifiers in Slack research summaries.
 
 ### Implementation Test Policy
