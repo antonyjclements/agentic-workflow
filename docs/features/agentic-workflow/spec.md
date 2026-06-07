@@ -105,7 +105,10 @@ The workflow routes:
 - Existing installs can use `aw-upgrade` to dry-run and apply workflow config migration. Applying migration backs up the prior `docs/workflow/config.yml`, writes the migrated current config, and updates `.agentic-workflow-version`.
 - Config migration preserves unknown fields and non-skill settings, adds missing current defaults, removes migrated legacy skill selector fields, and stops for manual review when old and new routing values conflict.
 - Existing installs can refresh skills and repo-local agent artifacts without a local clone by running the installer with `--remote` or a pinned `--source-url`. The remote source must contain the same repo layout as a GitHub archive of `agentic-workflow`.
-- The default configurable workflow steps include PRD intake, PRD creation, brainstorming, spec creation, spec review, human review request, planning, plan review, ticket creation, work execution, debugging, worktree creation, code review, workflow compliance checking, commit, commit/push/PR, research, knowledge capture, cleanup, PR feedback resolution, and post-PR pipeline monitoring.
+- Installed `AGENTS.md` starts with task triage that routes trivial changes, small fixes, feature or behavior changes, and high-risk or cross-cutting changes to the smallest safe workflow path.
+- Task triage lives in `AGENTS.md`, not `docs/workflow/config.yml`; a repo can need every workflow capability over time, while each task should choose only the ceremony it needs.
+- The default configurable workflow steps include PRD intake, PRD creation, brainstorming, spec creation, spec review, human review request, planning, plan review, ticket creation, work execution, code review, workflow compliance checking, commit, commit/push/PR, and post-PR pipeline monitoring.
+- The default auxiliary skill keys include feature indexing, debugging, worktree creation, code simplification, decision logging, retrospective learning, solution capture/refresh, decision refresh, standards discovery, Slack research, artifact cleanup, and PR feedback resolution.
 - Implementation agents can pick up one ticket at a time with traceability back to the source plan and spec.
 - Agents may also start from only a ticket after checking out a repo; in that case they read repo guidance, fetch the ticket through the configured tool when available, load linked source artifacts, and verify the ticket does not conflict with living specs or decisions before editing.
 - Repos can configure implementation discipline through `workflow.implementation.test_policy` in `docs/workflow/config.yml`. Blank or missing values use `acceptance-first`.
@@ -134,6 +137,7 @@ The workflow routes:
 - When a non-trivial problem is solved, `aw-capture-solution` captures reusable knowledge; `aw-refresh-solutions` keeps those solution docs current.
 - Slack research can be routed through a custom enterprise helper skill using `workflow.auxiliary.research_slack.skill` in `docs/workflow/config.yml`.
 - Before commit/PR, agents check whether `README.md` needs an update and make that update when setup, commands, configuration, architecture, repo structure, or workflow behavior changed.
+- README documents the `docs/workflow/config.yml` schema, including top-level blocks, value types, defaults, supported workflow step keys, supported auxiliary keys, and valid implementation test policies.
 
 ## Acceptance Criteria
 
@@ -143,6 +147,7 @@ The workflow routes:
 - New installs place skills in `~/.agents/skills` and, when safe, symlink `~/.claude/skills`, `~/.codeium/skills`, and `~/.windsurf/skills` to that directory.
 - The agentic-workflow repository itself does not require root-level `AGENTS.md`, `CLAUDE.md`, or `scripts/install.sh`; `aw-init` owns those artifacts.
 - Agents can discover and use the spec, standard, decision, and learning registries from `AGENTS.md`.
+- Installed `AGENTS.md` includes top-level task triage so trivial changes and small fixes can avoid the full spec/plan/review workflow when it is not warranted.
 - Repos using `docs/features/<feature>/spec.md` can generate a feature index.
 - Skills exist for spec creation, spec review, decision logging, standards discovery, and retrospective learning.
 - A skill exists for authored PRD creation from ideas, brainstorms, and notes, with template-driven sections and format.
@@ -153,7 +158,9 @@ The workflow routes:
 - A skill exists to refresh decision indexes and summaries without making historical decision records mutable.
 - Ticket creation can be routed through a configured skill in `docs/workflow/config.yml`.
 - Skill-backed workflow steps can be overridden through `workflow.steps.<step>.skill` in `docs/workflow/config.yml`, and blank values preserve bundled defaults.
+- Auxiliary helper skills can be overridden through `workflow.auxiliary.<key>.skill` in `docs/workflow/config.yml`, and blank values preserve bundled defaults.
 - Custom workflow-step skills preserve the default step contract for inputs, outputs, config reading, and unsupported behavior reporting.
+- README defines the `docs/workflow/config.yml` schema, including valid value types, defaults, workflow step keys, auxiliary keys, and implementation test policy values.
 - Implementation test policy can be configured through `workflow.implementation.test_policy` in `docs/workflow/config.yml`.
 - Missing or blank implementation test policy defaults to `acceptance-first`.
 - The implementation test policy supports `acceptance-first`, `tdd`, `bdd`, `characterization-first`, `test-after`, `manual-verification`, and `none`.

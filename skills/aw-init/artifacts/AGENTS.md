@@ -12,6 +12,46 @@ This file guides coding agents working in this repository. Follow it in addition
 - Use repo-relative paths in docs, plans, and summaries.
 - Ask only when a decision is genuinely blocked and cannot be inferred from local context.
 
+## Task Triage
+
+Match the workflow to the smallest path that safely handles the request. A repo may need every workflow capability over time, but most individual tasks do not need the full ceremony.
+
+### Trivial Change
+
+Use for typos, broken links, comments, formatting, obvious one-line fixes, or tiny docs edits.
+
+- Edit directly.
+- Run the narrowest relevant check when one exists.
+- Use `aw-commit` or `aw-commit-push-pr` only when the user asks to publish.
+- Skip spec updates, plans, workflow compliance, and review gates unless the user explicitly asks for them.
+
+### Small Fix
+
+Use for contained bugs, small config changes, local docs updates, or narrow test fixes.
+
+- Use `aw-debug` when the root cause is unclear; otherwise edit directly.
+- Run targeted tests or checks for the touched area.
+- Update README, specs, or decisions only when behavior, workflow, setup, or durable intent changes.
+- Use `aw-commit-push-pr` when the user asks to publish.
+
+### Feature or Behavior Change
+
+Use when product behavior, workflow behavior, APIs, UX, data contracts, acceptance criteria, or durable user-facing intent changes.
+
+- Ensure the relevant living spec exists and is updated.
+- Use `aw-plan` when implementation has multiple steps or meaningful sequencing.
+- Implement with `aw-work` or the configured replacement step.
+- Map acceptance criteria to tests or explicit verification.
+- Run relevant review gates and workflow compliance before PR creation.
+
+### High-Risk or Cross-Cutting Change
+
+Use for auth, payments, security, data loss risk, migrations, CI/CD, architecture, multi-module changes, or work that is hard to reverse.
+
+- Use the full spec, plan, work, review, compliance, commit, PR, and pipeline path.
+- Prefer explicit acceptance criteria and durable decision logs.
+- Treat missing spec, test, or review evidence as a blocker unless the user explicitly accepts the risk.
+
 ## Standards Registry
 
 Many repos include a standards registry at `docs/standards/index.yml`. If it exists, treat it as the entrypoint for repository best practices.
