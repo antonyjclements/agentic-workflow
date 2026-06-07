@@ -275,7 +275,9 @@ Use aw-create-tickets to turn docs/features/mfa/plan.md into stories.
 Create Jira tickets from this plan, using the configured ticket creation skill.
 ```
 
-Workflow step overrides, implementation test policy, and related behavior are configured in `docs/workflow/config.yml`:
+Workflow step overrides, implementation test policy, and related behavior are configured in `docs/workflow/config.yml`. Most repos should leave skill overrides blank; blank values use the bundled defaults.
+
+Minimal example:
 
 ```yaml
 workflow:
@@ -317,7 +319,7 @@ git:
       - "docs(readme): update usage guide"
 post_pr:
   ci_monitor:
-    provider: github-actions
+    provider: manual
 human_review:
   spec:
     reviewers:
@@ -326,6 +328,26 @@ human_review:
     reviewers:
       - engineering-github-user
 ```
+
+Schema:
+
+| Path | Type | Default | Description |
+| --- | --- | --- | --- |
+| `workflow.implementation.test_policy` | string | `acceptance-first` | How implementation work should map acceptance criteria to tests or checks. |
+| `workflow.steps.<step>.skill` | string | `""` | Optional replacement skill for a named workflow lifecycle step. Blank means use the bundled default. |
+| `workflow.auxiliary.<key>.skill` | string | `""` | Optional replacement skill for a helper capability used by one or more workflow steps. Blank means use the bundled default. |
+| `pull_request.template.title` | string | `""` | Optional path or URL for a PR title template. Blank means generate the title normally. |
+| `pull_request.template.body` | string | `""` | Optional path or URL for a PR body template. Blank means generate the body normally. |
+| `git.commit.format` | string | `conventional` | Commit message convention used by bundled commit skills. |
+| `git.commit.scope_required` | boolean | `false` | Whether configured commit messages must include a non-empty scope. |
+| `git.commit.template` | string | `"<type>(<scope>): <description>"` | Commit subject template used by bundled commit skills. |
+| `git.commit.allowed_types` | string list | conventional types | Allowed commit types for bundled commit skills. |
+| `git.commit.examples` | string list | example docs commit | Example commit messages used as style guidance. |
+| `post_pr.ci_monitor.provider` | string | `manual` | Post-PR monitor provider. `manual` disables automated monitoring. |
+| `human_review.spec.reviewers` | string list | `[]` | GitHub usernames requested on spec review PRs. |
+| `human_review.plan.reviewers` | string list | `[]` | GitHub usernames requested on plan review PRs. |
+
+The config customizes how named workflow routes execute. It does not decide whether a trivial fix, small bug, feature, or high-risk change should use the full workflow; that task-size routing belongs in `AGENTS.md`.
 
 Set `workflow.steps.<step>.skill` to replace a bundled workflow step with a custom skill. Blank values use the bundled default. The full default step map is documented in installed `AGENTS.md`.
 
@@ -371,7 +393,19 @@ resolve_pr_feedback -> aw-resolve-pr-feedback
 
 Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill`, and older helper keys misplaced under `workflow.steps`, are replaced by `workflow.auxiliary`. Migrate old values to the matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entry instead of maintaining both shapes.
 
-Set `workflow.implementation.test_policy` to choose how implementation work should map acceptance criteria to tests or checks. Supported values are `acceptance-first`, `tdd`, `bdd`, `characterization-first`, `test-after`, `manual-verification`, and `none`. Blank or missing values default to `acceptance-first`.
+Valid `workflow.implementation.test_policy` values:
+
+| Value | Meaning |
+| --- | --- |
+| `acceptance-first` | Start from acceptance criteria, then choose the lightest automated or manual verification that proves them. |
+| `tdd` | Write failing tests before implementation, then make them pass. |
+| `bdd` | Express expected behavior in scenario-style tests or checks before implementation where practical. |
+| `characterization-first` | Capture current behavior with tests before changing legacy or poorly understood code. |
+| `test-after` | Implement first, then add targeted tests/checks before shipping. |
+| `manual-verification` | Use explicit manual checks when automation is unavailable or disproportionate. |
+| `none` | No test policy is enforced by workflow config. Use only for intentionally unverified work. |
+
+Blank or missing policy values default to `acceptance-first`.
 
 Set `workflow.steps.create_tickets.skill` to a Linear, Jira, or custom ticketing step when external tickets should be created. Leave it blank to use the bundled `aw-create-tickets` drafting step, which reports the proposed ticket split without creating external tickets.
 
