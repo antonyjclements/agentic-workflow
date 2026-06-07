@@ -278,6 +278,23 @@ config.dig("post_pr", "ci_monitor")&.delete("skill")
 delete_empty_path(config, "post_pr", "ci_monitor")
 delete_empty_path(config, "post_pr")
 
+monitor_circleci_skill = dig_hash(existing, "workflow", "steps", "monitor_circleci", "skill")
+unless blank?(monitor_circleci_skill)
+  existing_provider = dig_hash(existing, "post_pr", "ci_monitor", "provider")
+  if !blank?(existing_provider) && existing_provider != "circleci" && existing_provider != "manual"
+    conflicts << "workflow.steps.monitor_circleci.skill is #{monitor_circleci_skill.inspect}, but post_pr.ci_monitor.provider is already #{existing_provider.inspect}"
+  else
+    ensure_hash(ensure_hash(config, "post_pr"), "ci_monitor")["provider"] = "circleci"
+  end
+  if monitor_circleci_skill == "aw-monitor-circleci"
+    actions << "migrated workflow.steps.monitor_circleci.skill=aw-monitor-circleci -> post_pr.ci_monitor.provider=circleci"
+  else
+    assign_step(config, "monitor_pipeline", monitor_circleci_skill, "workflow.steps.monitor_circleci.skill", actions, conflicts)
+  end
+end
+config.dig("workflow", "steps")&.delete("monitor_circleci")
+delete_empty_path(config, "workflow", "steps")
+
 DEFAULT_STEPS.each do |step|
   step_config = ensure_hash(ensure_hash(ensure_hash(config, "workflow"), "steps"), step)
   step_config["skill"] = "" unless step_config.key?("skill")
