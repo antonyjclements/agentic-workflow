@@ -50,6 +50,8 @@ The installer:
   - `docs/product/prds/template.md`
 - creates repo-local workflow config if missing:
   - `docs/workflow/config.yml`
+- creates repo-local workflow config documentation if missing:
+  - `docs/workflow/README.md`
 - creates global learning storage at `~/.agents/learnings/index.yml`
 
 Existing repo files are preserved unless you pass `--force`.
@@ -151,6 +153,7 @@ docs/
   learnings/
     index.yml
   workflow/
+    README.md
     config.yml
 ```
 

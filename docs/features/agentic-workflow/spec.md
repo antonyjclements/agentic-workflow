@@ -138,10 +138,11 @@ The workflow routes:
 - Slack research can be routed through a custom enterprise helper skill using `workflow.auxiliary.research_slack.skill` in `docs/workflow/config.yml`.
 - Before commit/PR, agents check whether `README.md` needs an update and make that update when setup, commands, configuration, architecture, repo structure, or workflow behavior changed.
 - README documents the `docs/workflow/config.yml` schema, including top-level blocks, value types, defaults, supported workflow step keys, supported auxiliary keys, and valid implementation test policies.
+- New installs include `docs/workflow/README.md` so repo-local config schema help is available beside `docs/workflow/config.yml`.
 
 ## Acceptance Criteria
 
-- New installs create `.agentic-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/brainstorms/index.yml`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/decisions/index.yml`, and `docs/learnings/index.yml`.
+- New installs create `.agentic-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/brainstorms/index.yml`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/decisions/index.yml`, `docs/learnings/index.yml`, and `docs/workflow/README.md`.
 - The installed `AGENTS.md` version stamp, installer version marker, and config migration version marker are sourced from root `aw-version.txt` when a full source tree is available.
 - New installs include `AGENTS.md` and `CLAUDE.md`; `CLAUDE.md` delegates to `AGENTS.md`.
 - New installs place skills in `~/.agents/skills` and, when safe, symlink `~/.claude/skills`, `~/.codeium/skills`, and `~/.windsurf/skills` to that directory.
