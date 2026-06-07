@@ -1,0 +1,321 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "fileutils"
+require "optparse"
+require "time"
+require "yaml"
+
+DEFAULT_STEPS = %w[
+  import_prd
+  create_prd
+  brainstorm
+  create_spec
+  index_features
+  review_spec
+  request_human_review
+  plan
+  review_plan
+  create_tickets
+  work
+  debug
+  create_worktree
+  simplify_code
+  review_code
+  check_workflow_compliance
+  commit
+  commit_push_pr
+  monitor_pipeline
+  monitor_circleci
+  log_decision
+  record_retrospective
+  capture_solution
+  refresh_solutions
+  refresh_decisions
+  discover_standards
+  research_slack
+  clean_artifacts
+  resolve_pr_feedback
+].freeze
+
+DEFAULT_CONFIG = {
+  "workflow" => {
+    "implementation" => {
+      "test_policy" => "acceptance-first"
+    },
+    "steps" => DEFAULT_STEPS.to_h { |step| [step, { "skill" => "" }] }
+  },
+  "pull_request" => {
+    "template" => {
+      "title" => "",
+      "body" => ""
+    }
+  },
+  "git" => {
+    "commit" => {
+      "format" => "conventional",
+      "scope_required" => false,
+      "template" => "<type>(<scope>): <description>",
+      "allowed_types" => %w[feat fix docs chore refactor test ci build perf style],
+      "examples" => [
+        "docs(readme): update usage guide"
+      ]
+    }
+  },
+  "post_pr" => {
+    "ci_monitor" => {
+      "provider" => "manual"
+    }
+  },
+  "human_review" => {
+    "spec" => {
+      "reviewers" => []
+    },
+    "plan" => {
+      "reviewers" => []
+    }
+  }
+}.freeze
+
+options = {
+  repo: Dir.pwd,
+  apply: false
+}
+
+OptionParser.new do |parser|
+  parser.banner = "Usage: upgrade-config.rb [--repo PATH] [--dry-run] [--apply]"
+
+  parser.on("--repo PATH", "Repository root. Defaults to current directory.") do |path|
+    options[:repo] = path
+  end
+
+  parser.on("--dry-run", "Preview the migration without writing. This is the default.") do
+    options[:apply] = false
+  end
+
+  parser.on("--apply", "Write the migrated config and backup the previous file.") do
+    options[:apply] = true
+  end
+end.parse!
+
+def stringify_keys(value)
+  case value
+  when Hash
+    value.each_with_object({}) { |(key, child), memo| memo[key.to_s] = stringify_keys(child) }
+  when Array
+    value.map { |child| stringify_keys(child) }
+  else
+    value
+  end
+end
+
+def deep_merge(base, overlay)
+  result = Marshal.load(Marshal.dump(base))
+  overlay.each do |key, value|
+    result[key] =
+      if result[key].is_a?(Hash) && value.is_a?(Hash)
+        deep_merge(result[key], value)
+      else
+        value
+      end
+  end
+  result
+end
+
+def dig_hash(hash, *keys)
+  keys.reduce(hash) { |memo, key| memo.is_a?(Hash) ? memo[key] : nil }
+end
+
+def ensure_hash(hash, key)
+  hash[key] = {} unless hash[key].is_a?(Hash)
+  hash[key]
+end
+
+def blank?(value)
+  value.nil? || value == ""
+end
+
+def assign_step(config, step, value, source, actions, conflicts)
+  return if blank?(value)
+
+  workflow = ensure_hash(config, "workflow")
+  steps = ensure_hash(workflow, "steps")
+  target = ensure_hash(steps, step)
+  existing = target["skill"]
+
+  if !blank?(existing) && existing != value
+    conflicts << "#{source} is #{value.inspect}, but workflow.steps.#{step}.skill is already #{existing.inspect}"
+    return
+  end
+
+  target["skill"] = value
+  actions << "migrated #{source} -> workflow.steps.#{step}.skill"
+end
+
+def delete_empty_path(hash, *keys)
+  return unless keys.any?
+
+  parents = []
+  current = hash
+  keys.each do |key|
+    return unless current.is_a?(Hash) && current.key?(key)
+
+    parents << [current, key]
+    current = current[key]
+  end
+
+  parents.reverse_each do |parent, key|
+    child = parent[key]
+    break unless child.is_a?(Hash) && child.empty?
+
+    parent.delete(key)
+  end
+end
+
+repo = File.expand_path(options[:repo])
+config_path = File.join(repo, "docs", "workflow", "config.yml")
+version_path = File.join(repo, ".agentic-workflow-version")
+source_root = File.expand_path("../../..", __dir__)
+installed_skills_root = File.expand_path("../..", __dir__)
+version_file = [
+  File.join(source_root, "aw-version.txt"),
+  File.join(installed_skills_root, "aw-version.txt")
+].find { |path| File.exist?(path) }
+unless version_file
+  warn "Cannot upgrade config: missing workflow version source aw-version.txt"
+  exit 1
+end
+version = File.read(version_file).strip
+if version.empty?
+  warn "Cannot upgrade config: empty workflow version source #{version_file}"
+  exit 1
+end
+
+existing =
+  if File.exist?(config_path)
+    loaded = YAML.load_file(config_path)
+    stringify_keys(loaded || {})
+  else
+    {}
+  end
+
+unless existing.is_a?(Hash)
+  warn "Cannot upgrade #{config_path}: expected a YAML mapping at the document root."
+  exit 1
+end
+
+config = deep_merge(DEFAULT_CONFIG, existing)
+actions = []
+conflicts = []
+
+ticket_skill = dig_hash(existing, "ticket_creation", "skill")
+assign_step(config, "create_tickets", ticket_skill, "ticket_creation.skill", actions, conflicts)
+config.dig("ticket_creation")&.delete("skill")
+delete_empty_path(config, "ticket_creation")
+
+commit_skill = dig_hash(existing, "git", "commit", "skill")
+assign_step(config, "commit", commit_skill, "git.commit.skill", actions, conflicts)
+config.dig("git", "commit")&.delete("skill")
+delete_empty_path(config, "git", "commit")
+delete_empty_path(config, "git")
+
+research_skill = dig_hash(existing, "research", "slack", "skill")
+assign_step(config, "research_slack", research_skill, "research.slack.skill", actions, conflicts)
+config.dig("research", "slack")&.delete("skill")
+delete_empty_path(config, "research", "slack")
+delete_empty_path(config, "research")
+
+ci_skill = dig_hash(existing, "post_pr", "ci_monitor", "skill")
+unless blank?(ci_skill)
+  existing_provider = dig_hash(existing, "post_pr", "ci_monitor", "provider")
+  if ci_skill.to_s.include?("circleci")
+    if !blank?(existing_provider) && existing_provider != "circleci" && existing_provider != "manual"
+      conflicts << "post_pr.ci_monitor.skill is #{ci_skill.inspect}, but post_pr.ci_monitor.provider is already #{existing_provider.inspect}"
+    else
+      ensure_hash(ensure_hash(config, "post_pr"), "ci_monitor")["provider"] = "circleci"
+    end
+    if ci_skill != "aw-monitor-circleci"
+      assign_step(config, "monitor_circleci", ci_skill, "post_pr.ci_monitor.skill", actions, conflicts)
+    else
+      actions << "migrated post_pr.ci_monitor.skill=aw-monitor-circleci -> post_pr.ci_monitor.provider=circleci"
+    end
+  else
+    if blank?(existing_provider)
+      ensure_hash(ensure_hash(config, "post_pr"), "ci_monitor")["provider"] = "github-actions"
+      actions << "set post_pr.ci_monitor.provider=github-actions because post_pr.ci_monitor.skill was configured"
+    end
+    assign_step(config, "monitor_pipeline", ci_skill, "post_pr.ci_monitor.skill", actions, conflicts)
+  end
+end
+config.dig("post_pr", "ci_monitor")&.delete("skill")
+delete_empty_path(config, "post_pr", "ci_monitor")
+delete_empty_path(config, "post_pr")
+
+DEFAULT_STEPS.each do |step|
+  step_config = ensure_hash(ensure_hash(ensure_hash(config, "workflow"), "steps"), step)
+  step_config["skill"] = "" unless step_config.key?("skill")
+end
+
+ensure_hash(ensure_hash(config, "workflow"), "implementation")["test_policy"] ||= "acceptance-first"
+
+valid_policies = %w[
+  acceptance-first
+  tdd
+  bdd
+  characterization-first
+  test-after
+  manual-verification
+  none
+]
+policy = dig_hash(config, "workflow", "implementation", "test_policy")
+unless valid_policies.include?(policy)
+  conflicts << "workflow.implementation.test_policy is #{policy.inspect}; expected one of #{valid_policies.join(', ')}"
+end
+
+changed = config != existing
+
+puts "Agentic Workflow config upgrade"
+puts "Repo: #{repo}"
+puts "Config: #{config_path}"
+puts "Mode: #{options[:apply] ? 'apply' : 'dry-run'}"
+puts
+
+if actions.empty?
+  puts "Migrations: none"
+else
+  puts "Migrations:"
+  actions.each { |action| puts "- #{action}" }
+end
+
+if conflicts.any?
+  puts
+  puts "Manual review required:"
+  conflicts.each { |conflict| puts "- #{conflict}" }
+  exit 1
+end
+
+unless changed
+  puts
+  puts "Config already matches the current shape."
+  exit 0
+end
+
+if options[:apply]
+  FileUtils.mkdir_p(File.dirname(config_path))
+  if File.exist?(config_path)
+    backup_path = "#{config_path}.bak-#{Time.now.utc.strftime('%Y%m%d%H%M%S')}"
+    FileUtils.cp(config_path, backup_path)
+    puts
+    puts "Backup: #{backup_path}"
+  end
+
+  File.write(config_path, YAML.dump(config))
+  File.write(version_path, "#{version}\n")
+  puts "Wrote: #{config_path}"
+  puts "Wrote: #{version_path}"
+else
+  puts
+  puts "Preview:"
+  puts YAML.dump(config)
+  puts "Run with --apply to write this config and create a backup."
+end

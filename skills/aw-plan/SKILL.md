@@ -54,6 +54,8 @@ Always inspect local code, tests, docs, conventions, `docs/features/index.yml` f
 - test strategy signals
 - risks, edge cases, and unknowns
 
+Read `docs/workflow/config.yml` when present and capture the effective `workflow.implementation.test_policy`. Blank or missing values default to `acceptance-first`. Use it to shape the plan's test expectations.
+
 If research reveals broader external contracts or cross-cutting risk, increase plan depth.
 
 ## Phase 2: Resolve Planning Questions
@@ -76,6 +78,7 @@ Implementation units should be independently reviewable and ordered by dependenc
 - standards to follow, when applicable
 - behavior/contract changes
 - tests to add/update with exact paths
+- acceptance-derived test scenarios or manual checks for every feature-bearing requirement when acceptance criteria exist
 - edge cases
 - implementation notes that guide, not prescribe code
 - dependencies and verification
@@ -121,7 +124,7 @@ Non-software plans use the universal planning reference instead of this template
 Before writing, check:
 
 - every origin requirement is addressed or explicitly deferred
-- each feature-bearing unit has tests
+- each feature-bearing unit has tests, manual checks, or justified exceptions according to `workflow.implementation.test_policy`
 - applicable standards from `docs/standards/index.yml` are referenced or deliberately marked not applicable
 - paths are repo-relative
 - decisions include rationale

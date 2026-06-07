@@ -32,6 +32,18 @@ Ticket-first sessions are valid. If the agent starts from only a ticket ID/URL a
 
 If plan/spec: read it fully, then continue.
 
+Read `docs/workflow/config.yml` and determine the effective implementation test policy from `workflow.implementation.test_policy`. Blank or missing values default to `acceptance-first`.
+
+Supported policies:
+
+- `acceptance-first`: map acceptance criteria to automated tests or explicit manual checks before implementation where feasible.
+- `tdd`: write the narrowest failing automated test before feature code where feasible.
+- `bdd`: express behavior scenarios before implementation, using Given/When/Then when helpful.
+- `characterization-first`: capture current behavior with tests before changing legacy or unclear behavior.
+- `test-after`: implementation may come first, but tests or a clear no-test rationale are still required.
+- `manual-verification`: document manual checks instead of requiring automated tests.
+- `none`: no tests are required by repo policy, but final summaries must state that explicit policy.
+
 If bare prompt:
 
 1. Inspect likely files, related tests, and local patterns.
@@ -44,6 +56,8 @@ If bare prompt:
 ## Phase 1: Understand and Set Up
 
 For plans, treat the plan as a decision artifact, not a script. Extract implementation units, requirements, files, test scenarios, verification, execution notes, standards references, implementation-time unknowns, scope boundaries, references, and deferred work. Ask only for ambiguity that would change the implementation.
+
+Extract acceptance criteria from the plan/spec/ticket and map each feature-bearing criterion to an automated test, manual check, or justified exception according to the effective test policy.
 
 For tickets, treat the ticket as the execution unit. Preserve traceability back to the linked plan/spec and update ticket status only when the configured ticket tool/workflow supports it and the user expects that behavior.
 
@@ -66,7 +80,8 @@ Work unit by unit:
 - read nearby code before editing
 - follow existing patterns and named references
 - follow applicable `docs/standards/` guidance
-- honor TDD/test-first/characterization notes when present
+- apply the effective implementation test policy
+- honor stronger TDD/test-first/characterization notes when present
 - resolve implementation-time unknowns locally when possible; ask only for product/scope decisions
 - keep changes scoped; defer tangential cleanup
 - update task status as work completes
@@ -95,6 +110,7 @@ Before finishing:
 - check the diff against applicable standards from `docs/standards/index.yml`
 - run `aw-review-code` for non-trivial or risky changes when time/context allows
 - address safe findings; surface judgment calls
+- record ship-readiness evidence needed by `aw-check-workflow-compliance`: effective test policy, tests/checks run, acceptance coverage, README status, review gates run/skipped, and justified exceptions
 
 ## Phase 5: Ship Readiness
 
@@ -106,6 +122,7 @@ Only when implementation and verification are complete:
   - capture correction-driven lessons with `aw-record-retrospective`
   - suggest `aw-capture-solution` for non-trivial solved problems or reusable patterns
 - summarize changed files and behavior
+- summarize effective implementation test policy, tests added/updated/run, manual checks, acceptance coverage, and justified exceptions
 - list tests/checks run and failures
 - identify residual risks or follow-ups
 - do not commit/push/PR unless the user asks or invoked a workflow that includes it

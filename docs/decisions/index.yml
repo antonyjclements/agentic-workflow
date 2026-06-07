@@ -1,4 +1,44 @@
 decisions:
+  - path: docs/decisions/2026-06-07-use-version-file-and-remote-installer-source.md
+    title: Use version file and remote installer source
+    date: 2026-06-07
+    status: active
+    tags:
+      - workflow
+      - installer
+      - updates
+  - path: docs/decisions/2026-06-07-add-upgrade-config-migration.md
+    title: Add upgrade config migration
+    date: 2026-06-07
+    status: active
+    tags:
+      - workflow
+      - configuration
+      - migration
+  - path: docs/decisions/2026-06-07-use-workflow-steps-for-skill-routing.md
+    title: Use workflow steps for skill routing
+    date: 2026-06-07
+    status: active
+    tags:
+      - workflow
+      - configuration
+      - skills
+  - path: docs/decisions/2026-06-07-configure-implementation-test-policy.md
+    title: Configure implementation test policy
+    date: 2026-06-07
+    status: active
+    tags:
+      - workflow
+      - testing
+      - configuration
+  - path: docs/decisions/2026-06-07-add-workflow-compliance-check.md
+    title: Add workflow compliance check
+    date: 2026-06-07
+    status: active
+    tags:
+      - workflow
+      - review
+      - shipping
   - path: docs/decisions/2026-05-28-use-verb-object-skill-names.md
     title: Use verb-object skill names
     date: 2026-05-28
@@ -62,12 +102,14 @@ decisions:
   - path: docs/decisions/2026-05-25-simplify-slack-and-ticket-config.md
     title: Simplify Slack and ticket configuration
     date: 2026-05-25
-    status: active
+    status: superseded
     tags:
       - workflow
       - configuration
       - tickets
       - slack
+    superseded_by:
+      - docs/decisions/2026-06-07-use-workflow-steps-for-skill-routing.md
   - path: docs/decisions/2026-05-25-use-pr-title-and-body-templates.md
     title: Use PR title and body templates
     date: 2026-05-25
@@ -155,27 +197,33 @@ decisions:
   - path: docs/decisions/2026-05-24-blank-ticket-skill-skips-ticket-creation.md
     title: Blank ticket skill skips ticket creation
     date: 2026-05-24
-    status: active
+    status: superseded
     tags:
       - workflow
       - tickets
       - configuration
+    superseded_by:
+      - docs/decisions/2026-06-07-use-workflow-steps-for-skill-routing.md
   - path: docs/decisions/2026-05-24-configure-post-pr-ci-monitoring.md
     title: Configure post-PR CI monitoring skill per repo
     date: 2026-05-24
-    status: active
+    status: superseded
     tags:
       - workflow
       - ci
       - automation
+    superseded_by:
+      - docs/decisions/2026-06-07-use-workflow-steps-for-skill-routing.md
   - path: docs/decisions/2026-05-24-configure-ticket-creation-skill.md
     title: Configure ticket creation skill per repo
     date: 2026-05-24
-    status: active
+    status: superseded
     tags:
       - workflow
       - tickets
       - automation
+    superseded_by:
+      - docs/decisions/2026-06-07-use-workflow-steps-for-skill-routing.md
   - path: docs/decisions/2026-05-24-use-agents-skills-as-canonical-skill-directory.md
     title: Use ~/.agents/skills as canonical skill directory
     date: 2026-05-24

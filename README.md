@@ -30,6 +30,7 @@ There is intentionally no root `AGENTS.md`, `CLAUDE.md`, or `scripts/install.sh`
 The installer:
 
 - installs all skills globally to `~/.agents/skills`
+- can fetch the latest workflow source from GitHub when run with `--remote` or `--source-url`
 - removes deprecated bundled skills such as `lfg`
 - symlinks runtime skill directories to `~/.agents/skills` when safe:
   - `~/.claude/skills`
@@ -54,6 +55,33 @@ The installer:
 Existing repo files are preserved unless you pass `--force`.
 
 Existing non-symlink skill directories are preserved. If a runtime already has its own real `skills` directory, the installer will not replace it.
+
+The repository root `aw-version.txt` is the single version source for installer-owned version markers. Installed `AGENTS.md` carries the same version stamp.
+
+## Upgrade Existing Installs
+
+Use `aw-upgrade` when an existing repo already has Agentic Workflow files and you need to adopt a newer workflow version:
+
+```text
+Use aw-upgrade to upgrade /path/to/target/repo.
+```
+
+The upgrade path dry-runs first, then can apply a safe migration for `docs/workflow/config.yml`:
+
+```bash
+ruby skills/aw-init/scripts/upgrade-config.rb --repo /path/to/target/repo --dry-run
+ruby skills/aw-init/scripts/upgrade-config.rb --repo /path/to/target/repo --apply
+```
+
+Applying the migration creates a timestamped backup beside the original config and writes the current `.agentic-workflow-version`.
+
+The config migrator preserves unknown fields, adds missing current defaults, and moves old skill selector fields into `workflow.steps`:
+
+- `ticket_creation.skill` -> `workflow.steps.create_tickets.skill`
+- `git.commit.skill` -> `workflow.steps.commit.skill`
+- `research.slack.skill` -> `workflow.steps.research_slack.skill`
+- custom `post_pr.ci_monitor.skill` -> `workflow.steps.monitor_pipeline.skill` and `post_pr.ci_monitor.provider: github-actions` when no provider was set
+- `post_pr.ci_monitor.skill: aw-monitor-circleci` -> `post_pr.ci_monitor.provider: circleci`
 
 ## Cross-Agent Skill Install
 
@@ -247,21 +275,31 @@ Use aw-create-tickets to turn docs/features/mfa/plan.md into stories.
 Create Jira tickets from this plan, using the configured ticket creation skill.
 ```
 
-Ticket creation is configured in `docs/workflow/config.yml`:
+Workflow step overrides, implementation test policy, and related behavior are configured in `docs/workflow/config.yml`:
 
 ```yaml
-ticket_creation:
-  skill: linear
-research:
-  slack:
-    skill: ""
+workflow:
+  implementation:
+    test_policy: acceptance-first
+  steps:
+    create_tickets:
+      skill: ""
+    work:
+      skill: ""
+    check_workflow_compliance:
+      skill: ""
+    monitor_pipeline:
+      skill: ""
+    monitor_circleci:
+      skill: ""
+    research_slack:
+      skill: ""
 pull_request:
   template:
     title: ""
     body: ""
 git:
   commit:
-    skill: ""
     format: conventional
     scope_required: false
     template: "<type>(<scope>): <description>"
@@ -281,7 +319,6 @@ git:
 post_pr:
   ci_monitor:
     provider: github-actions
-    skill: github:gh-fix-ci
 human_review:
   spec:
     reviewers:
@@ -291,15 +328,55 @@ human_review:
       - engineering-github-user
 ```
 
-Set `ticket_creation.skill` to the skill or MCP-backed workflow the agent should use, such as a Linear skill, Jira skill, or custom repo skill. Leave it blank to skip ticket creation for that repo. Put provider-specific defaults in that custom skill or the target ticket system, not in the base workflow config.
+Set `workflow.steps.<step>.skill` to replace a bundled workflow step with a custom skill. Blank values use the bundled default. The full default step map is documented in installed `AGENTS.md`.
 
-Set `research.slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `aw-research-slack` discovery path. Put workspace or channel defaults in that custom skill when a repo needs them.
+Default workflow step keys:
+
+```text
+import_prd -> aw-import-prd
+create_prd -> aw-create-prd
+brainstorm -> aw-brainstorm
+create_spec -> aw-create-spec
+index_features -> aw-index-features
+review_spec -> aw-review-spec
+request_human_review -> aw-request-human-review
+plan -> aw-plan
+review_plan -> aw-review-doc
+create_tickets -> aw-create-tickets
+work -> aw-work
+debug -> aw-debug
+create_worktree -> aw-create-worktree
+simplify_code -> aw-simplify-code
+review_code -> aw-review-code
+check_workflow_compliance -> aw-check-workflow-compliance
+commit -> aw-commit
+commit_push_pr -> aw-commit-push-pr
+monitor_pipeline -> aw-monitor-pipeline
+monitor_circleci -> aw-monitor-circleci
+log_decision -> aw-log-decision
+record_retrospective -> aw-record-retrospective
+capture_solution -> aw-capture-solution
+refresh_solutions -> aw-refresh-solutions
+refresh_decisions -> aw-refresh-decisions
+discover_standards -> aw-discover-standards
+research_slack -> aw-research-slack
+clean_artifacts -> aw-clean-artifacts
+resolve_pr_feedback -> aw-resolve-pr-feedback
+```
+
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` are replaced by `workflow.steps`. Migrate old values to the matching `workflow.steps.<step>.skill` entry instead of maintaining both shapes.
+
+Set `workflow.implementation.test_policy` to choose how implementation work should map acceptance criteria to tests or checks. Supported values are `acceptance-first`, `tdd`, `bdd`, `characterization-first`, `test-after`, `manual-verification`, and `none`. Blank or missing values default to `acceptance-first`.
+
+Set `workflow.steps.create_tickets.skill` to a Linear, Jira, or custom ticketing step when external tickets should be created. Leave it blank to use the bundled `aw-create-tickets` drafting step, which reports the proposed ticket split without creating external tickets.
+
+Set `workflow.steps.research_slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `aw-research-slack` discovery path. Put workspace or channel defaults in that custom skill when a repo needs them.
 
 Set `pull_request.template.title` and `pull_request.template.body` when PR title/body text should follow organization templates. Each value should point to a markdown file by GitHub URL, raw GitHub URL, `file://` URL, absolute path, or repo-relative path. Leave either blank to use the default generated title or body for that part.
 
-Set `git.commit.skill` when commits should route through an enterprise-specific skill. Leave it blank to use the default commit flow. The default flow follows `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present, then falls back to repo instructions and recent commit history.
+Set `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` when commits or commit/push/PR should route through an enterprise-specific step. The bundled commit flow follows `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present, then falls back to repo instructions and recent commit history.
 
-Set `post_pr.ci_monitor.skill` to the skill that should monitor and fix CI/CD after PR creation, such as a GitHub Actions, CircleCI, Jenkins, or custom pipeline skill. Leave it blank to skip post-PR monitoring. Retry limits and polling cadence belong to the linked monitor skill, not the base workflow config.
+Set `post_pr.ci_monitor.provider` to choose whether post-PR monitoring runs. `manual` disables monitoring. Use `workflow.steps.monitor_pipeline.skill` or `workflow.steps.monitor_circleci.skill` only when replacing the bundled monitoring step. Retry limits and polling cadence belong to the monitor skill, not the base workflow config.
 
 For CircleCI:
 
@@ -307,7 +384,6 @@ For CircleCI:
 post_pr:
   ci_monitor:
     provider: circleci
-    skill: aw-monitor-circleci
 ```
 
 CircleCI-specific settings are not part of the default `docs/workflow/config.yml`. `aw-monitor-circleci` will infer them from the git remote, PR URL, and `.circleci/config.yml` where possible. If a repo needs explicit settings, the skill can create `docs/workflow/circleci.yml`:
@@ -438,7 +514,7 @@ If the answer is obvious and repo-local, the agent can write the record. If scop
 
 ### 10. Monitor CI after PR creation
 
-When committing, `aw-commit` and `aw-commit-push-pr` first check `docs/workflow/config.yml`. If `git.commit.skill` is configured, they delegate commit message generation or commit creation to that enterprise skill. If it is blank, they use the configured template and examples when present.
+When committing, `aw-commit` and `aw-commit-push-pr` first check `docs/workflow/config.yml`. If `workflow.steps.commit.skill` is configured, they delegate commit message generation or commit creation to that enterprise step. Otherwise, they use the configured template and examples when present.
 
 For repos that require scoped conventional commits:
 
@@ -464,7 +540,9 @@ pull_request:
 
 Useful template placeholders include `{default_title}`, `{default_body}`, `{summary}`, `{what_changed}`, `{validation}`, `{risks}`, `{ticket}`, `{spec}`, `{decisions}`, and `{badge}`.
 
-If post-PR monitoring is configured, the PR creation flow should invoke `aw-monitor-pipeline` after creating or updating the PR.
+For non-trivial changes, `aw-commit-push-pr` runs the configured compliance check after pushing the branch and before creating the PR. If `workflow.steps.check_workflow_compliance.skill` is blank, it uses `aw-check-workflow-compliance`.
+
+If post-PR monitoring is configured, the PR creation flow should invoke the configured monitor step after creating or updating the PR.
 
 The configured monitor should:
 
@@ -480,7 +558,6 @@ Example config:
 post_pr:
   ci_monitor:
     provider: circleci
-    skill: aw-monitor-circleci
 ```
 
 ### 11. Keep README.md current
@@ -509,7 +586,7 @@ Use aw-log-decision for any choices we make during build.
 Use aw-review-spec before opening the PR.
 Run the capture checkpoint.
 Update README.md if setup, commands, config, or workflow behavior changed.
-Use aw-commit-push-pr to commit, push, and create the PR.
+Use aw-commit-push-pr to commit, push, run workflow compliance, and create the PR.
 If configured, aw-monitor-pipeline watches CI and fixes failures until green.
 ```
 
@@ -555,6 +632,8 @@ skills/aw-init/scripts/install.sh --skip-skill-links --repo .   # do not link Cl
 skills/aw-init/scripts/install.sh --skip-skills --repo ~/Code/app
 skills/aw-init/scripts/install.sh --skills-dir ~/.codex/skills  # alternate global skill dir
 skills/aw-init/scripts/install.sh --learnings-dir ~/.agents/learnings
+skills/aw-init/scripts/install.sh --remote --repo .             # fetch latest source from GitHub
+skills/aw-init/scripts/install.sh --source-url URL --repo .     # fetch source from a pinned archive or mirror
 ```
 
 Environment overrides:
@@ -562,11 +641,13 @@ Environment overrides:
 ```bash
 AGENTIC_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/aw-init/scripts/install.sh --repo .
 AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/install.sh --repo .
+AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.3.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
 ```
 
 ## Included Skills
 
 - `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, and global learnings index
+- `aw-upgrade`: upgrade existing installs and safely migrate older `docs/workflow/config.yml` shapes
 - `aw-import-prd`: persist pasted/file/link PRDs in `docs/product/prds/`
 - `aw-create-prd`: author PRDs from ideas, brainstorms, or notes using a repo-defined template when available
 - `aw-clean-artifacts`: remove workflow artifacts marked `status: archived`
@@ -581,6 +662,7 @@ AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/instal
 - `aw-debug`: investigate and fix bugs systematically
 - `aw-simplify-code`: simplify recently changed code while preserving behavior
 - `aw-review-code`: review code before PRs
+- `aw-check-workflow-compliance`: check workflow routing, test policy, acceptance coverage, README expectations, and review gates after push and before PR creation
 - `aw-commit`: create focused commits
 - `aw-commit-push-pr`: commit, push, create/update PRs with optional configured title/body templates, and invoke configured post-PR monitoring
 - `aw-monitor-pipeline`: run the configured post-PR CI monitor/fix loop

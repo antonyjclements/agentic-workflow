@@ -58,12 +58,17 @@ Note the existing PR URL from the PR check if `state: OPEN`. Step 5 uses it to r
 
 ## Step 2: Determine conventions
 
-Read `docs/workflow/config.yml` when it exists. For commit messages, follow `git.commit` before falling back to repo history:
+Read `docs/workflow/config.yml` when it exists. For commit messages, follow `workflow.steps.commit.skill` and `git.commit` before falling back to repo history:
 
 ```yaml
+workflow:
+  steps:
+    commit:
+      skill: <custom-commit-step>
+    check_workflow_compliance:
+      skill: ""
 git:
   commit:
-    skill: ""
     format: conventional
     scope_required: false
     template: "<type>(<scope>): <description>"
@@ -72,9 +77,11 @@ git:
       - "docs(readme): update usage guide"
 ```
 
-If `git.commit.skill` is set, delegate commit creation or message generation to that configured skill and pass the diff, branch, recent commits, configured template, allowed types, examples, and PR intent. The custom skill must return the commit hash or the exact commit message to use before continuing to push/PR.
+If `workflow.steps.commit.skill` is set, delegate commit creation or message generation to that configured skill and pass the diff, branch, recent commits, configured template, allowed types, examples, and PR intent. The custom skill must return the commit hash or the exact commit message to use before continuing to push/PR.
 
 If `git.commit.template` or examples are set, follow them. Treat `scope_required: true` as requiring a non-empty scope. Keep placeholders literal in interpretation only; produce a real subject such as `docs(readme): update usage guide`.
+
+Removed legacy field: `git.commit.skill`. If it appears in an older repo, tell the user to migrate it to `workflow.steps.commit.skill`; do not keep supporting both config shapes.
 
 For PR titles, match repo style (project instructions in context > recent commits > conventional commits as default). With conventional commits, default to `fix:` over `feat:` when ambiguous — adding code to remedy broken or missing behavior is `fix:`. Reserve `feat:` for capabilities the user could not previously accomplish. The user may override.
 
@@ -108,6 +115,15 @@ git push -u origin HEAD
 ```
 
 If the working tree is clean and all commits are already pushed, this step is a no-op.
+
+After a successful push and before composing or applying a new PR for non-trivial changes, run the configured workflow compliance step:
+
+- If `workflow.steps.check_workflow_compliance.skill` is set, invoke that replacement skill.
+- Otherwise invoke `aw-check-workflow-compliance`.
+- Run it when behavior, workflow, config, setup, acceptance criteria, or review-gate expectations changed.
+- Skip only for trivial docs-only or mechanical changes, and state the skip explicitly.
+- If push fails because of credentials, network, remote policy, or another external blocker, report the blocker and do not claim compliance passed.
+- Fix locally actionable compliance findings before PR creation.
 
 ## Step 4: Compose the PR title and body
 
@@ -168,8 +184,8 @@ Templates customize PR text only. PR creation still uses the built-in behavior b
 
 After a new PR is created, or after pushing commits to an existing PR, read `docs/workflow/config.yml`.
 
-- If `post_pr.ci_monitor.skill` is blank or missing, skip monitoring and report that post-PR CI monitoring is disabled.
-- If configured, invoke `aw-monitor-pipeline` with the PR URL/branch.
+- If `post_pr.ci_monitor.provider` is `manual` or missing, skip monitoring and report that post-PR CI monitoring is disabled.
+- If configured, invoke `workflow.steps.monitor_pipeline.skill` when set; otherwise invoke `aw-monitor-pipeline` with the PR URL/branch.
 - The monitor/fix loop should continue until checks pass, the configured max attempts is reached, or failures are blocked by external infrastructure, credentials, flakes, quota, or unrelated base-branch issues.
 
 ---

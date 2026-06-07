@@ -65,12 +65,15 @@ If the current branch from the context above is empty, the repository is in deta
 
 Follow this priority order:
 
-1. **Workflow config** -- If `docs/workflow/config.yml` exists, read `git.commit`:
+1. **Workflow config** -- If `docs/workflow/config.yml` exists, read `workflow.steps.commit.skill` and `git.commit`:
 
 ```yaml
+workflow:
+  steps:
+    commit:
+      skill: <custom-commit-step>
 git:
   commit:
-    skill: ""
     format: conventional
     scope_required: false
     template: "<type>(<scope>): <description>"
@@ -79,9 +82,11 @@ git:
       - "docs(readme): update usage guide"
 ```
 
-If `git.commit.skill` is set, delegate commit creation or message generation to that skill and pass the staged/unstaged diff, branch, recent commits, configured template, allowed types, and examples. The custom skill must return the commit hash or the exact commit message to use.
+If `workflow.steps.commit.skill` is set, delegate commit creation or message generation to that skill and pass the staged/unstaged diff, branch, recent commits, configured template, allowed types, and examples. The custom skill must return the commit hash or the exact commit message to use.
 
 If `git.commit.template` or examples are set, follow them. Treat `scope_required: true` as requiring a non-empty scope. Keep placeholders literal in interpretation only; produce a real subject such as `docs(readme): update usage guide`.
+
+Removed legacy field: `git.commit.skill`. If it appears in an older repo, tell the user to migrate it to `workflow.steps.commit.skill`; do not keep supporting both config shapes.
 2. **Repo conventions already in context** -- If project instructions (AGENTS.md, CLAUDE.md, or similar) are already loaded and specify commit message conventions, follow those. Do not re-read these files; they are loaded at session start.
 3. **Recent commit history** -- If no explicit convention is documented, examine the 10 most recent commits from Step 1. If a clear pattern emerges (e.g., conventional commits, ticket prefixes, emoji prefixes), match that pattern.
 4. **Default: conventional commits** -- If neither source provides a pattern, use conventional commit format: `type(scope): description` where type is one of `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`, `style`, `build`.
