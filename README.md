@@ -338,38 +338,38 @@ import_prd -> aw-import-prd
 create_prd -> aw-create-prd
 brainstorm -> aw-brainstorm
 create_spec -> aw-create-spec
-index_features -> aw-index-features
 review_spec -> aw-review-spec
 request_human_review -> aw-request-human-review
 plan -> aw-plan
 review_plan -> aw-review-doc
 create_tickets -> aw-create-tickets
 work -> aw-work
-debug -> aw-debug
-create_worktree -> aw-create-worktree
-simplify_code -> aw-simplify-code
 review_code -> aw-review-code
 check_workflow_compliance -> aw-check-workflow-compliance
 commit -> aw-commit
 commit_push_pr -> aw-commit-push-pr
 monitor_pipeline -> aw-monitor-pipeline
+```
+
+Auxiliary skill keys:
+
+```text
+index_features -> aw-index-features
+debug -> aw-debug
+create_worktree -> aw-create-worktree
+simplify_code -> aw-simplify-code
 log_decision -> aw-log-decision
 record_retrospective -> aw-record-retrospective
 capture_solution -> aw-capture-solution
 refresh_solutions -> aw-refresh-solutions
 refresh_decisions -> aw-refresh-decisions
 discover_standards -> aw-discover-standards
+research_slack -> aw-research-slack
 clean_artifacts -> aw-clean-artifacts
 resolve_pr_feedback -> aw-resolve-pr-feedback
 ```
 
-Auxiliary skill keys:
-
-```text
-research_slack -> aw-research-slack
-```
-
-Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill` are replaced by `workflow.auxiliary`. Migrate old values to the matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entry instead of maintaining both shapes.
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill`, and older helper keys misplaced under `workflow.steps`, are replaced by `workflow.auxiliary`. Migrate old values to the matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entry instead of maintaining both shapes.
 
 Set `workflow.implementation.test_policy` to choose how implementation work should map acceptance criteria to tests or checks. Supported values are `acceptance-first`, `tdd`, `bdd`, `characterization-first`, `test-after`, `manual-verification`, and `none`. Blank or missing values default to `acceptance-first`.
 

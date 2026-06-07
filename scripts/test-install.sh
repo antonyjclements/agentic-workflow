@@ -166,6 +166,35 @@ assert_contains "$custom_ci_target/docs/workflow/config.yml" "monitor_pipeline:"
 assert_contains "$custom_ci_target/docs/workflow/config.yml" "skill: enterprise-ci-monitor"
 assert_not_contains "$custom_ci_target/docs/workflow/config.yml" "monitor_circleci:"
 
+auxiliary_split_target="$tmp_root/auxiliary-split-target"
+mkdir -p "$auxiliary_split_target/docs/workflow"
+cat > "$auxiliary_split_target/docs/workflow/config.yml" <<'YAML'
+workflow:
+  steps:
+    work:
+      skill: enterprise-work
+    debug:
+      skill: enterprise-debug
+    index_features:
+      skill: enterprise-index
+    research_slack:
+      skill: enterprise-slack-research
+YAML
+
+ruby "$aw_init_skills/aw-init/scripts/upgrade-config.rb" --repo "$auxiliary_split_target" --apply > "$tmp_root/auxiliary-split-apply.txt"
+assert_contains "$tmp_root/auxiliary-split-apply.txt" "workflow.auxiliary.debug.skill"
+assert_contains "$tmp_root/auxiliary-split-apply.txt" "workflow.auxiliary.index_features.skill"
+assert_contains "$tmp_root/auxiliary-split-apply.txt" "workflow.auxiliary.research_slack.skill"
+assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "work:"
+assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "skill: enterprise-work"
+assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "auxiliary:"
+assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "debug:"
+assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "skill: enterprise-debug"
+assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "index_features:"
+assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "skill: enterprise-index"
+assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "research_slack:"
+assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "skill: enterprise-slack-research"
+
 remote_archive="$tmp_root/agentic-workflow-source.tar.gz"
 tar -czf "$remote_archive" -C "$repo_root" .
 

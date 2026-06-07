@@ -425,8 +425,6 @@ install_repo_files() {
       skill: \"\"
     create_spec:
       skill: \"\"
-    index_features:
-      skill: \"\"
     review_spec:
       skill: \"\"
     request_human_review:
@@ -439,12 +437,6 @@ install_repo_files() {
       skill: \"\"
     work:
       skill: \"\"
-    debug:
-      skill: \"\"
-    create_worktree:
-      skill: \"\"
-    simplify_code:
-      skill: \"\"
     review_code:
       skill: \"\"
     check_workflow_compliance:
@@ -454,6 +446,15 @@ install_repo_files() {
     commit_push_pr:
       skill: \"\"
     monitor_pipeline:
+      skill: \"\"
+  auxiliary:
+    index_features:
+      skill: \"\"
+    debug:
+      skill: \"\"
+    create_worktree:
+      skill: \"\"
+    simplify_code:
       skill: \"\"
     log_decision:
       skill: \"\"
@@ -467,12 +468,11 @@ install_repo_files() {
       skill: \"\"
     discover_standards:
       skill: \"\"
+    research_slack:
+      skill: \"\"
     clean_artifacts:
       skill: \"\"
     resolve_pr_feedback:
-      skill: \"\"
-  auxiliary:
-    research_slack:
       skill: \"\"
 pull_request:
   template:

@@ -11,33 +11,33 @@ DEFAULT_STEPS = %w[
   create_prd
   brainstorm
   create_spec
-  index_features
   review_spec
   request_human_review
   plan
   review_plan
   create_tickets
   work
-  debug
-  create_worktree
-  simplify_code
   review_code
   check_workflow_compliance
   commit
   commit_push_pr
   monitor_pipeline
+].freeze
+
+DEFAULT_AUXILIARY = %w[
+  index_features
+  debug
+  create_worktree
+  simplify_code
   log_decision
   record_retrospective
   capture_solution
   refresh_solutions
   refresh_decisions
   discover_standards
+  research_slack
   clean_artifacts
   resolve_pr_feedback
-].freeze
-
-DEFAULT_AUXILIARY = %w[
-  research_slack
 ].freeze
 
 DEFAULT_CONFIG = {
@@ -227,6 +227,13 @@ end
 config = deep_merge(DEFAULT_CONFIG, existing)
 actions = []
 conflicts = []
+
+DEFAULT_AUXILIARY.each do |key|
+  misplaced_skill = dig_hash(existing, "workflow", "steps", key, "skill")
+  assign_auxiliary(config, key, misplaced_skill, "workflow.steps.#{key}.skill", actions, conflicts)
+  config.dig("workflow", "steps")&.delete(key)
+end
+delete_empty_path(config, "workflow", "steps")
 
 ticket_skill = dig_hash(existing, "ticket_creation", "skill")
 assign_step(config, "create_tickets", ticket_skill, "ticket_creation.skill", actions, conflicts)

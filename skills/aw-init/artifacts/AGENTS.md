@@ -76,35 +76,35 @@ Supported default step keys:
 - `create_prd`: `aw-create-prd`
 - `brainstorm`: `aw-brainstorm`
 - `create_spec`: `aw-create-spec`
-- `index_features`: `aw-index-features`
 - `review_spec`: `aw-review-spec`
 - `request_human_review`: `aw-request-human-review`
 - `plan`: `aw-plan`
 - `review_plan`: `aw-review-doc`
 - `create_tickets`: `aw-create-tickets`
 - `work`: `aw-work`
-- `debug`: `aw-debug`
-- `create_worktree`: `aw-create-worktree`
-- `simplify_code`: `aw-simplify-code`
 - `review_code`: `aw-review-code`
 - `check_workflow_compliance`: `aw-check-workflow-compliance`
 - `commit`: `aw-commit`
 - `commit_push_pr`: `aw-commit-push-pr`
 - `monitor_pipeline`: `aw-monitor-pipeline`
+
+Supported auxiliary skill keys:
+
+- `index_features`: `aw-index-features`
+- `debug`: `aw-debug`
+- `create_worktree`: `aw-create-worktree`
+- `simplify_code`: `aw-simplify-code`
 - `log_decision`: `aw-log-decision`
 - `record_retrospective`: `aw-record-retrospective`
 - `capture_solution`: `aw-capture-solution`
 - `refresh_solutions`: `aw-refresh-solutions`
 - `refresh_decisions`: `aw-refresh-decisions`
 - `discover_standards`: `aw-discover-standards`
+- `research_slack`: `aw-research-slack`
 - `clean_artifacts`: `aw-clean-artifacts`
 - `resolve_pr_feedback`: `aw-resolve-pr-feedback`
 
-Supported auxiliary skill keys:
-
-- `research_slack`: `aw-research-slack`
-
-Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` have been replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill` have been replaced by `workflow.auxiliary`. If they appear in older repos, migrate them to the matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entry instead of supporting both shapes. Non-skill configuration fields remain authoritative, including `git.commit.format`, `pull_request.template`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` have been replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill`, and older helper keys misplaced under `workflow.steps`, have been replaced by `workflow.auxiliary`. If they appear in older repos, migrate them to the matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entry instead of supporting both shapes. Non-skill configuration fields remain authoritative, including `git.commit.format`, `pull_request.template`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
 
 Custom replacement skills must preserve the default step contract: accept the same handoff artifact or identifier, read relevant workflow config, return the expected artifact path/ID/result, and report unsupported behavior clearly.
 
