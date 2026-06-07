@@ -166,6 +166,20 @@ assert_contains "$custom_ci_target/docs/workflow/config.yml" "monitor_pipeline:"
 assert_contains "$custom_ci_target/docs/workflow/config.yml" "skill: enterprise-ci-monitor"
 assert_not_contains "$custom_ci_target/docs/workflow/config.yml" "monitor_circleci:"
 
+legacy_circleci_step_target="$tmp_root/legacy-circleci-step-target"
+mkdir -p "$legacy_circleci_step_target/docs/workflow"
+cat > "$legacy_circleci_step_target/docs/workflow/config.yml" <<'YAML'
+workflow:
+  steps:
+    monitor_circleci:
+      skill: aw-monitor-circleci
+YAML
+
+ruby "$aw_init_skills/aw-init/scripts/upgrade-config.rb" --repo "$legacy_circleci_step_target" --apply > "$tmp_root/legacy-circleci-step-apply.txt"
+assert_contains "$tmp_root/legacy-circleci-step-apply.txt" "workflow.steps.monitor_circleci.skill=aw-monitor-circleci"
+assert_contains "$legacy_circleci_step_target/docs/workflow/config.yml" "provider: circleci"
+assert_not_contains "$legacy_circleci_step_target/docs/workflow/config.yml" "monitor_circleci:"
+
 auxiliary_split_target="$tmp_root/auxiliary-split-target"
 mkdir -p "$auxiliary_split_target/docs/workflow"
 cat > "$auxiliary_split_target/docs/workflow/config.yml" <<'YAML'
