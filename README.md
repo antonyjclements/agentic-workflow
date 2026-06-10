@@ -11,6 +11,11 @@ This repo helps you install the same agent operating model into any codebase:
 
 The goal is not to adopt a framework. The goal is to make your repo the source of truth that agents read from and write back to.
 
+## Presentations
+
+- [Overview deck](https://antonyjclements.github.io/agentic-workflow/) — the adoption story: the collaboration problems product teams already have, shared living memory, and the workflow that fixes both human↔agent and human↔human.
+- [Technical deep dive](https://antonyjclements.github.io/agentic-workflow/technical.html) — how it works: artifacts as state machines, decisions as an event log, routing as dependency injection, and the determinism boundary.
+
 ## Quick Start
 
 Use the `aw-init` skill to install the workflow into a target repo:
