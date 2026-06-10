@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agentic Workflow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: { preflight: false },
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0d0f14', surface: '#151820', border: '#232735',
+            accent: '#6c8fff', accent2: '#a78bfa', accent3: '#34d399',
+            danger: '#f87171', muted: '#6b7280', text: '#e8eaf0', 'text-sub': '#9ca3af', card: '#1a1e2b'
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['"SF Mono"', '"Fira Code"', '"Cascadia Code"', '"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    /* ── Reset & base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-width: 0; border-style: solid; }
+
+    :root {
+      --bg:       #0d0f14;
+      --surface:  #151820;
+      --border:   #232735;
+      --accent:   #6c8fff;
+      --accent2:  #a78bfa;
+      --accent3:  #34d399;
+      --danger:   #f87171;
+      --muted:    #6b7280;
+      --text:     #e8eaf0;
+      --text-sub: #9ca3af;
+      --card:     #1a1e2b;
+      --shadow:   0 4px 32px rgba(0,0,0,.5);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Slide system ───────────────────────────────────────────── */
+    .deck {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 5vw 8vw;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .slide-number {
+      position: absolute;
+      top: 2rem;
+      right: 2.5rem;
+      font-size: .75rem;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Typography ─────────────────────────────────────────────── */
+    .eyebrow {
+      @apply text-[.75rem] font-semibold tracking-[.15em] uppercase text-accent mb-4;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 5vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+    }
+
+    h2 {
+      font-size: clamp(1.8rem, 3.5vw, 3rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -.02em;
+      margin-bottom: 1.5rem;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: .5rem;
+    }
+
+    p {
+      color: var(--text-sub);
+      font-size: 1.05rem;
+      max-width: 64ch;
+    }
+
+    p + p { margin-top: .75rem; }
+
+    strong { color: var(--text); font-weight: 600; }
+
+    /* ── Gradient text ──────────────────────────────────────────── */
+    .grad {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .grad-green {
+      background: linear-gradient(135deg, var(--accent3) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Pill / tag ─────────────────────────────────────────────── */
+    .tag {
+      @apply inline-block text-[.7rem] font-semibold tracking-[.08em] uppercase px-[.65rem] py-1 rounded-full bg-accent/[.12] text-accent border border-accent/25;
+    }
+
+    /* ── Grid helpers ───────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ───────────────────────────────────────────────────── */
+    .card {
+      @apply bg-card border border-border rounded-xl p-6;
+    }
+
+    .card-accent {
+      border-color: rgba(108,143,255,.3);
+      background: linear-gradient(135deg, rgba(108,143,255,.06) 0%, rgba(167,139,250,.04) 100%);
+    }
+
+    .card-green {
+      border-color: rgba(52,211,153,.3);
+      background: rgba(52,211,153,.05);
+    }
+
+    .card-red {
+      border-color: rgba(248,113,113,.3);
+      background: rgba(248,113,113,.05);
+    }
+
+    .card .icon {
+      font-size: 1.75rem;
+      margin-bottom: .75rem;
+      display: block;
+    }
+
+    /* ── Code block ─────────────────────────────────────────────── */
+    .code-block {
+      background: #0a0c11;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: .85rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: #c9d1e0;
+    }
+
+    .code-block .cm  { color: #6b7280; }  /* comment  */
+    .code-block .kw  { color: #818cf8; }  /* keyword  */
+    .code-block .str { color: #34d399; }  /* string   */
+    .code-block .key { color: #93c5fd; }  /* yaml key */
+    .code-block .val { color: #fcd34d; }  /* value    */
+
+    /* ── Decision mini diagram ─────────────────────────────────── */
+    .decision-map {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .85rem;
+    }
+
+    .decision-bucket {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(10,12,17,.45);
+      padding: 1rem;
+    }
+
+    .decision-bucket h4 {
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .8rem;
+    }
+
+    .decision-item {
+      border: 1px solid rgba(108,143,255,.18);
+      border-radius: 8px;
+      padding: .65rem .7rem;
+      margin-top: .55rem;
+      background: rgba(108,143,255,.05);
+    }
+
+    .decision-item .path {
+      display: block;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: .76rem;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+
+    .decision-item .meta {
+      display: block;
+      margin-top: .25rem;
+      font-size: .78rem;
+      color: var(--text-sub);
+    }
+
+    @media (max-width: 768px) {
+      .decision-map { grid-template-columns: 1fr; }
+    }
+
+    /* ── Flow diagram ───────────────────────────────────────────── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+
+    .flow-step {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .45rem 1rem;
+      font-size: .82rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .flow-step.highlight {
+      border-color: rgba(108,143,255,.5);
+      background: rgba(108,143,255,.1);
+      color: var(--accent);
+    }
+
+    .flow-arrow {
+      color: var(--muted);
+      font-size: .85rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Divider ────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 2rem 0;
+    }
+
+    /* ── Two-column layout ──────────────────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .two-col { grid-template-columns: 1fr; gap: 2rem; }
+    }
+
+    /* ── Comparison row ─────────────────────────────────────────── */
+    .vs-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .vs-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── List ───────────────────────────────────────────────────── */
+    .check-list {
+      @apply list-none flex flex-col gap-[.6rem];
+    }
+
+    .check-list li {
+      @apply flex items-baseline gap-[.6rem] text-[.95rem] text-text-sub;
+    }
+
+    .check-list li::before {
+      content: "✓";
+      color: var(--accent3);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .x-list { @apply list-none flex flex-col gap-[.6rem]; }
+    .x-list li { @apply flex items-baseline gap-[.6rem] text-[.95rem] text-text-sub; }
+    .x-list li::before { content: "✗"; color: var(--danger); font-weight: 700; flex-shrink: 0; }
+
+    /* ── Artifact type badges ───────────────────────────────────── */
+    .artifact-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .artifact-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .artifact-card {
+      border-radius: 12px;
+      padding: 1.25rem;
+      border: 1px solid;
+    }
+
+    .artifact-card .artifact-name {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .4rem;
+    }
+
+    .artifact-card p {
+      font-size: .82rem;
+      line-height: 1.5;
+      max-width: none;
+    }
+
+    .artifact-card .rule {
+      display: inline-block;
+      margin-top: .6rem;
+      font-size: .68rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: .2rem .5rem;
+      border-radius: 4px;
+    }
+
+    /* ── Stat block ─────────────────────────────────────────────── */
+    .stat { text-align: center; }
+    .stat .num { font-size: 3rem; font-weight: 800; line-height: 1; }
+    .stat .label { font-size: .8rem; color: var(--muted); margin-top: .35rem; text-transform: uppercase; letter-spacing: .08em; }
+
+    /* ── Cover slide specific ───────────────────────────────────── */
+    #cover {
+      background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(108,143,255,.15) 0%, transparent 70%),
+                  var(--bg);
+      min-height: 100vh;
+      justify-content: center;
+      text-align: center;
+      align-items: center;
+    }
+
+    #cover .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-sub);
+      margin-top: 1.25rem;
+      max-width: 52ch;
+    }
+
+    #cover .nav-hint {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: .75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    /* ── Timeline ───────────────────────────────────────────────── */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 1.1rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, var(--accent) 0%, var(--accent2) 100%);
+      opacity: .3;
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: 1.5rem;
+      padding: .85rem 0;
+      position: relative;
+    }
+
+    .timeline-dot {
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 50%;
+      background: var(--card);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .9rem;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+
+    .timeline-dot.active {
+      border-color: var(--accent);
+      background: rgba(108,143,255,.1);
+    }
+
+    .timeline-content h3 { font-size: 1rem; margin-bottom: .2rem; }
+    .timeline-content p  { font-size: .9rem; max-width: none; }
+
+    /* ── Skill pill ─────────────────────────────────────────────── */
+    .skill-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+
+    .skill-pill {
+      font-size: .78rem;
+      font-weight: 500;
+      padding: .3rem .8rem;
+      border-radius: 6px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-family: "SF Mono", "Fira Code", monospace;
+      color: var(--text-sub);
+    }
+
+    .skill-pill.core {
+      border-color: rgba(108,143,255,.4);
+      background: rgba(108,143,255,.08);
+      color: var(--accent);
+    }
+
+    .skill-pill.knowledge {
+      border-color: rgba(167,139,250,.4);
+      background: rgba(167,139,250,.08);
+      color: var(--accent2);
+    }
+
+    .skill-pill.ship {
+      border-color: rgba(52,211,153,.4);
+      background: rgba(52,211,153,.08);
+      color: var(--accent3);
+    }
+
+    /* ── Section label stripe ───────────────────────────────────── */
+    .stripe {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: 2rem;
+    }
+
+    .stripe-line {
+      width: 2.5rem;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 1px;
+    }
+
+    /* ── Nav bar ────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(13,15,20,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 2rem;
+      height: 3rem;
+    }
+
+    nav .nav-brand {
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-right: auto;
+    }
+
+    nav .nav-links {
+      display: flex;
+      gap: 0;
+    }
+
+    nav .nav-links a {
+      font-size: .7rem;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0 .8rem;
+      line-height: 3rem;
+      transition: color .15s;
+    }
+
+    nav .nav-links a:hover { color: var(--text); }
+
+    /* ── Offset for fixed nav ───────────────────────────────────── */
+    .slide { padding-top: 7rem; }
+    #cover { padding-top: 3rem; }
+
+    /* ── Big quote ──────────────────────────────────────────────── */
+    .big-quote {
+      font-size: clamp(1.3rem, 2.5vw, 1.9rem);
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text);
+      max-width: 70ch;
+      border-left: 3px solid var(--accent);
+      padding-left: 1.5rem;
+    }
+
+    /* ── Triage table ───────────────────────────────────────────── */
+    .triage-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+    }
+
+    .triage-table th {
+      text-align: left;
+      padding: .6rem 1rem;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .triage-table td {
+      padding: .75rem 1rem;
+      border-bottom: 1px solid rgba(35,39,53,.6);
+      color: var(--text-sub);
+      vertical-align: top;
+    }
+
+    .triage-table tr:last-child td { border-bottom: none; }
+
+    .triage-table .tier { font-weight: 600; color: var(--text); white-space: nowrap; }
+
+    .triage-dot {
+      display: inline-block;
+      width: .55rem;
+      height: .55rem;
+      border-radius: 50%;
+      margin-right: .4rem;
+      vertical-align: middle;
+    }
+
+    /* ── Mobile ─────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 0 1rem; }
+      nav .nav-links { display: none; }
+      .slide { padding: 5.5rem 6vw 3rem; }
+      .vs-row { grid-template-columns: 1fr; gap: 1rem; }
+      .vs-label { padding: .35rem 0; }
+      .artifact-grid { grid-template-columns: 1fr; }
+      .big-quote { padding-left: 1rem; }
+    }
+    @media (max-width: 480px) {
+      .stat .num { font-size: 2.4rem; }
+      .timeline-content h3 .tag { display: inline-block; margin-top: .25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ────────────────────────────────────────────────────────── -->
+<nav>
+  <span class="nav-brand">Agentic Workflow</span>
+  <div class="nav-links">
+    <a href="#problem">Problem</a>
+    <a href="#solution">Solution</a>
+    <a href="#artifacts">Artifacts</a>
+    <a href="#workflow">Workflow</a>
+    <a href="#skills">Skills</a>
+    <a href="#config">Config</a>
+    <a href="#knowledge">Knowledge</a>
+    <a href="#verdict">Verdict</a>
+  </div>
+  <a class="deck-switch" href="technical.html" style="font-size:.7rem; color: var(--accent2); text-decoration: none; padding-left: 1rem; margin-left: .75rem; border-left: 1px solid var(--border); line-height: 3rem;">technical deck →</a>
+</nav>
+
+<div class="deck">
+
+  <!-- ── 1. Cover ────────────────────────────────────────────────── -->
+  <section class="slide" id="cover">
+    <div class="eyebrow">Agentic Workflow</div>
+    <h1 class="grad">Spec-driven development<br/>for coding agents.</h1>
+    <p style="font-size: clamp(1.25rem, 2.4vw, 1.9rem); font-weight: 700; color: var(--text); margin-top: 1.5rem; max-width: 30ch; line-height: 1.25;">Having an AI agent is one thing. Getting agents <span class="grad">and people</span> to collaborate is another.</p>
+    <p class="subtitle">A shared, living memory for product teams and their agents, so intent, decisions, and the current spec stay in sync as the work evolves.</p>
+    <div class="nav-hint">↓ scroll to explore</div>
+  </section>
+
+  <!-- ── 2. Problem ──────────────────────────────────────────────── -->
+  <section class="slide" id="problem">
+    <div class="slide-number">01 / Problem</div>
+    <div class="eyebrow">The real problem</div>
+    <h2>Agents don't fix your collaboration<br/>problems. They <span class="grad">inherit</span> them.</h2>
+
+    <div style="margin-top: 2.5rem;">
+      <div class="vs-row">
+        <div>
+          <div class="card card-red">
+            <span class="icon">👥</span>
+            <h3>Product, Design &amp; Engineering already struggle to stay aligned</h3>
+            <ul class="x-list" style="margin-top:.5rem">
+              <li>PRDs go stale as the build evolves</li>
+              <li>Requirements change with no record of what or why</li>
+              <li>Intent drifts from PRD → conversation → code</li>
+              <li>Decisions, and their rejected alternatives, get lost</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="vs-label">+ agent</div>
+
+        <div class="card card-red" style="align-self: center;">
+          <span class="icon">🤖</span>
+          <h3>The agent joins a team that already loses the thread</h3>
+          <p style="margin-bottom:1rem">So it loses it too: re-deriving intent, re-litigating settled decisions, drifting from the spec, exactly like a teammate dropped in with no context.</p>
+          <p>An agent doesn't remove these problems. It runs straight into them <strong>and adds new ones</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 3. Problem deeper ───────────────────────────────────────── -->
+  <section class="slide">
+    <div class="slide-number">02 / Problem</div>
+    <div class="eyebrow">Shared by humans and agents</div>
+    <h2>The problems that<br/><span class="grad">don't go away.</span></h2>
+
+    <div class="grid-3" style="margin-top: 2rem;">
+      <div class="card">
+        <span class="icon">📄</span>
+        <h3>Stale PRDs</h3>
+        <p>The doc falls behind the build. By week two, nobody fully trusts the PRD, including the agent reading it.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔀</span>
+        <h3>Untracked requirement changes</h3>
+        <p>Requirements shift mid-flight with no record of what changed, when, or why.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🌀</span>
+        <h3>Requirements drift</h3>
+        <p>Intent gets translated differently across PRD, conversations, and code until they no longer agree.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🗺️</span>
+        <h3>Lost decision history</h3>
+        <p>What was decided, why, and what was rejected, gone. So the same debate restarts in the next meeting.</p>
+      </div>
+      <div class="card">
+        <span class="icon">❓</span>
+        <h3>Losing track of the spec</h3>
+        <p>People stop being sure what the system is even supposed to do. Cue another clarification cycle.</p>
+      </div>
+      <div class="card card-accent">
+        <span class="icon">⚡</span>
+        <h3>Agents amplify all five</h3>
+        <p>They hit these gaps at machine speed, while the team keeps paying the re-alignment tax.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 4. Solution overview ────────────────────────────────────── -->
+  <section class="slide" id="solution">
+    <div class="slide-number">03 / Solution</div>
+    <div class="eyebrow">The solution</div>
+    <h2>One shared memory.<br/>For <span class="grad">agents and people</span>.</h2>
+
+    <div class="two-col" style="margin-top: 2.5rem; gap: 3rem;">
+      <div>
+        <p>Agentic Workflow keeps intent, decisions, and the current spec as living documents in the repo, the same source of truth your team and your agents both read before they act.</p>
+
+        <div class="divider"></div>
+
+        <p>It fixes collaboration on two fronts at once: <strong>human ↔ agent</strong>, the agent works from current intent instead of a stale PRD, and <strong>human ↔ human</strong>, fewer re-alignment meetings and clarification cycles because the doc is always live.</p>
+
+        <div class="divider"></div>
+
+        <p style="margin-top:0">Two steps. One config file. Works in any repo, with any team, with any agent runtime.</p>
+      </div>
+      <div>
+        <div class="code-block">
+<span class="cm"># 1. install the skills (skills.sh)</span>
+npx skills add antonyjclements/agentic-workflow
+
+<span class="cm"># 2. scaffold this repo, in your agent</span>
+/aw-init
+
+<span class="cm"># what aw-init writes</span>
+write: AGENTS.md
+write: CLAUDE.md
+write: docs/workflow/config.yml
+write: docs/decisions/index.yml
+write: docs/features/index.yml
+write: docs/learnings/index.yml
+<span class="str">agentic workflow installed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 5. AGENTS.md ───────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="slide-number">04 / Solution</div>
+    <div class="eyebrow">The entry point</div>
+    <h2><code style="font-size:inherit">AGENTS.md</code>: the map every agent reads first.</h2>
+
+    <div class="two-col" style="margin-top: 2rem; gap: 3rem;">
+      <div>
+        <p>Claude Code, Codeium, and Windsurf all read <code>AGENTS.md</code> at session start. Agentic Workflow installs a canonical <code>AGENTS.md</code> that tells agents:</p>
+
+        <div class="divider" style="margin: 1.5rem 0;"></div>
+
+        <ul class="check-list">
+          <li>Where living specs live and how to read them</li>
+          <li>How to route requests to the right skill</li>
+          <li>What size of change needs what level of ceremony</li>
+          <li>When to capture decisions, learnings, and solutions</li>
+          <li>How to use the config to find custom enterprise skills</li>
+        </ul>
+
+        <div class="divider" style="margin: 1.5rem 0;"></div>
+
+        <p>It's versioned, upgradeable, and the same across every repo that uses this workflow.</p>
+      </div>
+
+      <div>
+        <div class="eyebrow" style="font-size:.65rem; margin-bottom:.85rem">What's inside AGENTS.md</div>
+        <div class="card" style="padding: 1.25rem 1.4rem;">
+          <ul style="list-style:none; display:flex; flex-direction:column; gap:.7rem;">
+            <li style="display:flex; gap:.7rem; align-items:baseline; font-size:.88rem; color:var(--text-sub);"><span style="color:var(--accent); font-family:'SF Mono',monospace; font-size:.72rem; flex-shrink:0;">01</span><span><strong>Operating principles</strong>, read before changing, scope discipline, preserve user work</span></li>
+            <li style="display:flex; gap:.7rem; align-items:baseline; font-size:.88rem; color:var(--text-sub);"><span style="color:var(--accent); font-family:'SF Mono',monospace; font-size:.72rem; flex-shrink:0;">02</span><span><strong>Task triage</strong>, match ceremony to change size</span></li>
+            <li style="display:flex; gap:.7rem; align-items:baseline; font-size:.88rem; color:var(--text-sub);"><span style="color:var(--accent); font-family:'SF Mono',monospace; font-size:.72rem; flex-shrink:0;">03</span><span><strong>Spec-driven model</strong>, where each artifact lives and its lifecycle</span></li>
+            <li style="display:flex; gap:.7rem; align-items:baseline; font-size:.88rem; color:var(--text-sub);"><span style="color:var(--accent); font-family:'SF Mono',monospace; font-size:.72rem; flex-shrink:0;">04</span><span><strong>Step routing</strong>, config-driven skill selection and handoff contract</span></li>
+            <li style="display:flex; gap:.7rem; align-items:baseline; font-size:.88rem; color:var(--text-sub);"><span style="color:var(--accent); font-family:'SF Mono',monospace; font-size:.72rem; flex-shrink:0;">05</span><span><strong>Capture checkpoints</strong>, when to log decisions, learnings, solutions</span></li>
+            <li style="display:flex; gap:.7rem; align-items:baseline; font-size:.88rem; color:var(--text-sub);"><span style="color:var(--accent); font-family:'SF Mono',monospace; font-size:.72rem; flex-shrink:0;">06</span><span><strong>Safety &amp; expectations</strong>, git rules, testing, documentation, final summary</span></li>
+          </ul>
+        </div>
+        <p style="font-size:.8rem; color: var(--muted); margin-top: 1rem;">One canonical file, versioned and identical across every repo that adopts the workflow.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 6. Artifacts ───────────────────────────────────────────── -->
+  <section class="slide" id="artifacts">
+    <div class="slide-number">05 / Artifacts</div>
+    <div class="eyebrow">Five durable knowledge types, plus temporary plans</div>
+    <h2>Different documents.<br/>Different <span class="grad">lifecycle rules</span>.</h2>
+
+    <div class="artifact-grid" style="margin-top: 2.5rem;">
+
+      <div class="artifact-card" style="border-color: rgba(108,143,255,.35); background: rgba(108,143,255,.05);">
+        <div class="artifact-name" style="color: var(--accent);">📋 Specs</div>
+        <p>Living product intent. One per feature. Always current, updated when behavior changes.</p>
+        <span class="rule" style="background: rgba(108,143,255,.15); color: var(--accent);">Always alive</span>
+      </div>
+
+      <div class="artifact-card" style="border-color: rgba(248,113,113,.35); background: rgba(248,113,113,.05);">
+        <div class="artifact-name" style="color: var(--danger);">🔒 Decisions</div>
+        <p>Immutable records. Architecture, product, workflow choices. Never edited, only superseded.</p>
+        <span class="rule" style="background: rgba(248,113,113,.15); color: var(--danger);">Immutable</span>
+      </div>
+
+      <div class="artifact-card" style="border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.04);">
+        <div class="artifact-name" style="color: #fbbf24;">📄 PRDs</div>
+        <p>Historical source artifacts. Imported or authored. Preserved as inputs, not treated as living truth.</p>
+        <span class="rule" style="background: rgba(251,191,36,.12); color: #fbbf24;">Historical</span>
+      </div>
+
+      <div class="artifact-card" style="border-color: rgba(52,211,153,.35); background: rgba(52,211,153,.05);">
+        <div class="artifact-name" style="color: var(--accent3);">🎓 Learnings</div>
+        <p>Correction-driven lessons. Captured when agents are redirected. Prevents repeated mistakes.</p>
+        <span class="rule" style="background: rgba(52,211,153,.15); color: var(--accent3);">Correction-driven</span>
+      </div>
+
+      <div class="artifact-card" style="border-color: rgba(167,139,250,.35); background: rgba(167,139,250,.05);">
+        <div class="artifact-name" style="color: var(--accent2);">📐 Standards</div>
+        <p>Enforceable conventions. Discovered from the codebase. Applied during planning, implementation, and review.</p>
+        <span class="rule" style="background: rgba(167,139,250,.15); color: var(--accent2);">Enforceable</span>
+      </div>
+
+      <div class="artifact-card" style="border-color: rgba(156,163,175,.2); background: rgba(156,163,175,.03);">
+        <div class="artifact-name" style="color: var(--muted);">🗺️ Plans</div>
+        <p>Temporary implementation maps. Created before multi-step work. Expire when the work is done.</p>
+        <span class="rule" style="background: rgba(156,163,175,.1); color: var(--muted);">Temporary</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── 7. Decision model ───────────────────────────────────────── -->
+  <section class="slide">
+    <div class="slide-number">06 / Artifacts</div>
+    <div class="eyebrow">Decisions in depth</div>
+    <h2>Immutable records.<br/>Derived <span class="grad">navigation</span>.</h2>
+
+    <div class="two-col" style="margin-top: 2rem; gap: 3rem;">
+      <div>
+        <p>Decision files are never edited after creation. When a decision is superseded, a new file is created that references the old one. The chain is permanent and auditable.</p>
+        <div class="divider"></div>
+        <p>The <strong>index</strong> and <strong>summaries</strong> are derived, regenerated by <code>aw-refresh-decisions</code> without touching the immutable records. You get current navigation without rewriting history.</p>
+        <div class="divider"></div>
+        <div class="decision-map">
+          <div class="decision-bucket">
+            <h4>Immutable records</h4>
+            <div class="decision-item">
+              <span class="path">use-agents-skills.md</span>
+              <span class="meta">original decision</span>
+            </div>
+            <div class="decision-item">
+              <span class="path">keep-repo-local.md</span>
+              <span class="meta">supersedes the original</span>
+            </div>
+          </div>
+          <div class="decision-bucket">
+            <h4>Derived navigation</h4>
+            <div class="decision-item">
+              <span class="path">index.yml</span>
+              <span class="meta">current status and links</span>
+            </div>
+            <div class="decision-item">
+              <span class="path">summaries/workflow.md</span>
+              <span class="meta">regenerated by tag</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card card-accent">
+          <h3 style="margin-bottom:1rem">Why immutability matters</h3>
+          <ul class="check-list">
+            <li>Links never break, old docs still point to valid files</li>
+            <li>Full audit trail of how thinking evolved</li>
+            <li>Agents can see <em>why</em> a decision was superseded, not just that it was</li>
+            <li>No accidental rewriting of history under time pressure</li>
+          </ul>
+        </div>
+        <div style="margin-top: 1rem; background: #0a0c11; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; font-size: .8rem; line-height: 1.8; font-family: 'SF Mono', monospace; color: #c9d1e0;">
+<span class="key">title:</span> <span class="str">Use single feature plan file</span><br/>
+<span class="key">date:</span> <span class="val">2026-05-24</span><br/>
+<span class="key">status:</span> <span class="val">active</span><br/>
+<span class="key">supersedes:</span><br/>
+<span class="key">  -</span> <span class="str">use-feature-directories.md</span><br/>
+<span class="key">tags:</span> <span class="val">[workflow, planning]</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 8. Workflow pipeline ────────────────────────────────────── -->
+  <section class="slide" id="workflow">
+    <div class="slide-number">07 / Workflow</div>
+    <div class="eyebrow">The pipeline</div>
+    <h2>Every step hands off<br/>to the <span class="grad">next one</span>.</h2>
+
+    <p style="margin-bottom: 2.5rem;">Each skill outputs the artifact path that becomes the next skill's input. The chain is traceable from PRD to shipped PR.</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot active">📥</div>
+        <div class="timeline-content">
+          <h3>Import / Author PRD <span class="tag">aw-import-prd · aw-create-prd</span></h3>
+          <p>Persist the source artifact first → <code>docs/product/prds/*.md</code></p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot active">💬</div>
+        <div class="timeline-content">
+          <h3>Brainstorm <span class="tag">aw-brainstorm</span></h3>
+          <p>Resolve ambiguity → outputs a living spec.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot active">📋</div>
+        <div class="timeline-content">
+          <h3>Living Spec <span class="tag">aw-create-spec</span></h3>
+          <p>Durable intent at <code>docs/features/&lt;feature&gt;/spec.md</code>: when requirements are already clear.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot active">🗺️</div>
+        <div class="timeline-content">
+          <h3>Plan <span class="tag">aw-plan · aw-review-doc</span></h3>
+          <p>Temporary map at <code>docs/features/&lt;feature&gt;/plan.md</code>, reviewed before work.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot active">🎫</div>
+        <div class="timeline-content">
+          <h3>Tickets <span class="tag">aw-create-tickets</span></h3>
+          <p>Linear / Jira / custom. Each traces back to spec, plan, decisions.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot active">⚙️</div>
+        <div class="timeline-content">
+          <h3>Work <span class="tag">aw-work · aw-debug</span></h3>
+          <p>From a ticket, spec, plan, or bare request. Ticket-first cold-start works.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot active">🚢</div>
+        <div class="timeline-content">
+          <h3>Review, Commit, PR, CI <span class="tag">aw-review-code · aw-commit-push-pr · aw-monitor-pipeline</span></h3>
+          <p>PR body includes test policy, acceptance coverage, decisions, residual risks.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 1.75rem; padding: .9rem 1.25rem; border-left: 3px solid var(--accent3); background: rgba(52,211,153,.04); border-radius: 0 8px 8px 0;">
+      <div style="font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent3); margin-bottom: .55rem;">Quality backstops · wrap Work → PR, not steps in the chain</div>
+      <div style="display: flex; flex-wrap: wrap; gap: .35rem 1.75rem; font-size: .82rem; color: var(--text-sub);">
+        <span><code>test_policy</code>: acceptance criteria → tests/checks</span>
+        <span><code>aw-review-spec</code>: catches code-vs-spec drift</span>
+        <span><code>aw-check-workflow-compliance</code>: verifies the contract on the shipping path</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 9. Triage ──────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="slide-number">08 / Workflow</div>
+    <div class="eyebrow">Ceremony that scales</div>
+    <h2>Not every change<br/>needs the <span class="grad">full path</span>.</h2>
+
+    <p style="margin-bottom: 2rem;">The built-in task triage matches workflow depth to change size. Agents use judgment, and the compliance check catches under-triaging after push.</p>
+
+    <div class="grid-4" style="margin-top: 1rem;">
+      <div class="card">
+        <div style="font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .75rem;">
+          <span class="triage-dot" style="background:#6b7280"></span>Trivial
+        </div>
+        <p style="font-size: .85rem;">Edit directly. No spec, no plan, no review, no compliance.</p>
+      </div>
+      <div class="card">
+        <div style="font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #93c5fd; margin-bottom: .75rem;">
+          <span class="triage-dot" style="background:#93c5fd"></span>Small fix
+        </div>
+        <p style="font-size: .85rem;">Debug if needed. Targeted tests. Update docs only if behavior changes.</p>
+      </div>
+      <div class="card card-accent">
+        <div style="font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent2); margin-bottom: .75rem;">
+          <span class="triage-dot" style="background:var(--accent2)"></span>Feature
+        </div>
+        <p style="font-size: .85rem;">Living spec → plan → work → acceptance tests → review gates → PR.</p>
+      </div>
+      <div class="card card-red">
+        <div style="font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--danger); margin-bottom: .75rem;">
+          <span class="triage-dot" style="background:var(--danger)"></span>High-risk
+        </div>
+        <p style="font-size: .85rem;">Full path. Decision log mandatory. Missing spec or test evidence is a blocker.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 10. Skills ─────────────────────────────────────────────── -->
+  <section class="slide" id="skills">
+    <div class="slide-number">09 / Skills</div>
+    <div class="eyebrow">The skill system</div>
+    <h2>31 skills. One global install.<br/>Every agent runtime.</h2>
+
+    <div class="two-col" style="margin-top: 2rem; gap: 3rem;">
+      <div>
+        <p>Skills are <code>SKILL.md</code> files that agents read as workflow instructions. They're installed globally into <code>~/.agents/skills/</code> and symlinked to Claude Code, Codeium, and Windsurf automatically.</p>
+        <div class="divider"></div>
+        <p>Each skill is self-contained: trigger conditions, workflow steps, rules, and handoff contract. Agents invoke them by name. The runtime routes the call.</p>
+        <div class="divider"></div>
+        <p>Any skill can be replaced per-repo via <code>docs/workflow/config.yml</code> without touching the global install.</p>
+      </div>
+
+      <div>
+        <div style="margin-bottom: .75rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Core pipeline</div>
+        <div class="skill-grid" style="margin-bottom: 1.25rem;">
+          <span class="skill-pill core">aw-brainstorm</span>
+          <span class="skill-pill core">aw-create-spec</span>
+          <span class="skill-pill core">aw-plan</span>
+          <span class="skill-pill core">aw-work</span>
+          <span class="skill-pill core">aw-commit-push-pr</span>
+          <span class="skill-pill core">aw-monitor-pipeline</span>
+        </div>
+
+        <div style="margin-bottom: .75rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Knowledge capture</div>
+        <div class="skill-grid" style="margin-bottom: 1.25rem;">
+          <span class="skill-pill knowledge">aw-log-decision</span>
+          <span class="skill-pill knowledge">aw-record-retrospective</span>
+          <span class="skill-pill knowledge">aw-capture-solution</span>
+          <span class="skill-pill knowledge">aw-refresh-decisions</span>
+          <span class="skill-pill knowledge">aw-discover-standards</span>
+        </div>
+
+        <div style="margin-bottom: .75rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Ship &amp; maintain</div>
+        <div class="skill-grid">
+          <span class="skill-pill ship">aw-review-code</span>
+          <span class="skill-pill ship">aw-check-workflow-compliance</span>
+          <span class="skill-pill ship">aw-upgrade</span>
+          <span class="skill-pill ship">aw-simplify-code</span>
+          <span class="skill-pill ship">aw-resolve-pr-feedback</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 11. Config ─────────────────────────────────────────────── -->
+  <section class="slide" id="config">
+    <div class="slide-number">10 / Config</div>
+    <div class="eyebrow">Extensibility</div>
+    <h2>Enterprise-ready.<br/>Zero config to <span class="grad">get started</span>.</h2>
+
+    <div class="two-col" style="margin-top: 2rem; gap: 3rem;">
+      <div>
+        <p><code>docs/workflow/config.yml</code> lets teams replace any bundled skill with an enterprise-specific one, without touching AGENTS.md or the global install.</p>
+
+        <div class="divider"></div>
+
+        <p><strong>All values are optional.</strong> Blank means use the bundled default. Most repos never need to change anything.</p>
+
+        <div class="divider"></div>
+
+        <ul class="check-list">
+          <li>Custom ticket creation (Linear, Jira, internal)</li>
+          <li>Enterprise Slack research skill</li>
+          <li>Custom commit message format and templates</li>
+          <li>PR title/body templates from markdown files or URLs</li>
+          <li>Human reviewer lists for specs and plans</li>
+          <li>Post-PR CI provider (CircleCI, GitHub Actions, manual)</li>
+          <li>Implementation test policy per repo</li>
+        </ul>
+
+        <div class="divider"></div>
+
+        <p>When config shape changes, <code>aw-upgrade</code> migrates it, dry-run first, timestamped backup before apply, conflict detection.</p>
+      </div>
+
+      <div>
+        <div style="font-size: .8rem; color: var(--muted); margin-bottom: .6rem;">Override one route:</div>
+        <div class="code-block" style="font-size:.95rem; line-height: 2;">
+<span class="key">workflow:</span>
+  <span class="key">steps:</span>
+    <span class="key">commit_push_pr:</span>
+      <span class="key">skill:</span> <span class="str">enterprise-pr</span>
+        </div>
+
+        <div style="margin-top: 1.75rem; text-align: center; padding: 2rem 1rem; border: 1px dashed var(--border); border-radius: 12px;">
+          <div class="grad" style="font-size: 2.4rem; font-weight: 800; line-height: 1;">blank&nbsp;=&nbsp;default</div>
+          <p style="margin: .85rem auto 0; max-width: 34ch; font-size: .9rem;">Every key is optional. Set one only to override the bundled skill for that route. The full schema lives in the README.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 12. Knowledge loop ─────────────────────────────────────── -->
+  <section class="slide" id="knowledge">
+    <div class="slide-number">11 / Knowledge</div>
+    <div class="eyebrow">The feedback loop</div>
+    <h2>Context accumulates.<br/>It doesn't <span class="grad">evaporate</span>.</h2>
+
+    <p style="margin-bottom: 2.5rem;">Capture checkpoints are built into AGENTS.md, so decisions, corrections, and solutions get written down as they happen, for the agent and for the next person who opens the repo.</p>
+
+    <div class="grid-3" style="margin-bottom: 2.5rem;">
+      <div class="card card-accent">
+        <span class="icon">📌</span>
+        <h3>Decisions</h3>
+        <p>When ambiguity is resolved or a trade-off is made. Immutable. Referenced by future agents automatically.</p>
+        <div style="margin-top:.75rem; font-size:.78rem; color: var(--muted);">Trigger: resolve ambiguity, choose between options</div>
+      </div>
+      <div class="card" style="border-color: rgba(167,139,250,.3); background: rgba(167,139,250,.05);">
+        <span class="icon">🎓</span>
+        <h3>Retrospectives</h3>
+        <p>When the user corrects, redirects, or says "this should have worked differently." Prevents the same mistake next session.</p>
+        <div style="margin-top:.75rem; font-size:.78rem; color: var(--muted);">Trigger: correction, interruption, post-completion redirect</div>
+      </div>
+      <div class="card card-green">
+        <span class="icon">💡</span>
+        <h3>Solutions</h3>
+        <p>When a non-trivial bug, integration issue, or repeatable problem is solved. Becomes reusable team knowledge.</p>
+        <div style="margin-top:.75rem; font-size:.78rem; color: var(--muted);">Trigger: non-trivial problem solved, solution is repeatable</div>
+      </div>
+    </div>
+
+    <div class="card" style="max-width: 760px;">
+      <div style="font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .75rem;">How it compounds, for agents and people</div>
+      <div class="flow">
+        <span class="flow-step highlight">Decision or correction</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Captured in the repo</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step highlight">Agent reads it next session</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step highlight">Teammate reads it next sprint</span>
+      </div>
+      <p style="font-size: .9rem; color: var(--text-sub); margin-top: 1.1rem;">Observed building SkillStack: live documentation cut confusion among <strong>people</strong>, not just agents, fewer re-alignment meetings and fewer "wait, what are we building again?" cycles.</p>
+    </div>
+  </section>
+
+  <!-- ── 13. Upgrade ────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="slide-number">12 / Maintenance</div>
+    <div class="eyebrow">Upgradeable by design</div>
+    <h2>The workflow stays<br/>current <span class="grad">across repos</span>.</h2>
+
+    <div class="grid-3" style="margin-top: 2.5rem;">
+      <div class="card">
+        <span class="icon">🔢</span>
+        <h3>Version tracking</h3>
+        <p>Every installed repo gets <code>.agentic-workflow-version</code>. The installer reads <code>aw-version.txt</code>: one file to bump for a release.</p>
+      </div>
+      <div class="card card-accent">
+        <span class="icon">☁️</span>
+        <h3>Remote install</h3>
+        <p>The <code>--remote</code> flag fetches the latest installer and all skills directly from GitHub, or an internal mirror via <code>--source-url</code>. No local clone needed to update an existing install.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔄</span>
+        <h3>Config migration</h3>
+        <p><code>aw-upgrade</code> migrates old <code>config.yml</code> shapes safely: dry-run preview, timestamped backup, conflict detection, no silent data loss.</p>
+      </div>
+    </div>
+
+    <div class="divider" style="margin: 2.5rem 0;"></div>
+
+    <div style="display: flex; gap: 2.5rem 3.5rem; flex-wrap: wrap;">
+      <div class="stat">
+        <div class="num grad">31</div>
+        <div class="label">Bundled skills</div>
+      </div>
+      <div class="stat">
+        <div class="num grad">5</div>
+        <div class="label">Durable knowledge types</div>
+      </div>
+      <div class="stat">
+        <div class="num grad">28</div>
+        <div class="label">Configurable routes</div>
+      </div>
+      <div class="stat">
+        <div class="num grad">3</div>
+        <div class="label">Agent runtimes</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 14. Verdict ────────────────────────────────────────────── -->
+  <section class="slide" id="verdict">
+    <div class="slide-number">13 / Verdict</div>
+    <div class="eyebrow">Assessment</div>
+    <h2>Who it's for.<br/>What it <span class="grad">delivers</span>.</h2>
+
+    <div class="two-col" style="margin-top: 2rem; gap: 3rem; align-items: start;">
+      <div>
+        <div class="card card-green" style="margin-bottom: 1.25rem;">
+          <h3 style="margin-bottom: .75rem;">✓ Where it excels</h3>
+          <ul class="check-list">
+            <li>Cross-functional teams who lose intent between PRD, chat, and code</li>
+            <li>Multi-session projects where context compounds over weeks</li>
+            <li>Teams that write specs and log decisions, workflow makes them shared and live</li>
+            <li>Enterprise environments needing custom skill routing</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-color: rgba(251,191,36,.3); background: rgba(251,191,36,.04);">
+          <h3 style="margin-bottom: .75rem; color: #fbbf24;">⚠ Honest caveats</h3>
+          <ul class="x-list">
+            <li>Discipline-amplifier, not discipline-creator, won't force teams to keep specs alive</li>
+            <li>Triage boundaries rely on agent judgment, not hard rules</li>
+            <li>Higher ceremony than raw prompting for one-off scripts</li>
+          </ul>
+        </div>
+      </div>
+
+      <div>
+        <p class="big-quote">"A lone agent delivers a fraction of the value, because the collaboration problems are still there."</p>
+
+        <div class="divider" style="margin: 2rem 0;"></div>
+
+        <p>The leverage isn't a smarter agent. It's agents plus shared memory, live documentation, and decision tracking, all working the same source of truth your team does.</p>
+
+        <div class="divider" style="margin: 2rem 0;"></div>
+
+        <p>The outcome isn't better agents. It's <strong>smoother collaboration, agent to human, and human to human.</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 15. Close ──────────────────────────────────────────────── -->
+  <section class="slide" id="cover" style="text-align: center; align-items: center; background: radial-gradient(ellipse 80% 60% at 50% 110%, rgba(108,143,255,.12) 0%, transparent 70%);">
+    <div class="slide-number">14 / End</div>
+    <div class="eyebrow">Get started</div>
+    <h2 class="grad" style="font-size: clamp(1.8rem, 3vw, 3rem);">Two steps to install.</h2>
+
+    <div class="code-block" style="margin: 2rem auto; max-width: 620px; text-align: left;"><span class="cm"># 1. install the skills</span>
+npx skills add antonyjclements/agentic-workflow
+
+<span class="cm"># 2. scaffold your repo, in your agent</span>
+/aw-init</div>
+
+    <p style="max-width: 44ch; text-align: center; margin: 0 auto;">
+      Run it in Claude Code, Codeium, Windsurf, or any skills.sh-supported agent.<br/>
+      <strong>The workflow is already waiting.</strong>
+    </p>
+
+    <div style="margin-top: 3rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <a href="https://github.com/antonyjclements/agentic-workflow" style="display: inline-flex; align-items: center; gap: .5rem; padding: .65rem 1.4rem; background: var(--accent); color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: .9rem;">
+        GitHub →
+      </a>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // Highlight nav link for current section
+  const slides = document.querySelectorAll('.slide[id]');
+  const navLinks = document.querySelectorAll('nav .nav-links a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => {
+          a.style.color = a.getAttribute('href') === '#' + entry.target.id
+            ? 'var(--text)' : '';
+        });
+      }
+    });
+  }, { threshold: 0.4 });
+
+  slides.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

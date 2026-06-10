@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agentic Workflow: Technical Deep Dive</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: { preflight: false },
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0a0c11', surface: '#12141c', border: '#20242f', border2: '#2c313f',
+            accent: '#6c8fff', accent2: '#a78bfa', accent3: '#34d399', amber: '#fbbf24',
+            danger: '#f87171', muted: '#5f6675', text: '#e8eaf0', 'text-sub': '#9aa1b0', card: '#14171f'
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['"SF Mono"', '"Fira Code"', '"Cascadia Code"', '"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-width: 0; border-style: solid; }
+
+    :root {
+      --bg:       #0a0c11;
+      --surface:  #12141c;
+      --border:   #20242f;
+      --border2:  #2c313f;
+      --accent:   #6c8fff;
+      --accent2:  #a78bfa;
+      --accent3:  #34d399;
+      --amber:    #fbbf24;
+      --danger:   #f87171;
+      --muted:    #5f6675;
+      --text:     #e8eaf0;
+      --text-sub: #9aa1b0;
+      --card:     #14171f;
+      --mono: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Slides ─────────────────────────────────────────────────── */
+    .slide {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 7rem 7vw 5rem;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .slide-number {
+      position: absolute;
+      top: 4.5rem;
+      right: 3rem;
+      font-size: .72rem;
+      color: var(--muted);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+    }
+
+    /* ── Typography ─────────────────────────────────────────────── */
+    .eyebrow {
+      @apply text-[.72rem] font-semibold tracking-[.16em] uppercase text-accent mb-4 font-mono;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 4.5vw, 4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+    }
+
+    h2 {
+      font-size: clamp(1.7rem, 3.2vw, 2.8rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -.02em;
+      margin-bottom: 1.25rem;
+    }
+
+    h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: .5rem; }
+    h4 { font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: .75rem; font-family: var(--mono); }
+
+    p { color: var(--text-sub); font-size: 1rem; max-width: 68ch; }
+    p + p { margin-top: .75rem; }
+    strong { color: var(--text); font-weight: 600; }
+    code { font-family: var(--mono); font-size: .88em; color: var(--accent2); background: rgba(167,139,250,.08); padding: .1em .35em; border-radius: 4px; }
+
+    .grad { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .grad-green { background: linear-gradient(135deg, var(--accent3) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .grad-amber { background: linear-gradient(135deg, var(--amber) 0%, var(--danger) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* ── Layout helpers ─────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5rem; align-items: start; }
+    @media (max-width: 820px) {
+      .grid-2, .grid-3, .two-col { grid-template-columns: 1fr; gap: 1.5rem; }
+    }
+
+    .card {
+      @apply bg-card border border-border rounded-xl p-6;
+    }
+    .card-accent { border-color: rgba(108,143,255,.3); background: linear-gradient(135deg, rgba(108,143,255,.06), rgba(167,139,250,.03)); }
+    .card-green  { border-color: rgba(52,211,153,.3);  background: rgba(52,211,153,.05); }
+    .card-amber  { border-color: rgba(251,191,36,.3);  background: rgba(251,191,36,.04); }
+    .card-red    { border-color: rgba(248,113,113,.3); background: rgba(248,113,113,.05); }
+
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 1.75rem 0; }
+
+    /* ── Code / file blocks ─────────────────────────────────────── */
+    .code {
+      background: #07090d;
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      font-family: var(--mono);
+      font-size: .82rem;
+      line-height: 1.75;
+      overflow-x: auto;
+      color: #c4ccda;
+    }
+    .code .cm  { color: #5f6675; }
+    .code .kw  { color: #818cf8; }
+    .code .str { color: #34d399; }
+    .code .key { color: #93c5fd; }
+    .code .val { color: #fcd34d; }
+    .code .fn  { color: #a78bfa; }
+    .code .dir { color: #6c8fff; font-weight: 600; }
+    .code .dim { color: #4b5160; }
+
+    .code-caption { font-size: .72rem; color: var(--muted); font-family: var(--mono); margin-bottom: .5rem; letter-spacing: .04em; }
+
+    /* ── Comparison table (the centerpiece) ─────────────────────── */
+    .compare {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: .9rem;
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .compare th {
+      text-align: left;
+      padding: 1rem 1.25rem;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+      border-bottom: 1px solid var(--border2);
+    }
+    .compare th.dim-head { color: var(--muted); background: rgba(248,113,113,.04); }
+    .compare th.hot-head { color: var(--accent); background: rgba(108,143,255,.06); }
+    .compare th.axis-head { color: var(--text-sub); }
+    .compare td {
+      padding: .85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-sub);
+      vertical-align: top;
+    }
+    .compare tr:last-child td { border-bottom: none; }
+    .compare td.axis { font-weight: 600; color: var(--text); white-space: nowrap; }
+    .compare td.fw { background: rgba(248,113,113,.03); }
+    .compare td.om { background: rgba(108,143,255,.04); color: var(--text); }
+
+    /* ── Lists ──────────────────────────────────────────────────── */
+    .check-list, .x-list, .arrow-list { @apply list-none flex flex-col gap-[.55rem]; }
+    .check-list li, .x-list li, .arrow-list li { @apply flex items-baseline gap-[.6rem] text-[.92rem] text-text-sub; }
+    .check-list li::before { content: "✓"; color: var(--accent3); font-weight: 700; flex-shrink: 0; }
+    .x-list li::before { content: "✗"; color: var(--danger); font-weight: 700; flex-shrink: 0; }
+    .arrow-list li::before { content: "→"; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+    /* ── Tag / pill ─────────────────────────────────────────────── */
+    .tag {
+      @apply inline-block text-[.68rem] font-semibold tracking-[.06em] uppercase px-[.6rem] py-[.2rem] rounded-full font-mono;
+    }
+    .tag-blue  { background: rgba(108,143,255,.12); color: var(--accent);  border: 1px solid rgba(108,143,255,.25); }
+    .tag-green { background: rgba(52,211,153,.12);  color: var(--accent3); border: 1px solid rgba(52,211,153,.25); }
+    .tag-amber { background: rgba(251,191,36,.12);  color: var(--amber);   border: 1px solid rgba(251,191,36,.25); }
+    .tag-red   { background: rgba(248,113,113,.12); color: var(--danger);  border: 1px solid rgba(248,113,113,.25); }
+
+    /* ── Nav ────────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(10,12,17,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 2rem; height: 3.25rem;
+    }
+    nav .brand { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-right: auto; font-family: var(--mono); }
+    nav .brand .sub { color: var(--muted); font-weight: 500; }
+    nav .links { display: flex; }
+    nav .links a { font-size: .68rem; color: var(--muted); text-decoration: none; padding: 0 .75rem; line-height: 3.25rem; transition: color .15s; font-family: var(--mono); }
+    nav .links a:hover { color: var(--text); }
+    nav .deck-switch { font-size: .68rem; color: var(--accent2); text-decoration: none; padding: 0 0 0 1rem; margin-left: .75rem; border-left: 1px solid var(--border2); line-height: 3.25rem; font-family: var(--mono); }
+    @media (max-width: 980px) { nav .links { display: none; } }
+
+    /* ── Cover ──────────────────────────────────────────────────── */
+    #cover {
+      background: radial-gradient(ellipse 70% 50% at 50% -10%, rgba(108,143,255,.14) 0%, transparent 70%), var(--bg);
+      justify-content: center;
+    }
+    #cover .meta { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
+    #cover .meta .tag { font-size: .72rem; padding: .35rem .8rem; }
+    .nav-hint { position: absolute; bottom: 2.5rem; left: 7vw; font-size: .72rem; color: var(--muted); font-family: var(--mono); }
+
+    /* ── Big statement ──────────────────────────────────────────── */
+    .statement {
+      font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--text);
+      max-width: 24ch;
+    }
+    .statement .hl { color: var(--accent); }
+
+    .big-quote {
+      font-size: clamp(1.15rem, 2vw, 1.5rem);
+      font-weight: 500;
+      line-height: 1.45;
+      color: var(--text);
+      max-width: 60ch;
+      border-left: 3px solid var(--accent);
+      padding-left: 1.5rem;
+    }
+
+    /* ── Layer diagram ──────────────────────────────────────────── */
+    .layers { display: flex; flex-direction: column; gap: .65rem; }
+    .layer {
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 1rem 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .layer .lname { font-weight: 600; font-size: .95rem; min-width: 11rem; }
+    .layer .ldesc { font-size: .85rem; color: var(--text-sub); }
+    .layer.l-agent   { background: rgba(167,139,250,.07); border-color: rgba(167,139,250,.3); }
+    .layer.l-instr   { background: rgba(108,143,255,.07); border-color: rgba(108,143,255,.3); }
+    .layer.l-art     { background: rgba(52,211,153,.06);  border-color: rgba(52,211,153,.28); }
+    .layer.l-code    { background: var(--card); }
+    .layer-gap { text-align: center; color: var(--muted); font-size: .75rem; font-family: var(--mono); letter-spacing: .1em; padding: .15rem 0; }
+
+    /* ── Flow ───────────────────────────────────────────────────── */
+    .flow { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .flow-node {
+      background: var(--card); border: 1px solid var(--border2);
+      border-radius: 8px; padding: .5rem 1rem; font-size: .82rem; font-weight: 500; white-space: nowrap; font-family: var(--mono);
+    }
+    .flow-node.in  { border-color: rgba(52,211,153,.4);  color: var(--accent3); }
+    .flow-node.out { border-color: rgba(108,143,255,.4); color: var(--accent); }
+    .flow-node.fn  { border-color: rgba(167,139,250,.4); color: var(--accent2); background: rgba(167,139,250,.06); }
+    .flow-arrow { color: var(--muted); }
+
+    /* ── State machine ──────────────────────────────────────────── */
+    .states { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .state {
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: .45rem .9rem;
+      font-size: .82rem;
+      font-family: var(--mono);
+      font-weight: 500;
+    }
+    .state.active   { border-color: rgba(52,211,153,.5);  color: var(--accent3); background: rgba(52,211,153,.08); }
+    .state.terminal { border-color: rgba(248,113,113,.4); color: var(--danger); }
+    .state.start    { border-color: rgba(251,191,36,.4);  color: var(--amber); }
+    .state-arrow { color: var(--muted); font-size: .8rem; }
+
+    /* ── Invariant box ──────────────────────────────────────────── */
+    .invariant {
+      @apply border-l-[3px] border-accent3 bg-accent3/5 px-5 py-[.85rem] rounded-r-lg text-[.9rem] text-text-sub;
+    }
+    .invariant strong { color: var(--accent3); }
+
+    /* ── Stat ───────────────────────────────────────────────────── */
+    .stat-row { @apply flex gap-14 flex-wrap; }
+    .stat .num { font-size: 2.6rem; font-weight: 800; line-height: 1; font-family: var(--mono); }
+    .stat .label { font-size: .75rem; color: var(--muted); margin-top: .4rem; text-transform: uppercase; letter-spacing: .08em; }
+
+    /* ── Install footprint diagram ─────────────────────────────── */
+    .footprint {
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(0, .82fr);
+      gap: 1.25rem;
+      align-items: stretch;
+      margin-top: 1.75rem;
+    }
+    .footprint-panel {
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      background: rgba(20,23,31,.72);
+      padding: 1.25rem;
+    }
+    .footprint-panel.primary {
+      border-color: rgba(108,143,255,.35);
+      background: linear-gradient(135deg, rgba(108,143,255,.08), rgba(20,23,31,.8));
+    }
+    .footprint-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: baseline;
+      margin-bottom: 1rem;
+    }
+    .footprint-title {
+      font-family: var(--mono);
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .footprint-note {
+      font-size: .72rem;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+    .tile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .75rem;
+    }
+    .tile {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .85rem .9rem;
+      background: rgba(10,12,17,.45);
+      min-height: 5.35rem;
+    }
+    .tile.full { grid-column: 1 / -1; min-height: auto; }
+    .tile .path {
+      display: block;
+      font-family: var(--mono);
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: .35rem;
+    }
+    .tile .desc {
+      display: block;
+      font-size: .8rem;
+      color: var(--text-sub);
+      line-height: 1.35;
+    }
+    .runtime-list {
+      display: grid;
+      gap: .65rem;
+      margin-top: .9rem;
+    }
+    .runtime-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: .65rem .8rem;
+      font-family: var(--mono);
+      font-size: .78rem;
+      background: rgba(10,12,17,.45);
+    }
+    .runtime-row span:first-child { color: var(--text-sub); }
+    .runtime-row span:last-child { color: var(--accent3); }
+    .scope-bridge {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: .9rem;
+      align-items: center;
+      margin-top: 1rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .scope-bridge::before,
+    .scope-bridge::after {
+      content: "";
+      height: 1px;
+      background: var(--border2);
+    }
+    @media (max-width: 900px) {
+      .footprint { grid-template-columns: 1fr; }
+      .tile-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Structured diagrams ───────────────────────────────────── */
+    .chain-list,
+    .trace-list,
+    .binding-list {
+      display: grid;
+      gap: .65rem;
+    }
+    .chain-row,
+    .trace-row,
+    .binding-row {
+      display: grid;
+      grid-template-columns: minmax(8.5rem, .8fr) auto minmax(0, 1.2fr);
+      gap: .75rem;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .7rem .85rem;
+      background: rgba(10,12,17,.45);
+    }
+    .chain-row .skill,
+    .trace-row .skill,
+    .binding-row .role {
+      font-family: var(--mono);
+      color: var(--accent2);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .chain-row .artifact,
+    .trace-row .artifact,
+    .binding-row .impl {
+      font-family: var(--mono);
+      color: var(--accent3);
+      font-size: .8rem;
+      overflow-wrap: anywhere;
+    }
+    .chain-row .arrow,
+    .trace-row .arrow,
+    .binding-row .arrow {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: .8rem;
+    }
+    .trace-row {
+      grid-template-columns: minmax(8.5rem, .8fr) auto minmax(0, 1fr) auto;
+    }
+    .trace-row .state-label,
+    .binding-row .state-label {
+      justify-self: end;
+      font-family: var(--mono);
+      font-size: .68rem;
+      color: var(--amber);
+      border: 1px solid rgba(251,191,36,.25);
+      border-radius: 999px;
+      padding: .12rem .5rem;
+      background: rgba(251,191,36,.08);
+      white-space: nowrap;
+    }
+    .trace-row.highlight {
+      border-color: rgba(167,139,250,.35);
+      background: rgba(167,139,250,.06);
+    }
+    .projection {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: stretch;
+    }
+    .projection-box {
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      background: rgba(10,12,17,.45);
+      padding: 1rem;
+    }
+    .projection-box h4 {
+      color: var(--text);
+      margin-bottom: .85rem;
+    }
+    .decision-card {
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: .7rem .75rem;
+      margin-top: .55rem;
+      background: rgba(20,23,31,.72);
+    }
+    .decision-card .file {
+      display: block;
+      font-family: var(--mono);
+      color: var(--accent);
+      font-size: .76rem;
+      overflow-wrap: anywhere;
+    }
+    .decision-card .meta {
+      display: block;
+      color: var(--text-sub);
+      font-size: .78rem;
+      margin-top: .25rem;
+    }
+    .projection-arrow {
+      align-self: center;
+      color: var(--accent2);
+      font-family: var(--mono);
+      font-size: .75rem;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .binding-row {
+      grid-template-columns: minmax(8.5rem, .85fr) auto minmax(0, 1fr) auto;
+    }
+    .binding-row.default .impl { color: var(--text-sub); }
+    @media (max-width: 900px) {
+      .chain-row,
+      .trace-row,
+      .binding-row,
+      .projection {
+        grid-template-columns: 1fr;
+      }
+      .chain-row .arrow,
+      .trace-row .arrow,
+      .binding-row .arrow,
+      .projection-arrow {
+        display: none;
+      }
+      .trace-row .state-label,
+      .binding-row .state-label {
+        justify-self: start;
+      }
+    }
+
+    .note { font-size: .8rem; color: var(--muted); font-style: italic; }
+
+    /* ── Mobile ─────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      nav { padding: 0 1rem; }
+      .slide { padding: 5.5rem 6vw 3rem; }
+      .layer { flex-direction: column; align-items: flex-start; gap: .3rem; }
+      .layer .lname { min-width: 0; }
+      .stat-row { gap: 1.5rem 2.5rem; }
+      .scope-bridge { grid-template-columns: 1fr; }
+      .scope-bridge::before, .scope-bridge::after { display: none; }
+      .big-quote { padding-left: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">Agentic Workflow <span class="sub">/ technical</span></span>
+  <div class="links">
+    <a href="#premise">Premise</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#substrate">Substrate</a>
+    <a href="#anatomy">Anatomy</a>
+    <a href="#artifacts">Artifact FSM</a>
+    <a href="#contract">Contract</a>
+    <a href="#example">Example</a>
+    <a href="#decisions">Decisions</a>
+    <a href="#routing">Routing</a>
+    <a href="#determinism">Determinism</a>
+    <a href="#guarantees">Guarantees</a>
+  </div>
+  <a class="deck-switch" href="index.html">overview deck →</a>
+</nav>
+
+<!-- ── 1. Cover ──────────────────────────────────────────────────── -->
+<section class="slide" id="cover">
+  <div class="eyebrow">Technical Deep Dive</div>
+  <h1>The Operating Model<br/><span class="grad">behind agentic-workflow.</span></h1>
+  <p style="margin-top: 1.5rem; font-size: 1.1rem; max-width: 62ch;">What it actually takes to give an AI agent durable memory and sound judgment inside your codebase: the artifacts, the invariants, and the systems design underneath.</p>
+  <div class="meta">
+    <span class="tag tag-blue">Event-sourced decisions</span>
+    <span class="tag tag-green">DI-routed skills</span>
+    <span class="tag tag-amber">A real determinism boundary</span>
+  </div>
+  <div class="nav-hint">↓ scroll · or use the section nav above</div>
+</section>
+
+<!-- ── 2. Premise (the hook) ─────────────────────────────────────── -->
+<section class="slide" id="premise">
+  <div class="slide-number">01 / Premise</div>
+  <div class="eyebrow">Start here</div>
+  <h2>An agent is only as good as<br/>the context <span class="grad">you</span> give it.</h2>
+
+  <div class="two-col" style="margin-top: 2rem;">
+    <div>
+      <p style="font-size: 1.05rem;">Yes. It's just markdown an agent reads. No runtime, no library, no language binding. <strong>That part is obvious.</strong></p>
+      <div class="divider"></div>
+      <p style="font-size: 1.05rem;">The interesting part is the <strong>systems design layered on top of plain documents</strong>, to make an agent's context durable, current, and compounding instead of re-derived from scratch every session.</p>
+      <div class="divider"></div>
+      <p style="font-size: 1.05rem; color: var(--text);">And that context isn't only for the agent. It's the same memory your team reads, so the real problem is collaboration: human ↔ agent, and human ↔ human. From here, this deck is the engineering that makes that shared memory work.</p>
+    </div>
+    <div>
+      <div class="card card-accent">
+        <h4 style="color: var(--accent);">The shift</h4>
+        <p style="margin-bottom: 1rem;">Most agent tooling optimizes the <em>prompt</em>. This optimizes the <em>repo</em>: the persistent context your team and your agents both read before they act, and write after they learn.</p>
+        <p>Get that right and raw model capability stops being the bottleneck. <strong>Continuity does.</strong></p>
+        <div class="invariant" style="margin-top: 1.25rem;">
+          <strong>The bet:</strong> durable, well-structured context beats a cleverer prompt, every session, and more so over time.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 3. Roadmap (strap in) ─────────────────────────────────────── -->
+<section class="slide" id="roadmap">
+  <div class="slide-number">02 / Roadmap</div>
+  <div class="eyebrow">What we'll explore</div>
+  <h2>Battle-tested patterns,<br/>pointed at an agent's <span class="grad">context.</span></h2>
+
+  <p style="margin-bottom: 2rem;">No new magic. We took four patterns every engineer already trusts and aimed them at how an agent remembers and works. Here's the tour.</p>
+
+  <div class="grid-2" style="gap: 1.25rem;">
+    <div class="card card-accent">
+      <span style="font-size: 1.6rem;">🔁</span>
+      <h3 style="margin-top: .5rem;">Event sourcing for decisions</h3>
+      <p style="font-size: .88rem;">An immutable decision log with derived, regeneratable projections: current state without rewriting history.</p>
+    </div>
+    <div class="card card-accent">
+      <span style="font-size: 1.6rem;">🔌</span>
+      <h3 style="margin-top: .5rem;">Dependency injection for skills</h3>
+      <p style="font-size: .88rem;">Routing as data: the call site names a role, config binds the implementation. Swap any step without forking.</p>
+    </div>
+    <div class="card card-accent">
+      <span style="font-size: 1.6rem;">🔣</span>
+      <h3 style="margin-top: .5rem;">State machines for artifacts</h3>
+      <p style="font-size: .88rem;">Every artifact type has a lifecycle. The load-bearing invariant: mutable intent, immutable history.</p>
+    </div>
+    <div class="card card-accent">
+      <span style="font-size: 1.6rem;">⚖️</span>
+      <h3 style="margin-top: .5rem;">A determinism boundary</h3>
+      <p style="font-size: .88rem;">An explicit line between what's guaranteed in code and what's left to agent judgment, and why it's there.</p>
+    </div>
+  </div>
+
+  <p style="margin-top: 1.75rem; font-size: 1.05rem; color: var(--text); font-weight: 600;">The payoff: memory that compounds across sessions. <span class="grad">Strap in.</span></p>
+</section>
+
+<!-- ── 5. Execution substrate ────────────────────────────────────── -->
+<section class="slide" id="substrate">
+  <div class="slide-number">03 / Substrate</div>
+  <div class="eyebrow">What actually executes</div>
+  <h2>The agent <span class="grad">is</span> the interpreter.</h2>
+
+  <p style="margin-bottom: 2rem;">A classic framework has a deterministic runtime as its execution substrate. This operating model's substrate is an LLM agent. The "instructions" are natural language; the "interpreter" reasons over them probabilistically, so the context it reasons over is the whole game.</p>
+
+  <div class="layers">
+    <div class="layer l-agent">
+      <span class="lname" style="color: var(--accent2);">Agent (interpreter)</span>
+      <span class="ldesc">Reads instructions, reasons, decides which skill to invoke, writes artifacts. Probabilistic.</span>
+    </div>
+    <div class="layer-gap">▲ reads &amp; follows ▲</div>
+    <div class="layer l-instr">
+      <span class="lname" style="color: var(--accent);">Instruction layer</span>
+      <span class="ldesc"><code>AGENTS.md</code> + <code>SKILL.md</code> files, routing rules, lifecycle rules, handoff contracts. Prose.</span>
+    </div>
+    <div class="layer-gap">▲ reads &amp; writes ▲</div>
+    <div class="layer l-art">
+      <span class="lname" style="color: var(--accent3);">Artifact layer</span>
+      <span class="ldesc"><code>docs/</code>: specs, decisions, learnings, standards, plans. The repo's persistent memory.</span>
+    </div>
+    <div class="layer-gap" style="color: var(--border2);">— — — no coupling — — —</div>
+    <div class="layer l-code">
+      <span class="lname" style="color: var(--text-sub);">Application code</span>
+      <span class="ldesc">Your actual program. Untouched by the workflow's existence. Governed by it only via the agent.</span>
+    </div>
+  </div>
+
+  <p style="margin-top: 2rem;" class="note">The only deterministic code in the entire system is the installer (a shell script) and two small helper scripts. Everything else is interpreted by the agent.</p>
+</section>
+
+<!-- ── 6. Anatomy ────────────────────────────────────────────────── -->
+<section class="slide" id="anatomy">
+  <div class="slide-number">04 / Anatomy</div>
+  <div class="eyebrow">What gets installed</div>
+  <h2>The complete footprint.</h2>
+
+  <div class="footprint">
+    <div class="footprint-panel primary">
+      <div class="footprint-head">
+        <div class="footprint-title">Repo-local memory</div>
+        <div class="footprint-note">committed with the codebase</div>
+      </div>
+      <div class="tile-grid">
+        <div class="tile full">
+          <span class="path">AGENTS.md</span>
+          <span class="desc">The map every agent reads first: task triage, artifact rules, routing, capture checkpoints.</span>
+        </div>
+        <div class="tile">
+          <span class="path">docs/features/</span>
+          <span class="desc">Living specs and temporary plans for feature work.</span>
+        </div>
+        <div class="tile">
+          <span class="path">docs/decisions/</span>
+          <span class="desc">Immutable decision records with derived indexes and summaries.</span>
+        </div>
+        <div class="tile">
+          <span class="path">docs/product/prds/</span>
+          <span class="desc">Historical product inputs, imported or authored.</span>
+        </div>
+        <div class="tile">
+          <span class="path">docs/standards/</span>
+          <span class="desc">Enforceable conventions agents apply during work and review.</span>
+        </div>
+        <div class="tile">
+          <span class="path">docs/learnings/</span>
+          <span class="desc">Correction-driven lessons that prevent repeated mistakes.</span>
+        </div>
+        <div class="tile">
+          <span class="path">docs/workflow/</span>
+          <span class="desc">Config schema, skill overrides, test policy, reviewers, CI provider.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footprint-panel">
+      <div class="footprint-head">
+        <div class="footprint-title">Global skills</div>
+        <div class="footprint-note">installed once per machine</div>
+      </div>
+      <div class="tile full">
+        <span class="path">~/.agents/skills/</span>
+        <span class="desc">Canonical store for 31 bundled skills, each with its own SKILL.md workflow instructions.</span>
+      </div>
+      <div class="tile full" style="margin-top:.75rem;">
+        <span class="path">~/.agents/learnings/</span>
+        <span class="desc">Global lessons shared across repositories when the learning is not repo-specific.</span>
+      </div>
+      <div class="scope-bridge">symlinked into runtimes</div>
+      <div class="runtime-list">
+        <div class="runtime-row"><span>~/.claude/skills</span><span>→ skills</span></div>
+        <div class="runtime-row"><span>~/.codeium/skills</span><span>→ skills</span></div>
+        <div class="runtime-row"><span>~/.windsurf/skills</span><span>→ skills</span></div>
+      </div>
+      <div class="card" style="margin-top: 1rem; padding: 1rem;">
+        <h4 style="margin-bottom: .5rem;">Two scopes, one model</h4>
+        <p style="font-size:.84rem;">Repo-local files carry memory with the project. Global skills provide the reusable workflow instructions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 7. Artifact FSM ───────────────────────────────────────────── -->
+<section class="slide" id="artifacts">
+  <div class="slide-number">05 / Artifact lifecycle</div>
+  <div class="eyebrow">Each artifact is a state machine</div>
+  <h2>Lifecycle rules, <span class="grad">formalized.</span></h2>
+
+  <p style="margin-bottom: 2rem;">Artifact types are more than folders. Each has a defined lifecycle the operating model enforces. Five durable knowledge types carry state; plans are temporary. The distinction between <em>mutable intent</em> and <em>immutable record</em> is the load-bearing idea.</p>
+
+  <div class="grid-2" style="gap: 1.25rem;">
+    <div class="card">
+      <span class="tag tag-blue">Spec · living</span>
+      <div class="states" style="margin-top: 1rem;">
+        <span class="state start">draft</span>
+        <span class="state-arrow">→</span>
+        <span class="state active">active</span>
+        <span class="state-arrow">⟲</span>
+        <span class="state active">updated</span>
+      </div>
+      <p style="font-size: .85rem; margin-top: .85rem;">Mutated in place whenever behavior changes. Always reflects current truth. One per feature.</p>
+    </div>
+
+    <div class="card">
+      <span class="tag tag-red">Decision · immutable</span>
+      <div class="states" style="margin-top: 1rem;">
+        <span class="state active">active</span>
+        <span class="state-arrow">→</span>
+        <span class="state terminal">superseded</span>
+      </div>
+      <p style="font-size: .85rem; margin-top: .85rem;">Never edited after creation. Supersession creates a <em>new</em> file referencing the old. Append-only log.</p>
+    </div>
+
+    <div class="card">
+      <span class="tag tag-amber">PRD · historical</span>
+      <div class="states" style="margin-top: 1rem;">
+        <span class="state start">imported</span>
+        <span class="state-arrow">→</span>
+        <span class="state active">promoted</span>
+        <span class="state-arrow">→</span>
+        <span class="state terminal">archived</span>
+      </div>
+      <p style="font-size: .85rem; margin-top: .85rem;">Preserved as input, never treated as living truth. <code>archived</code> ⇒ removable; git is the archive.</p>
+    </div>
+
+    <div class="card">
+      <span class="tag tag-green">Learning · correction-driven</span>
+      <div class="states" style="margin-top: 1rem;">
+        <span class="state start">captured</span>
+        <span class="state-arrow">→</span>
+        <span class="state active">indexed</span>
+        <span class="state-arrow">→</span>
+        <span class="state active">applied next session</span>
+      </div>
+      <p style="font-size: .85rem; margin-top: .85rem;">Written on correction. Read at session start. Closes the mistake-repetition loop.</p>
+    </div>
+  </div>
+
+  <div class="invariant" style="margin-top: 1.5rem;">
+    <strong>Core invariant:</strong> intent is mutable, history is immutable. Specs are rewritten freely; decisions are never rewritten, only superseded. Everything else derives from these two rules.
+  </div>
+</section>
+
+<!-- ── 8. Handoff contract ───────────────────────────────────────── -->
+<section class="slide" id="contract">
+  <div class="slide-number">06 / Composition</div>
+  <div class="eyebrow">Skills compose by contract</div>
+  <h2>Skills are pure functions<br/>over <span class="grad">artifacts.</span></h2>
+
+  <div class="two-col" style="margin-top: 2rem;">
+    <div>
+      <p>Every skill obeys the same contract: take an artifact path (or identifier) as input, produce the next artifact path as output. The output of one step is the typed input of the next.</p>
+      <div class="divider"></div>
+      <p>This is what makes the pipeline traceable end-to-end, and what makes any step <strong>replaceable</strong>. A custom enterprise skill is valid as long as it honours the same input/output contract.</p>
+      <div class="divider"></div>
+      <div class="invariant">
+        <strong>Contract:</strong> accept the same handoff artifact, read relevant config, return the expected artifact path / ID, and report unsupported behavior explicitly.
+      </div>
+    </div>
+    <div>
+      <div class="code-caption">the handoff chain, output ⊳ input</div>
+      <div class="chain-list">
+        <div class="chain-row"><span class="skill">aw-import-prd</span><span class="arrow">⊳</span><span class="artifact">docs/product/prds/x.md</span></div>
+        <div class="chain-row"><span class="skill">aw-create-spec</span><span class="arrow">⊳</span><span class="artifact">docs/features/x/spec.md</span></div>
+        <div class="chain-row"><span class="skill">aw-plan</span><span class="arrow">⊳</span><span class="artifact">docs/features/x/plan.md</span></div>
+        <div class="chain-row"><span class="skill">aw-create-tickets</span><span class="arrow">⊳</span><span class="artifact">TICKET-123</span></div>
+        <div class="chain-row"><span class="skill">aw-work</span><span class="arrow">⊳</span><span class="artifact">branch + diff</span></div>
+        <div class="chain-row"><span class="skill">aw-commit-push-pr</span><span class="arrow">⊳</span><span class="artifact">github.com/…/pull/7</span></div>
+        <div class="chain-row"><span class="skill">aw-monitor-pipeline</span><span class="arrow">⊳</span><span class="artifact">green CI</span></div>
+      </div>
+      <p class="note" style="margin-top: 1rem;">A later agent can re-enter the chain at any node, e.g. cold-start from just <code>TICKET-123</code>: by loading the linked upstream artifacts.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Worked example ────────────────────────────────────────────── -->
+<section class="slide" id="example">
+  <div class="slide-number">07 / Worked example</div>
+  <div class="eyebrow">Everything, together</div>
+  <h2>One feature, <span class="grad">end to end.</span></h2>
+
+  <p style="margin-bottom: 1.75rem;">A request to add multi-factor auth, traced through the real skills and the real artifacts each one leaves behind. Because it touches auth, triage puts it in the <strong>high-risk tier</strong>: the full path, decision log mandatory. (The two cleverest pieces, decisions and routing, get their own slides next.)</p>
+
+  <div class="two-col" style="gap: 2.5rem; align-items: start;">
+    <div>
+      <div class="code-caption">trace, skill ⊳ artifact it produces</div>
+      <div class="card card-amber" style="padding:.8rem 1rem; margin-bottom:.75rem;">
+        <span style="font-family:var(--mono); font-size:.82rem; color:var(--amber);">request</span>
+        <span style="display:block; margin-top:.2rem; color:var(--text);">Add multi-factor authentication</span>
+      </div>
+      <div class="trace-list">
+        <div class="trace-row"><span class="skill">aw-import-prd</span><span class="arrow">⊳</span><span class="artifact">docs/product/prds/mfa.md</span><span class="state-label">imported</span></div>
+        <div class="trace-row"><span class="skill">aw-brainstorm</span><span class="arrow">⊳</span><span class="artifact">docs/features/mfa/spec.md</span><span class="state-label">living spec</span></div>
+        <div class="trace-row highlight"><span class="skill">aw-log-decision</span><span class="arrow">⊳</span><span class="artifact">decisions/…totp-over-sms.md</span><span class="state-label">immutable</span></div>
+        <div class="trace-row"><span class="skill">aw-plan</span><span class="arrow">⊳</span><span class="artifact">docs/features/mfa/plan.md</span><span class="state-label">temporary</span></div>
+        <div class="trace-row"><span class="skill">aw-create-tickets</span><span class="arrow">⊳</span><span class="artifact">MFA-101, MFA-102</span><span class="state-label">tickets</span></div>
+        <div class="trace-row"><span class="skill">aw-work</span><span class="arrow">⊳</span><span class="artifact">branch + diff</span><span class="state-label">2/2 tests</span></div>
+        <div class="trace-row highlight"><span class="skill">aw-record-retrospective</span><span class="arrow">⊳</span><span class="artifact">learnings/…clock-skew.md</span><span class="state-label">captured</span></div>
+        <div class="trace-row"><span class="skill">aw-commit-push-pr</span><span class="arrow">⊳</span><span class="artifact">github.com/…/pull/42</span><span class="state-label">PR</span></div>
+        <div class="trace-row"><span class="skill">aw-monitor-pipeline</span><span class="arrow">⊳</span><span class="artifact">green CI</span><span class="state-label">done</span></div>
+      </div>
+      <p class="note" style="margin-top: .9rem;">Each output is the next step's typed input. The chain is traceable from request to merged PR.</p>
+      <p class="note" style="margin-top: .4rem;">Here <code>aw-brainstorm</code> handles the ambiguous intake; with clear requirements, <code>aw-create-spec</code> writes the spec directly.</p>
+    </div>
+
+    <div>
+      <div class="card card-green" style="margin-bottom: 1.25rem;">
+        <h4 style="color: var(--accent3);">What the repo remembers afterward</h4>
+        <ul class="check-list" style="margin-top: .85rem; font-size: .9rem;">
+          <li><code>features/mfa/spec.md</code>: living intent, kept current</li>
+          <li><code>decisions/…totp-over-sms.md</code>: immutable, forever</li>
+          <li><code>learnings/…clock-skew.md</code>: auto-applied next session</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-bottom: 1.25rem;">
+        <h4 style="color: var(--muted);">What expires</h4>
+        <ul class="x-list" style="margin-top: .85rem; font-size: .9rem;">
+          <li><code>features/mfa/plan.md</code>: deleted; the job is done</li>
+          <li><code>prds/mfa.md</code>: archived; git keeps the history</li>
+        </ul>
+      </div>
+      <div class="invariant" style="font-size: .88rem;">
+        Six months later, an agent picking up <code>MFA-103</code> reads the spec, sees <em>why</em> TOTP was chosen, and won't re-litigate the clock-skew bug, none of which was in any chat window.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 9. Decision model ─────────────────────────────────────────── -->
+<section class="slide" id="decisions">
+  <div class="slide-number">08 / Decision model</div>
+  <div class="eyebrow">Immutability + projection</div>
+  <h2>Event sourcing,<br/>for <span class="grad">decisions.</span></h2>
+
+  <div class="two-col" style="margin-top: 2rem;">
+    <div>
+      <p>The decision registry borrows the event-sourcing pattern: the decision files are the <strong>immutable event log</strong>; the index and summaries are <strong>read projections</strong> rebuilt from that log.</p>
+      <div class="divider"></div>
+      <ul class="arrow-list">
+        <li><strong>Source of truth:</strong> individual decision <code>.md</code> files, append-only, never mutated</li>
+        <li><strong>Projection:</strong> <code>index.yml</code> + <code>summaries/&lt;tag&gt;.md</code>: fully regeneratable</li>
+        <li><strong>Rebuild:</strong> <code>aw-refresh-decisions</code> recomputes projections from the log</li>
+      </ul>
+      <div class="divider"></div>
+      <p>This resolves the tension every decision log hits: <em>"records must never change"</em> vs <em>"we need to know which are current."</em> Currency lives in the projection; truth lives in the log.</p>
+    </div>
+    <div>
+      <div class="code-caption">log → projection</div>
+      <div class="projection">
+        <div class="projection-box">
+          <h4>Immutable log</h4>
+          <div class="decision-card">
+            <span class="file">use-feature-dirs.md</span>
+            <span class="meta">record says: active</span>
+          </div>
+          <div class="decision-card">
+            <span class="file">use-single-plan.md</span>
+            <span class="meta">supersedes: use-feature-dirs</span>
+          </div>
+        </div>
+        <div class="projection-arrow">aw-refresh-decisions<br/>rebuilds</div>
+        <div class="projection-box">
+          <h4>Derived projection</h4>
+          <div class="decision-card">
+            <span class="file">use-feature-dirs</span>
+            <span class="meta">current status: superseded</span>
+          </div>
+          <div class="decision-card">
+            <span class="file">use-single-plan</span>
+            <span class="meta">current status: active</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-accent card" style="margin-top: 1.25rem; padding: 1rem 1.3rem;">
+        <p style="font-size: .85rem; color: var(--text-sub);">The original file still says <code>status: active</code> in its own frontmatter, and that's correct. The projection holds current state; the record holds what was true when written.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 10. Routing / indirection ─────────────────────────────────── -->
+<section class="slide" id="routing">
+  <div class="slide-number">09 / Routing</div>
+  <div class="eyebrow">Indirection layer</div>
+  <h2><code style="font-size:inherit">config.yml</code> is dependency injection<br/>for <span class="grad">skills.</span></h2>
+
+  <div class="two-col" style="margin-top: 2rem;">
+    <div>
+      <p>Every configurable step resolves through one indirection: read <code>workflow.steps.&lt;step&gt;.skill</code>; if blank, use the bundled default. This is dependency injection, the call site names a <em>role</em>, the config binds the <em>implementation</em>.</p>
+      <div class="divider"></div>
+      <ul class="arrow-list">
+        <li><strong>15 core steps</strong>, the sequential pipeline</li>
+        <li><strong>13 auxiliary helpers</strong>, invoked from within steps</li>
+        <li><strong>Blank = default</strong>, zero config to start</li>
+        <li><strong>Bound = override</strong>, swap in Linear, Jira, enterprise commit, internal Slack search…</li>
+      </ul>
+      <div class="divider"></div>
+      <p>Because routing is data, not code, an org customizes the entire workflow without forking a single skill, and <code>aw-upgrade</code> migrates the config shape forward with dry-run + backup + conflict detection.</p>
+    </div>
+    <div>
+      <div class="code-caption">role → implementation binding</div>
+      <div class="binding-list">
+        <div class="binding-row default">
+          <span class="role">create_tickets</span>
+          <span class="arrow">→</span>
+          <span class="impl">aw-create-tickets</span>
+          <span class="state-label">blank = default</span>
+        </div>
+        <div class="binding-row">
+          <span class="role">commit_push_pr</span>
+          <span class="arrow">→</span>
+          <span class="impl">enterprise-pr</span>
+          <span class="state-label">override</span>
+        </div>
+        <div class="binding-row">
+          <span class="role">research_slack</span>
+          <span class="arrow">→</span>
+          <span class="impl">corp-slack-search</span>
+          <span class="state-label">auxiliary</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1rem; padding:1rem;">
+        <h4 style="margin-bottom:.45rem;">Resolution rule</h4>
+        <p style="font-size:.84rem;">The agent calls the configured skill when one is bound; otherwise it uses the bundled default for that role.</p>
+      </div>
+      <div class="invariant" style="margin-top: 1.25rem;">
+        <strong>Liskov for skills:</strong> any override must be substitutable for the default, same contract in, same contract out.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 11. Determinism boundary ──────────────────────────────────── -->
+<section class="slide" id="determinism">
+  <div class="slide-number">10 / Determinism</div>
+  <div class="eyebrow">Where determinism lives</div>
+  <h2>Draw the line between<br/><span class="grad-green">deterministic</span> and <span class="grad">probabilistic.</span></h2>
+
+  <p style="margin-bottom: 2rem;">A mature operating model is explicit about which parts are guaranteed and which are interpreted. Putting the boundary in the wrong place is how these systems fail.</p>
+
+  <div class="grid-2">
+    <div class="card card-green">
+      <h4 style="color: var(--accent3);">Deterministic, code</h4>
+      <ul class="check-list" style="margin-top: .85rem;">
+        <li>Installer: which files are written, where</li>
+        <li>Version stamping &amp; the upgrade migration</li>
+        <li>Symlink wiring across runtimes</li>
+        <li>Config schema validation &amp; backup</li>
+        <li>Smoke test assertions</li>
+      </ul>
+      <p class="note" style="margin-top: 1rem;">Shell + Ruby. Tested. Reproducible. No model involved.</p>
+    </div>
+    <div class="card card-accent">
+      <h4 style="color: var(--accent);">Probabilistic, agent</h4>
+      <ul class="arrow-list" style="margin-top: .85rem;">
+        <li>Which triage tier a change belongs to</li>
+        <li>When to capture a decision or learning</li>
+        <li>How a spec is written and updated</li>
+        <li>How the configured test policy is applied</li>
+        <li>Whether two decisions actually conflict</li>
+        <li>Skill selection for ambiguous requests</li>
+      </ul>
+      <p class="note" style="margin-top: 1rem;">Interpreted from prose. Judgment, not guarantee.</p>
+    </div>
+  </div>
+
+  <div class="invariant" style="margin-top: 1.5rem; border-left-color: var(--amber); background: rgba(251,191,36,.05);">
+    <strong style="color: var(--amber);">Design rule:</strong> anything that must be <em>guaranteed</em> (install integrity, no data loss on upgrade, immutability of records) is pushed into deterministic code. Everything requiring <em>judgment</em> is left to the agent, with review gates as the backstop.
+  </div>
+
+  <div class="invariant" style="margin-top: 1rem; border-left-color: var(--accent2); background: rgba(167,139,250,.06);">
+    <strong style="color: var(--accent2);">Quality gates:</strong> <code>test_policy</code> guides implementation style (TDD, BDD, characterization-first, or explicit verification); <code>aw-review-spec</code> checks spec drift; <code>aw-check-workflow-compliance</code> checks process adherence.
+  </div>
+</section>
+
+<!-- ── 12. Guarantees & failure modes ────────────────────────────── -->
+<section class="slide" id="guarantees">
+  <div class="slide-number">11 / Guarantees</div>
+  <div class="eyebrow">What it does &amp; doesn't promise</div>
+  <h2>Honest <span class="grad">guarantees.</span></h2>
+
+  <div class="grid-2" style="margin-top: 2rem;">
+    <div class="card card-green">
+      <h4 style="color: var(--accent3);">Guaranteed (by construction)</h4>
+      <ul class="check-list" style="margin-top: .85rem;">
+        <li>Zero runtime coupling, removable without breaking the app</li>
+        <li>Decision records are never silently mutated</li>
+        <li>Upgrades back up before they migrate; no silent data loss</li>
+        <li>Context that <em>is</em> captured is available to the next session</li>
+        <li>The same install works across stacks and runtimes</li>
+      </ul>
+    </div>
+    <div class="card card-amber">
+      <h4 style="color: var(--amber);">Not guaranteed (requires discipline)</h4>
+      <ul class="x-list" style="margin-top: .85rem;">
+        <li>That specs stay current, the model amplifies discipline, it can't create it</li>
+        <li>That every decision gets logged, capture is prompted, not forced</li>
+        <li>That TDD/BDD is perfectly followed, policy guides the agent and review exposes misses</li>
+        <li>That triage is always right. It's agent judgment</li>
+        <li>Deterministic output for the same input, the substrate is probabilistic</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="big-quote">An operating model can't compile your discipline into existence. It can make discipline cheap to follow and expensive to skip, and then make the gap visible when you skip it anyway.</p>
+</section>
+
+<!-- ── 13. Close ─────────────────────────────────────────────────── -->
+<section class="slide" id="cover" style="background: radial-gradient(ellipse 70% 50% at 50% 110%, rgba(108,143,255,.12) 0%, transparent 70%), var(--bg);">
+  <div class="slide-number">12 / Principles</div>
+  <div class="eyebrow">Design principles, distilled</div>
+  <h2>The five ideas <span class="grad">underneath.</span></h2>
+
+  <div class="layers" style="margin-top: 2rem; max-width: 900px;">
+    <div class="layer l-instr"><span class="lname">1 · No runtime</span><span class="ldesc">The agent is the interpreter; the repo supplies only intent and memory.</span></div>
+    <div class="layer l-art"><span class="lname">2 · Memory over orchestration</span><span class="ldesc">Persist context in the repo; let the agent orchestrate against it.</span></div>
+    <div class="layer l-agent"><span class="lname">3 · Mutable intent, immutable history</span><span class="ldesc">Rewrite specs; never rewrite decisions, only supersede and project.</span></div>
+    <div class="layer l-instr"><span class="lname">4 · Routing is data</span><span class="ldesc">Bind roles to implementations in config; customize without forking.</span></div>
+    <div class="layer l-art"><span class="lname">5 · Determinism where it must be guaranteed</span><span class="ldesc">Code for integrity; agent judgment for everything else.</span></div>
+  </div>
+
+  <p style="margin-top: 1.5rem; font-size: .9rem; color: var(--text-sub); max-width: 70ch;">Not a framework like BMAD or SpecKit. Those drive a prescribed process. An operating model defines how work is done and lets the agent run it.</p>
+
+  <div class="stat-row" style="margin-top: 3rem;">
+    <div class="stat"><div class="num grad">0</div><div class="label">Runtime deps</div></div>
+    <div class="stat"><div class="num grad">31</div><div class="label">Skills</div></div>
+    <div class="stat"><div class="num grad">5</div><div class="label">Durable knowledge types</div></div>
+    <div class="stat"><div class="num grad">∞</div><div class="label">Stacks supported</div></div>
+  </div>
+
+  <p style="margin-top: 2.5rem;"><a href="index.html" style="color: var(--accent2); text-decoration: none; font-family: var(--mono); font-size: .85rem;">← back to the overview deck</a></p>
+</section>
+
+<script>
+  const slides = document.querySelectorAll('.slide[id]');
+  const links = document.querySelectorAll('nav .links a');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.style.color = a.getAttribute('href') === '#' + e.target.id ? 'var(--text)' : '');
+      }
+    });
+  }, { threshold: 0.4 });
+  slides.forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>
