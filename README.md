@@ -117,7 +117,9 @@ skills/aw-init/scripts/install.sh --skip-skill-links --repo /path/to/repo
 
 ## Mental Model
 
-Use five kinds of durable context:
+### Durable context
+
+Five artifact types compound over time and live permanently in the repo:
 
 - **PRDs** preserve external product input or authored product requirements as source artifacts.
 - **Specs** describe what a feature is now.
@@ -125,12 +127,14 @@ Use five kinds of durable context:
 - **Decisions** record why a choice was made.
 - **Learnings** capture corrections that should change future agent behavior.
 
-Session memory adds a two-layer synthesis loop on top of that:
+### Transient and synthesized context
+
+Two additional artifact types form the memory synthesis loop:
 
 - **Session logs** (`docs/sessions/`) are transient synthesis input. Each log captures what was attempted, what worked, corrections made, and dead ends hit. Logs are written by `aw-log-session`, consumed by `aw-synthesize-memory`, and removed once their retention window expires. They are not durable project knowledge — they are raw material.
 - **The context wiki** (`docs/context/wiki.md`) is a generated artifact, not a source artifact. It is a compact summary of active features, recent decisions, top learnings, and known dead ends, regenerated in full on each synthesis run. Agents read it at session start for a head-start on project context. Never edit it manually.
 
-The rule:
+### The rule
 
 - If it describes intent, keep it alive.
 - If it is an imported PRD, preserve it as historical input. If it is authored in-repo, treat it as product input for specs.
