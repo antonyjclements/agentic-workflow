@@ -59,6 +59,10 @@ workflow:
       skill: ""
     resolve_pr_feedback:
       skill: ""
+    log_session:
+      skill: ""
+    synthesize_memory:
+      skill: ""
 pull_request:
   template:
     title: ""
