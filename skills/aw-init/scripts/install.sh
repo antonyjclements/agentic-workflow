@@ -21,10 +21,11 @@ What it does:
   1. Installs skills globally when a skills source is available.
   2. Installs AGENTS.md and CLAUDE.md into the repo root.
   3. Symlinks Claude Code, Codeium, and Windsurf skill dirs to the global skills directory when safe.
-  4. Creates repo-local docs/product/prds, docs/brainstorms, docs/features, docs/standards, docs/decisions, docs/learnings, and docs/workflow config if missing.
+  4. Creates repo-local docs/product/prds, docs/brainstorms, docs/features, docs/standards, docs/decisions, docs/learnings, docs/sessions, and docs/workflow config if missing.
   5. Writes .agentic-workflow-version.
   6. Creates global ~/.agents/learnings/index.yml if missing.
-  7. Prints recommended next steps.
+  7. Installs .claude/hooks/log-session.sh and merges a Stop hook into .claude/settings.json for automatic session logging (Claude Code only).
+  8. Prints recommended next steps.
 
 Existing files are preserved unless --force is passed.
 Existing non-symlink skill directories are always preserved.
@@ -516,6 +517,68 @@ install_global_learnings() {
   write_file_if_missing "$learnings_dir/index.yml" "learnings: []"
 }
 
+install_claude_hooks() {
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "hooks skip: python3 not available for .claude/settings.json merge"
+    return 0
+  fi
+
+  local hook_src="$source_dir/skills/aw-log-session/hooks/log-session.sh"
+  if [ ! -f "$hook_src" ]; then
+    echo "hooks skip: log-session.sh not found at $hook_src"
+    return 0
+  fi
+
+  local hook_dest="$repo_dir/.claude/hooks/log-session.sh"
+  mkdir -p "$(dirname "$hook_dest")"
+  if prompt_overwrite "$hook_dest"; then
+    cp "$hook_src" "$hook_dest"
+    chmod +x "$hook_dest"
+    echo "write: $hook_dest"
+  fi
+
+  local settings_file="$repo_dir/.claude/settings.json"
+  mkdir -p "$(dirname "$settings_file")"
+
+  local result
+  result=$(python3 - "$settings_file" '$CLAUDE_PROJECT_DIR/.claude/hooks/log-session.sh' <<'PYEOF'
+import json, sys
+
+settings_path = sys.argv[1]
+hook_cmd = sys.argv[2]
+
+try:
+    with open(settings_path) as f:
+        settings = json.load(f)
+except Exception:
+    settings = {}
+
+hooks = settings.setdefault("hooks", {})
+stop_hooks = hooks.setdefault("Stop", [])
+
+already_present = any(
+    any(h.get("command") == hook_cmd for h in entry.get("hooks", []))
+    for entry in stop_hooks
+)
+
+if not already_present:
+    stop_hooks.append({"hooks": [{"type": "command", "command": hook_cmd}]})
+    with open(settings_path, "w") as f:
+        json.dump(settings, f, indent=2)
+        f.write("\n")
+    print("merged")
+else:
+    print("already-present")
+PYEOF
+  )
+
+  case "$result" in
+    merged)          echo "write: $settings_file (Stop hook added)" ;;
+    already-present) echo "preserve: $settings_file (Stop hook already present)" ;;
+    *)               echo "hooks warning: unexpected result merging $settings_file: $result" ;;
+  esac
+}
+
 resolve_source
 
 if [ "$skip_skills" -ne 1 ]; then
@@ -527,6 +590,7 @@ fi
 
 if [ "$skip_repo" -ne 1 ]; then
   install_repo_files
+  install_claude_hooks
 fi
 
 install_global_learnings
@@ -548,4 +612,7 @@ Next steps:
 5. If importing an external PRD, run: aw-import-prd. If authoring a PRD from an idea, run: aw-create-prd.
 6. Continue the handoff chain: aw-brainstorm -> aw-plan -> aw-create-tickets or aw-work. Use aw-create-spec directly only when requirements are already clear.
 7. Keep README.md updated when setup, commands, configuration, architecture, or workflow behavior changes.
+8. Session logging is now automatic for Claude Code: .claude/hooks/log-session.sh fires when each session ends.
+   Run aw-synthesize-memory periodically to distill session logs into learnings and refresh docs/context/wiki.md.
+   Other agents (Codex, Codeium, Windsurf) can invoke aw-log-session manually; the session log format is cross-agent.
 EOF
