@@ -54,6 +54,15 @@ docs/context/wiki.md          # destination: regenerated project wiki
 5. If a pattern appears in three or more sessions and looks like an enforceable convention, surface it to the user as a candidate for `docs/standards/`. Do not write the standard without confirmation.
 6. Regenerate `docs/context/wiki.md` in full from the current state of specs, decisions, learnings, and session summaries (see format below).
 7. Mark each processed session `status: processed` in `docs/sessions/index.yml`.
+8. Remove processed session logs older than 14 days (or two sprints, whichever is longer) from `docs/sessions/` and drop their entries from `docs/sessions/index.yml`. Git history is the long-term archive for raw session data.
+
+## Retention
+
+Processed session logs do not need to live in the repo indefinitely. Once synthesis has run, their signal exists in `docs/learnings/` and `docs/context/wiki.md`. Keeping stale processed logs creates noise without adding value.
+
+Default retention window: **14 days** after the session date, or the end of the current sprint if the team works in sprints — whichever is longer. Remove logs that fall outside the window during step 8 of each synthesis run.
+
+If no synthesis has run yet, do not remove any logs regardless of age — unprocessed logs are still raw material.
 
 ## Context Wiki Format
 
