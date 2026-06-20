@@ -139,6 +139,8 @@ Two additional artifact types form the memory synthesis loop:
 
 ### The rule
 
+When in doubt, prefer a session log over a durable artifact. Durable artifacts should represent knowledge worth rediscovering months from now, not simply facts learned during implementation. The synthesis loop exists so transient knowledge can earn durability through repetition, not assumption.
+
 - If it describes intent, keep it alive.
 - If it is an imported PRD, preserve it as historical input. If it is authored in-repo, treat it as product input for specs.
 - If it describes a plan, let it expire.
