@@ -134,15 +134,22 @@ Five artifact types compound over time and live permanently in the repo:
 
 Two additional artifact types form the memory synthesis loop:
 
-- **Session logs** (`docs/sessions/`) are transient synthesis input. Each log captures what was attempted, what worked, corrections made, and dead ends hit. Logs are written by `aw-log-session`, consumed by `aw-synthesize-memory`, and removed once their retention window expires. They are not durable project knowledge — they are raw material.
-- **The context wiki** (`docs/context/wiki.md`) is a generated artifact, not a source artifact. It is a compact summary of active features, recent decisions, top learnings, and known dead ends, regenerated in full on each synthesis run. Agents read it at session start for a head-start on project context. Never edit it manually.
+- **Session logs** (`docs/sessions/`) are transient synthesis input — raw material written by
+  `aw-log-session` and consumed by `aw-synthesize-memory`. They are not durable project
+  knowledge; they decay once their signal has been promoted to learnings.
+- **The context wiki** (`docs/context/wiki.md`) is a generated artifact, never a source artifact.
+  Regenerated in full on each synthesis run, it gives agents a compact project briefing at
+  session start. Never edit it manually.
 
 ### The rule
 
-When in doubt, prefer a session log over a durable artifact. Durable artifacts should represent knowledge worth rediscovering months from now, not simply facts learned during implementation. The synthesis loop exists so transient knowledge can earn durability through repetition, not assumption.
+When in doubt, prefer a session log over a durable artifact. Durable artifacts represent
+knowledge worth rediscovering months from now, not facts learned during implementation. The
+synthesis loop exists so transient knowledge can earn durability through repetition, not
+assumption.
 
 - If it describes intent, keep it alive.
-- If it is an imported PRD, preserve it as historical input. If it is authored in-repo, treat it as product input for specs.
+- If it is an imported PRD, preserve it as historical input. If authored in-repo, treat it as product input for specs.
 - If it describes a plan, let it expire.
 - If it describes a decision, log it immutably.
 - If it is a processed session log, let it decay once its signal has been promoted to learnings.
