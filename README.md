@@ -728,7 +728,7 @@ AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/
 
 ## Included Skills
 
-- `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, and global learnings index
+- `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, global learnings index, and bundled `docs/standards/coding-approach.md`
 - `aw-upgrade`: upgrade existing installs and safely migrate older `docs/workflow/config.yml` shapes
 - `aw-import-prd`: persist pasted/file/link PRDs in `docs/product/prds/`
 - `aw-create-prd`: author PRDs from ideas, brainstorms, or notes using a repo-defined template when available

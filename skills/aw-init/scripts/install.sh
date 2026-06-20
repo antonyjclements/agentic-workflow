@@ -411,7 +411,14 @@ install_repo_files() {
   copy_prompted "$artifact_dir/prd-template.md" "$repo_dir/docs/product/prds/template.md"
   write_file_if_missing "$repo_dir/docs/brainstorms/index.yml" "brainstorms: []"
   write_file_if_missing "$repo_dir/docs/features/index.yml" "features: []"
-  write_file_if_missing "$repo_dir/docs/standards/index.yml" "standards: []"
+  write_file_if_missing "$repo_dir/docs/standards/index.yml" "standards:
+  - path: docs/standards/coding-approach.md
+    title: Coding Approach
+    tags:
+      - implementation
+      - simplicity
+      - code-quality"
+  copy_prompted "$artifact_dir/coding-approach.md" "$repo_dir/docs/standards/coding-approach.md"
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
   write_file_if_missing "$repo_dir/docs/sessions/index.yml" "sessions: []"
