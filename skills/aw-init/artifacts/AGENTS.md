@@ -261,6 +261,14 @@ Supported values:
 - Before commit/PR, check whether the diff changes anything a future user needs to know. If yes, update `README.md`; if no, state why no README update was needed.
 - Do not let README instructions drift from `AGENTS.md`, `docs/workflow/config.yml`, installer behavior, or skill names.
 
+### Artifact Discipline
+
+Before creating a durable artifact, ask: is this knowledge worth rediscovering months from now? If not, prefer a session log and let `aw-synthesize-memory` decide whether it earns a permanent record through repetition.
+
+Durable artifacts — decisions, learnings, standards, spec updates — represent knowledge that compounds across many future sessions. Session logs represent knowledge that informed this session. Default to the session log when uncertain.
+
+Do not create durable artifacts from facts that only matter for the current implementation, corrections unlikely to recur, or decisions that will be self-evident from the code.
+
 ### Capture Checkpoints
 
 Do not rely on the user to remember capture skills. At natural pauses, proactively check whether knowledge should be written back.
