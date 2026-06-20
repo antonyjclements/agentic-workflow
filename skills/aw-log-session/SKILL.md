@@ -113,6 +113,19 @@ Examples:
 - `2026-06-19-add-session-memory.md`
 - `2026-06-19-fix-auth-bug.md`
 
+## Automation (Claude Code)
+
+`aw-init` installs a Stop hook for Claude Code that runs this skill automatically when each session ends:
+
+```text
+.claude/hooks/log-session.sh    # hook script
+.claude/settings.json           # Stop hook registration
+```
+
+The hook receives the session transcript path via stdin and spawns a non-interactive `claude --print` subprocess to write the log. A lock file (`.claude/hooks/.aw-log-session-active`) prevents the subprocess from triggering the hook again recursively.
+
+Other agents (Codex, Codeium, Windsurf) do not have an equivalent lifecycle hook but can invoke `aw-log-session` manually. The session log format is cross-agent — all logs land in `docs/sessions/` and are processed identically by `aw-synthesize-memory`.
+
 ## Final Output
 
 Report:

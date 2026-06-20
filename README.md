@@ -52,6 +52,9 @@ The installer:
   - `docs/decisions/index.yml`
   - `docs/learnings/index.yml`
   - `docs/sessions/index.yml`
+- installs a Claude Code Stop hook for automatic session logging:
+  - `.claude/hooks/log-session.sh`
+  - `.claude/settings.json` (Stop hook entry merged in)
 - creates repo-local PRD template if missing:
   - `docs/product/prds/template.md`
 - creates repo-local workflow config if missing:
@@ -683,8 +686,15 @@ Use aw-record-retrospective if this should affect future agent behavior, and use
 
 ### Session Memory
 
+For Claude Code, session logging is automatic. The Stop hook installed by `aw-init` fires when each session ends and writes a log to `docs/sessions/` without any manual step.
+
+For other agents (Codex, Codeium, Windsurf), invoke `aw-log-session` manually at session end. The log format is cross-agent — all logs land in `docs/sessions/` and are processed identically.
+
 ```text
-At session end, use aw-log-session to record what was attempted, what worked, any corrections, and dead ends.
+# manual invocation (any agent)
+Use aw-log-session to record what was attempted, what worked, any corrections, and dead ends.
+
+# synthesis (any agent, run periodically)
 After a sprint or when several unprocessed session logs have accumulated, use aw-synthesize-memory to distill logs into learnings and regenerate docs/context/wiki.md.
 ```
 
@@ -718,7 +728,7 @@ AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/
 
 ## Included Skills
 
-- `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, and global learnings index
+- `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, global learnings index, and bundled `docs/standards/coding-approach.md`
 - `aw-upgrade`: upgrade existing installs and safely migrate older `docs/workflow/config.yml` shapes
 - `aw-import-prd`: persist pasted/file/link PRDs in `docs/product/prds/`
 - `aw-create-prd`: author PRDs from ideas, brainstorms, or notes using a repo-defined template when available
