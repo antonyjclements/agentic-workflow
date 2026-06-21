@@ -11,6 +11,18 @@ This repo helps you install the same agent operating model into any codebase:
 
 The goal is not to adopt a framework. The goal is to make your repo the source of truth that agents read from and write back to.
 
+## When to use this
+
+The workflow pays back most on mature, multi-quarter, multi-contributor codebases. The discipline cost is front-loaded; the value is back-loaded. On a brand-new project there is nothing to synthesize yet.
+
+That said, some parts of the system pay back from the start:
+
+- **Decisions and session logs** are worth capturing immediately — even on a new project, the cost of reconstructing "why did we choose X?" is real and arrives sooner than expected.
+- **Learnings and synthesis** start paying back after 4–8 sessions, once patterns emerge across sessions and `aw-synthesize-memory` has material to work with.
+- **Context wiki and standards** earn their keep around the two-month mark or when a second contributor joins and shared context becomes a bottleneck.
+
+Install the workflow on any project. Start with decisions and session logs. Let the rest earn its place as the project matures.
+
 ## Presentations
 
 - [Overview deck](https://antonyjclements.github.io/agentic-workflow/) — the adoption story: the collaboration problems product teams already have, shared living memory, and the workflow that fixes both human↔agent and human↔human.

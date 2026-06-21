@@ -261,6 +261,24 @@ Supported values:
 - Before commit/PR, check whether the diff changes anything a future user needs to know. If yes, update `README.md`; if no, state why no README update was needed.
 - Do not let README instructions drift from `AGENTS.md`, `docs/workflow/config.yml`, installer behavior, or skill names.
 
+### Workflow Maturity
+
+Not all artifact types pay back at every project stage. Activate them progressively rather than all at once.
+
+**New project (fewer than four sessions)**
+Log decisions and session logs. The overhead of learnings, synthesis, and a wiki exceeds the payback when there is no accumulated history to synthesize.
+
+**Early project (four or more sessions, roughly one month)**
+Run `aw-synthesize-memory` for the first time. If patterns are emerging across sessions, promote them to learnings. Skip wiki generation until there is enough signal to make it useful.
+
+**Growing project (two or more months or two or more active contributors)**
+The context wiki earns its place when onboarding or cross-session continuity becomes a pain point. Standards become worth maintaining when the same conventions need enforcing repeatedly.
+
+**Mature project (multi-quarter, multi-contributor)**
+The full workflow compounds: specs, plans, tickets, decisions, learnings, standards, wiki, and synthesis all reinforce each other. This is when the ROI curve turns strongly positive.
+
+When unsure whether to create a durable artifact at the current project stage, prefer a session log.
+
 ### Artifact Discipline
 
 Before creating a durable artifact, ask: is this knowledge worth rediscovering months from now? If not, prefer a session log and let `aw-synthesize-memory` decide whether it earns a permanent record through repetition.
