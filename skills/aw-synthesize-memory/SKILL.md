@@ -21,7 +21,7 @@ Use this skill when:
 ## Principles
 
 - Extract the signal, discard the noise. Not every session produces a durable learning.
-- A pattern earns a learning after appearing in two or more sessions. A single instance is not enough unless the correction was significant.
+- New learnings start as `tentative`. They graduate to `active` only through corroboration across multiple sessions. This prevents a single hallucinated or misread session from polluting the wiki.
 - Dead ends are low-cost to record and high-value for future agents. Err toward preserving them.
 - `docs/context/wiki.md` is a synthesis artifact, not a source artifact. Regenerate it in full on each run; never manually edit it.
 - Prefer updating existing learnings to creating near-duplicate entries.
@@ -42,27 +42,77 @@ docs/context/wiki.md          # destination: regenerated project wiki
 
 1. Read `docs/sessions/index.yml` and collect entries with `status: unprocessed`.
 2. Read each unprocessed session log in full.
-3. Extract across all logs:
+3. Read all existing learnings with `status: tentative` from `docs/learnings/` — these need corroboration checking in step 5.
+4. Extract across all new session logs:
    - **Corrections** — missed assumptions that could become learnings.
    - **Dead ends** — failed approaches worth recording so future agents avoid them.
    - **What worked** — non-obvious effective approaches.
    - **Patterns** — items appearing in two or more sessions.
-4. For each durable correction or pattern:
+5. For each existing `tentative` learning:
+   - Check whether any new session log corroborates it (same lesson, same pattern).
+   - If corroborated: increment `evidence-count`, add the corroborating session to `derived-from`, reset `unconfirmed-runs` to 0. If `evidence-count` reaches 3, promote to `status: active`.
+   - If not corroborated: increment `unconfirmed-runs` by 1. If `unconfirmed-runs` reaches 3, remove the learning file and drop it from `docs/learnings/index.yml`. Do not promote it.
+6. For each new durable pattern extracted in step 4:
    - Check `docs/learnings/index.yml` for an existing learning to update rather than duplicate.
-   - If new, write a learning file following the `aw-record-retrospective` format under `docs/learnings/`.
+   - If the pattern appears in 3 or more of this batch's session logs, write it directly as `status: active`.
+   - Otherwise write it as `status: tentative` with `evidence-count: 1`.
+   - Always include `derived-from` listing the specific session log paths that support it.
    - Update `docs/learnings/index.yml`.
-5. If a pattern appears in three or more sessions and looks like an enforceable convention, surface it to the user as a candidate for `docs/standards/`. Do not write the standard without confirmation.
-6. Regenerate `docs/context/wiki.md` in full from the current state of specs, decisions, learnings, and session summaries (see format below).
-7. Mark each processed session `status: processed` in `docs/sessions/index.yml`.
-8. Remove processed session logs older than 14 days (or two sprints, whichever is longer) from `docs/sessions/` and drop their entries from `docs/sessions/index.yml`. Git history is the long-term archive for raw session data.
+7. If a pattern appears across three or more sessions (cumulative, including past runs) and looks like an enforceable convention, surface it to the user as a candidate for `docs/standards/`. Do not write the standard without confirmation.
+8. Regenerate `docs/context/wiki.md` in full from the current state of specs, decisions, learnings, and session summaries (see format below). Only `active` learnings appear in the main **Top Learnings** section. `Tentative` learnings appear in a separate **Tentative Learnings** section with minimal detail.
+9. Mark each processed session `status: processed` in `docs/sessions/index.yml`.
+10. Remove processed session logs older than 14 days (or two sprints, whichever is longer) from `docs/sessions/` and drop their entries from `docs/sessions/index.yml`. Git history is the long-term archive for raw session data.
 
 ## Retention
 
 Processed session logs do not need to live in the repo indefinitely. Once synthesis has run, their signal exists in `docs/learnings/` and `docs/context/wiki.md`. Keeping stale processed logs creates noise without adding value.
 
-Default retention window: **14 days** after the session date, or the end of the current sprint if the team works in sprints — whichever is longer. Remove logs that fall outside the window during step 8 of each synthesis run.
+Default retention window: **14 days** after the session date, or the end of the current sprint if the team works in sprints — whichever is longer. Remove logs that fall outside the window during step 10 of each synthesis run.
 
 If no synthesis has run yet, do not remove any logs regardless of age — unprocessed logs are still raw material.
+
+## Learning File Format
+
+```markdown
+---
+title: <Short description>
+scope: repo
+created: YYYY-MM-DD
+trigger: correction | pattern | dead-end
+status: tentative | active
+evidence-count: <N>
+unconfirmed-runs: <N>
+derived-from:
+  - docs/sessions/YYYY-MM-DD-<slug>.md
+tags:
+  - <tag>
+---
+
+# <Title>
+
+## Lesson
+
+<One paragraph: what to do or avoid, and why.>
+
+## Applies When
+
+<Bullet list of conditions under which this learning triggers.>
+
+## Do Instead
+
+<What to do in place of the wrong approach, or how to apply the insight.>
+
+## Evidence
+
+<Direct quotes or summaries from the source session logs that support this learning.
+Reference each source by path.>
+```
+
+- `status: tentative` — promoted from one or two sessions, not yet confirmed. Excluded from the main wiki context.
+- `status: active` — confirmed across three or more sessions. Included in wiki.
+- `evidence-count` — total number of sessions that have corroborated this learning.
+- `unconfirmed-runs` — number of consecutive synthesis runs since creation without corroboration. Reset to 0 on any corroboration. Remove the learning when this reaches 3.
+- `derived-from` — append each corroborating session path. This is the audit trail.
 
 ## Context Wiki Format
 
@@ -88,7 +138,13 @@ sessions_synthesized: <N>
 
 ## Top Learnings
 
-<Top 5–10 learnings by recency or frequency of trigger: title, one-line lesson, path.>
+<Active learnings only (status: active). Top 5–10 by recency or frequency of trigger:
+title, one-line lesson, path.>
+
+## Tentative Learnings
+
+<Tentative learnings pending corroboration. Title and path only — no detail in wiki context.
+Agents should not rely on these; they are surfaced for visibility, not authority.>
 
 ## Known Dead Ends
 
@@ -107,6 +163,7 @@ Keep the wiki under 500 words. It is loaded into agent context at session start,
 - A **dead end** becomes a learning when the failed approach is plausible enough that a future agent would try it.
 - A **working approach** does not need a learning unless it is non-obvious and an agent would not naturally try it.
 - Consolidate related items into one learning rather than writing several near-duplicates.
+- Every learning must cite at least one `derived-from` session log. Do not write a learning without traceable evidence.
 
 ## Relation to Other Skills
 
@@ -119,7 +176,9 @@ Keep the wiki under 500 words. It is loaded into agent context at session start,
 Report:
 
 - sessions processed (count and paths)
-- learnings written or updated (titles and paths)
+- learnings written or updated (titles, paths, and status)
+- tentative learnings promoted to active (if any)
+- tentative learnings aged out and removed (if any)
 - patterns surfaced as standard candidates (with confirmation prompt if any)
 - `docs/context/wiki.md` regenerated (section summary)
 - sessions marked `processed` in the index

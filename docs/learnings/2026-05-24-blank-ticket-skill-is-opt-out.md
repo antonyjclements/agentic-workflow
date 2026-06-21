@@ -3,6 +3,10 @@ title: Blank ticket skill is an opt-out
 scope: repo
 created: 2026-05-24
 trigger: correction
+status: active
+evidence-count: 1
+unconfirmed-runs: 0
+derived-from: []
 tags:
   - workflow
   - tickets
