@@ -34,6 +34,6 @@ Install repo-local agentic-workflow files into a target repository.
 - Do not overwrite existing `AGENTS.md` or `CLAUDE.md` without user confirmation.
 - Keep `AGENTS.md` and `CLAUDE.md` at the repo root.
 - Preserve existing docs indexes and workflow config unless explicitly forced.
-- If the repo already has feature specs, recommend `aw-index-features`.
-- If the repo has an external PRD to import, recommend `aw-import-prd` as the first workflow step.
-- If the user wants to author a PRD from an idea or notes, recommend `aw-create-prd`.
+- If the repo already has feature specs, recommend `aw-refresh features`.
+- If the repo has an external PRD to import, recommend `aw-prd` as the first workflow step.
+- If the user wants to author a PRD from an idea or notes, recommend `aw-prd`.

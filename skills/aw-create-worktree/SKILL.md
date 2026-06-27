@@ -1,6 +1,6 @@
 ---
 name: aw-create-worktree
-description: Create an isolated git worktree for parallel feature work or PR review. Use when starting work that should not disturb the current checkout, or when `aw-work` or `aw-review-code` offers a worktree option.
+description: Create an isolated git worktree for parallel feature work or PR review. Use when starting work that should not disturb the current checkout, or when `aw-work` or `aw-review` offers a worktree option.
 allowed-tools: Bash(bash *worktree-manager.sh)
 ---
 
@@ -69,7 +69,7 @@ Do not create a worktree for single-task work that can happen on a branch in the
 
 ## Integration
 
-`aw-work` and `aw-review-code` offer this skill as an option. When the user selects "worktree" in those flows, invoke `bash "${CLAUDE_SKILL_DIR:-.}/scripts/worktree-manager.sh" create <branch>` with a meaningful branch name derived from the work description (e.g., `feat/crowd-sniff`, `fix/email-validation`). Avoid auto-generated names like `worktree-jolly-beaming-raven` that obscure the work.
+`aw-work` and `aw-review` offer this skill as an option. When the user selects "worktree" in those flows, invoke `bash "${CLAUDE_SKILL_DIR:-.}/scripts/worktree-manager.sh" create <branch>` with a meaningful branch name derived from the work description (e.g., `feat/crowd-sniff`, `fix/email-validation`). Avoid auto-generated names like `worktree-jolly-beaming-raven` that obscure the work.
 
 After creating the worktree, read `docs/workflow/config.yml` in the worktree and continue with the configured work step:
 

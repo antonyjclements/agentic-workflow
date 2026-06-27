@@ -28,7 +28,7 @@ This file contains the shipping workflow (Phase 3-4). It is loaded when all Phas
 
    **Tier 1 -- harness-native code review (default).** Run your built-in code review command or skill (e.g., `/review` in Claude Code). Address blocking and suggested findings inline before Final Validation. Skip the Residual Work Gate. If the current harness has no built-in code review command or skill, escalate to Tier 2 -- Tier 1 cannot run, and "Every change gets reviewed" still applies.
 
-   **Tier 2 -- `aw-review-code` (escalation).** Invoke the `aw-review-code` skill with `mode:autofix`, passing `plan:<path>` when known. Then proceed to the Residual Work Gate.
+   **Tier 2 -- `aw-review` (escalation).** Invoke the `aw-review` skill with `mode:autofix`, passing `plan:<path>` when known. Then proceed to the Residual Work Gate.
 
    Escalate to Tier 2 when **any** of the following is true:
 
@@ -121,7 +121,7 @@ Before creating PR, verify:
 - [ ] Evidence decision handled by `aw-commit-push-pr` when the change has observable behavior
 - [ ] Commit messages follow conventional format
 - [ ] PR description includes Post-Deploy Monitoring & Validation section (or explicit no-impact rationale)
-- [ ] Code review completed (Tier 1 harness-native or Tier 2 `aw-review-code`)
+- [ ] Code review completed (Tier 1 harness-native or Tier 2 `aw-review`)
 - [ ] PR description includes summary, testing notes, and evidence when captured
 - [ ] PR description includes Compound Engineered badge with accurate model and harness
 
@@ -131,7 +131,7 @@ Every change gets reviewed. Default to Tier 1; escalate to Tier 2 only on a conc
 
 **Tier 1 -- harness-native code review (default).** Run your built-in code review command or skill (e.g., `/review` in Claude Code). Address blocking and suggested findings inline. If the current harness has no built-in code review command or skill, escalate to Tier 2 -- Tier 1 cannot run.
 
-**Tier 2 -- `aw-review-code` (escalation).** Invoke `aw-review-code mode:autofix` with `plan:<path>` when available. Safe fixes are applied automatically; residual work routes through the Residual Work Gate.
+**Tier 2 -- `aw-review` (escalation).** Invoke `aw-review mode:autofix` with `plan:<path>` when available. Safe fixes are applied automatically; residual work routes through the Residual Work Gate.
 
 Escalate to Tier 2 when any of these holds:
 - Sensitive surface touched (auth/authz, payments/billing, data migrations or backfills, cryptography or secrets, security-relevant config, public API or library contracts, dependency manifests)
