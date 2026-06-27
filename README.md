@@ -265,9 +265,9 @@ PRD lifecycle statuses are:
 - `ready-for-spec`: stable enough to promote into a living spec
 - `promoted`: a living spec has been created from the PRD
 - `superseded`: replaced before promotion by newer product input
-- `archived`: safe to remove from the working tree with `aw-clean-artifacts`
+- `archived`: safe to remove from the working tree with `aw-refresh cleanup`
 
-When a spec is created from a PRD, the agent marks the PRD `promoted` and links `promoted_to` to the spec. The PRD body stays unchanged. To remove old artifacts, mark them `archived` and run `aw-clean-artifacts`; git history is the long-term archive.
+When a spec is created from a PRD, the agent marks the PRD `promoted` and links `promoted_to` to the spec. The PRD body stays unchanged. To remove old artifacts, mark them `archived` and run `aw-refresh cleanup`; git history is the long-term archive.
 
 ### 2. Discover or enforce standards
 
@@ -409,7 +409,7 @@ work -> aw-work
 check_workflow_compliance -> aw-check-workflow-compliance
 commit -> aw-commit
 commit_push_pr -> aw-commit-push-pr
-monitor_pipeline -> aw-monitor-pipeline
+monitor_pipeline -> (no bundled skill; set workflow.steps.monitor_pipeline.skill)
 ```
 
 Auxiliary skill keys:
@@ -420,14 +420,13 @@ debug -> aw-debug
 create_worktree -> aw-create-worktree
 capture -> aw-capture
 discover_standards -> aw-discover-standards
-clean_artifacts -> aw-clean-artifacts
 resolve_pr_feedback -> aw-resolve-pr-feedback
 synthesize_memory -> aw-synthesize-memory
 ```
 
-`research_slack` and `log_session` are no longer bundled auxiliary keys. For Slack research, agents use available tools directly; set `workflow.auxiliary.research_slack.skill` to route through a custom enterprise skill. Session logging is now `aw-capture session`.
+`research_slack`, `log_session`, `monitor_pipeline`, and `clean_artifacts` are no longer bundled keys. For Slack research, agents use available tools directly; set `workflow.auxiliary.research_slack.skill` for enterprise routing. Session logging is now `aw-capture session`. Post-PR CI monitoring requires a custom skill via `workflow.steps.monitor_pipeline.skill`. Archived artifact cleanup is now `aw-refresh cleanup`.
 
-Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code` are now `prd` and `review`; old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions` are now `refresh` and `capture`. Migrate old values to the matching current keys.
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code` are now `prd` and `review`; old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions`, `clean_artifacts`, and `log_session` are now `refresh` and `capture`. Migrate old values to the matching current keys.
 
 Valid `workflow.implementation.test_policy` values:
 
@@ -451,7 +450,7 @@ Set `pull_request.template.title` and `pull_request.template.body` when PR title
 
 Set `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` when commits or commit/push/PR should route through an enterprise-specific step. The bundled commit flow follows `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present, then falls back to repo instructions and recent commit history.
 
-Set `workflow.steps.monitor_pipeline.skill` to a custom skill that handles post-PR CI monitoring for your provider (GitHub Actions, CircleCI, Jenkins, etc.). `aw-monitor-pipeline` itself is only a config router — it invokes the configured skill or skips cleanly when `post_pr.ci_monitor.provider` is `manual` or missing. Retry limits and polling cadence belong to the provider skill, not the base workflow config.
+Set `workflow.steps.monitor_pipeline.skill` to a custom skill that handles post-PR CI monitoring for your provider (GitHub Actions, CircleCI, Jenkins, etc.). There is no bundled pipeline monitor — agents invoke the configured skill directly after PR creation, or skip cleanly when `post_pr.ci_monitor.provider` is `manual` or missing. Retry limits and polling cadence belong to the provider skill, not the base workflow config.
 
 To enable monitoring, set `workflow.steps.monitor_pipeline.skill` to a skill that handles your CI provider. Set `post_pr.ci_monitor.provider` to a non-`manual` value to signal that monitoring is expected. Leave `post_pr.ci_monitor.provider: manual` (or omit it) to skip post-PR monitoring entirely.
 
@@ -646,7 +645,7 @@ Use aw-review before opening the PR (spec drift + code review in one step).
 Run the capture checkpoint.
 Update README.md if setup, commands, config, or workflow behavior changed.
 Use aw-commit-push-pr to commit, push, run workflow compliance, and create the PR.
-If configured, aw-monitor-pipeline watches CI and fixes failures until green.
+If `workflow.steps.monitor_pipeline.skill` is configured, invoke it with the PR URL to watch CI and fix failures until green.
 ```
 
 ### Ticket-First Implementation
@@ -721,7 +720,6 @@ AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/
 
 - `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, global learnings index, and bundled `docs/standards/coding-approach.md`; upgrade via `skills/aw-init/scripts/upgrade.sh`
 - `aw-prd`: create or import PRDs under `docs/product/prds/`; routes by source between import mode (pasted content/file/URL) and create mode (ideas/notes)
-- `aw-clean-artifacts`: remove workflow artifacts marked `status: archived`
 - `aw-brainstorm`: clarify ambiguous PRDs or ideas and create the right artifact, usually a living feature spec
 - `aw-create-spec`: directly create or update living feature specs in `docs/features/<feature>/spec.md`
 - `aw-plan`: create implementation plans from specs or requirements
@@ -732,10 +730,9 @@ AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/
 - `aw-check-workflow-compliance`: check workflow routing, test policy, acceptance coverage, README expectations, and review gates after push and before PR creation
 - `aw-commit`: create focused commits
 - `aw-commit-push-pr`: commit, push, create/update PRs with optional configured title/body templates, and invoke configured post-PR monitoring
-- `aw-monitor-pipeline`: config router for post-PR CI monitoring; invokes `workflow.steps.monitor_pipeline.skill` when set, skips cleanly when `post_pr.ci_monitor.provider` is `manual` or missing
 - `aw-request-human-review`: create spec/plan sign-off PRs and request configured GitHub reviewers
 - `aw-capture`: capture durable knowledge — routes by type: `decision` → immutable record in `docs/decisions/`; `learning` → correction-driven learning in `docs/learnings/`; `solution` → reusable solved-problem doc in `docs/solutions/`; `session` → structured session log in `docs/sessions/` feeding the memory synthesis loop
-- `aw-refresh`: refresh and maintain docs registries — routes by scope: `decisions` → rebuild index and summaries without rewriting records; `solutions` → audit and update stale solution docs; `features` → regenerate `docs/features/index.yml`
+- `aw-refresh`: refresh and maintain docs registries — routes by scope: `decisions` → rebuild index and summaries without rewriting records; `solutions` → audit and update stale solution docs; `features` → regenerate `docs/features/index.yml`; `cleanup` → remove workflow artifacts marked `status: archived`
 - `aw-discover-standards`: extract repeated codebase conventions into `docs/standards/`
 - `aw-synthesize-memory`: process session logs into learnings, regenerate `docs/context/wiki.md`, surface pattern candidates for standards promotion, and expire old processed logs
 - `aw-resolve-pr-feedback`: resolve PR review comments

@@ -1,7 +1,7 @@
 ---
 name: aw-refresh
-description: "Refresh and maintain docs registries: rebuild docs/decisions/index.yml and audit decision logs; refresh stale docs/solutions/ learning docs; regenerate docs/features/index.yml from living specs. Use when a registry is stale or missing, when the user says refresh decisions/solutions/features, or after a sprint milestone."
-argument-hint: "[decisions|solutions|features|all] [scope, tag, or mode:headless]"
+description: "Refresh and maintain docs registries: rebuild docs/decisions/index.yml and audit decision logs; refresh stale docs/solutions/ learning docs; regenerate docs/features/index.yml from living specs; remove workflow artifacts marked status: archived. Use when a registry is stale or missing, when the user says refresh decisions/solutions/features, when archived artifacts should be pruned, or after a sprint milestone."
+argument-hint: "[decisions|solutions|features|cleanup|all] [scope, tag, or mode:headless|mode:dry-run]"
 ---
 
 # Refresh
@@ -15,9 +15,11 @@ Determine scope from arguments and context:
 - "refresh decisions" or `docs/decisions/` mentioned → **Decisions**
 - "refresh solutions", "audit learnings", or `docs/solutions/` mentioned → **Solutions**
 - "index features", "rebuild feature index", or `docs/features/` mentioned → **Features**
-- No target given or "refresh all" → run all three in sequence
+- "clean", "cleanup", "prune archived", or "remove archived" → **Cleanup**
+- No target given or "refresh all" → run Decisions, Solutions, and Features in sequence (not Cleanup — cleanup is always explicit)
 
 If `mode:headless` is present, strip it and apply headless behavior across all modes run.
+If `mode:dry-run` is present, strip it and apply dry-run behavior (Cleanup mode only — report what would be removed without deleting).
 
 ---
 
@@ -177,6 +179,54 @@ Optional fields when present in spec frontmatter: `owner`, `updated`, `related_d
 
 ---
 
+## Cleanup
+
+Remove workflow artifacts whose frontmatter or index entry has `status: archived`. Git is the archive; the working tree keeps only current source-of-truth artifacts.
+
+### Scope
+
+Clean only files under workflow artifact directories:
+
+- `docs/product/prds/`
+- `docs/brainstorms/`
+- `docs/features/*/plan.md`
+- other repo-local workflow artifact paths only when the user explicitly names them
+
+Never delete:
+
+- living specs at `docs/features/<feature>/spec.md`
+- decision records under `docs/decisions/`
+- standards under `docs/standards/`
+- learnings or solution docs
+- `AGENTS.md`, `CLAUDE.md`, workflow config, or indexes themselves
+
+### Workflow
+
+1. Parse arguments:
+   - `mode:dry-run`: report what would be removed without deleting
+   - artifact type or path: limit cleanup to that scope
+   - blank (with `cleanup` mode selected): scan supported artifact directories
+2. Inspect relevant indexes and artifact frontmatter.
+3. Select only artifacts with `status: archived`.
+4. For each candidate:
+   - verify the file exists
+   - check whether git tracks it with `git ls-files --error-unmatch <path>`
+   - if untracked, ask before deletion because git has no historical copy
+5. In interactive mode, show the deletion list and ask before removing files unless the user explicitly requested deletion of a named archived path.
+6. Delete approved archived files.
+7. Remove deleted file entries from indexes, preserving existing schema.
+8. Report removed files and skipped candidates.
+
+### Rules
+
+- Do not infer archive status from age, completion, promotion, or supersession. Only `status: archived` permits deletion.
+- Do not mark artifacts archived in this skill unless the user explicitly asks for that too.
+- Do not remove a promoted PRD automatically. Promotion preserves provenance; archive status is the separate cleanup signal.
+- If git is unavailable, do not delete files unless the user explicitly confirms that external history is acceptable.
+- Keep paths repo-relative.
+
+---
+
 ## Output
 
-Report per mode run: index entries added/removed/changed · summaries created or refreshed · metadata gaps or conflicts · any recommended `aw-capture decision` follow-up for unresolved conflicts · files kept/updated/consolidated/replaced/deleted/stale-marked · features discovered and indexed.
+Report per mode run: index entries added/removed/changed · summaries created or refreshed · metadata gaps or conflicts · any recommended `aw-capture decision` follow-up for unresolved conflicts · files kept/updated/consolidated/replaced/deleted/stale-marked · features discovered and indexed · files removed and indexes updated (Cleanup mode).

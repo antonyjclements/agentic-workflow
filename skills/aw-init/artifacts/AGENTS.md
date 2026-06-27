@@ -73,7 +73,7 @@ Use the repo as the source of truth for product intent, standards, and decisions
 - Living specs live under `docs/features/<feature>/spec.md` and are indexed by `docs/features/index.yml`.
 - Imported and authored PRDs live under `docs/product/prds/` and are indexed by `docs/product/prds/index.yml`.
 - Authored PRDs should use `docs/product/prds/template.md` when the repo defines one.
-- PRD statuses are `imported`, `draft`, `ready-for-spec`, `promoted`, `superseded`, and `archived`. `archived` means the artifact may be removed from the working tree by `aw-clean-artifacts`; git is the historical archive.
+- PRD statuses are `imported`, `draft`, `ready-for-spec`, `promoted`, `superseded`, and `archived`. `archived` means the artifact may be removed from the working tree by `aw-refresh cleanup`; git is the historical archive.
 - Brainstorm or ideation artifacts live under `docs/brainstorms/` and are indexed by `docs/brainstorms/index.yml`.
 - Temporary plans live at `docs/features/<feature>/plan.md` until removed.
 - Use one spec per feature or coherent capability. Specs describe current behavior and durable intent, not task progress.
@@ -90,7 +90,7 @@ Use the repo as the source of truth for product intent, standards, and decisions
 
 - Use `aw-prd` when the user asks to create, import, draft, or save a PRD. It routes internally: importing external content vs. authoring from ideas/notes.
 - Run `skills/aw-init/scripts/upgrade.sh` when an existing Agentic Workflow install needs to move to the current version or migrate `docs/workflow/config.yml`.
-- Use `aw-clean-artifacts` when the user asks to remove archived workflow artifacts. Only artifacts marked `status: archived` should be deleted.
+- Use `aw-refresh cleanup` when the user asks to remove archived workflow artifacts. Only artifacts marked `status: archived` should be deleted.
 - Use `aw-brainstorm` as the default PRD or idea intake path because PRDs and raw ideas often contain implicit ambiguity and open questions. It should usually clarify and create/update the living spec in the same run.
 - Use `aw-create-spec` when clear requirements, existing behavior, or implementation changes need to become a living feature spec without exploratory discovery.
 - Use `aw-refresh features` when `docs/features/index.yml` needs to be generated or refreshed from `docs/features/<feature>/spec.md`.
@@ -102,7 +102,7 @@ Use the repo as the source of truth for product intent, standards, and decisions
 - Use configured workflow step routing before delegating to another workflow skill.
 - Use configured commit-message formatting before committing.
 - Use configured PR templates when opening pull requests. If `pull_request.template.title` or `pull_request.template.body` is blank, use the normal generated title/body for that part.
-- Use `aw-monitor-pipeline` after PR creation when `docs/workflow/config.yml` configures a post-PR CI monitor/fix skill.
+- After PR creation, if `workflow.steps.monitor_pipeline.skill` is configured, invoke it directly to handle post-PR CI monitoring.
 - A normal feature flow is: pasted/file/link PRD -> imported PRD artifact -> brainstorm/discovery creates or updates the living feature spec -> temporary feature plan -> tickets/stories -> implementation agent picks up a ticket -> decisions logged as they happen -> spec review before PR.
 
 ### Workflow Step Routing
@@ -124,7 +124,7 @@ Supported default step keys:
 - `check_workflow_compliance`: `aw-check-workflow-compliance`
 - `commit`: `aw-commit`
 - `commit_push_pr`: `aw-commit-push-pr`
-- `monitor_pipeline`: `aw-monitor-pipeline`
+- `monitor_pipeline`: no bundled skill — set `workflow.steps.monitor_pipeline.skill` to a custom CI skill; if blank or absent, skip post-PR monitoring cleanly
 
 Supported auxiliary skill keys:
 
@@ -133,13 +133,12 @@ Supported auxiliary skill keys:
 - `create_worktree`: `aw-create-worktree` — offered by `work` and `review` for isolation
 - `capture`: `aw-capture`
 - `discover_standards`: `aw-discover-standards`
-- `clean_artifacts`: `aw-clean-artifacts`
 - `resolve_pr_feedback`: `aw-resolve-pr-feedback`
 - `synthesize_memory`: `aw-synthesize-memory`
 
-The `research_slack` and `log_session` auxiliary keys are no longer bundled. For Slack research, agents use available tools (MCP servers, browser, etc.) directly; set `workflow.auxiliary.research_slack.skill` to route through an enterprise-specific skill when needed. Session logging is now part of `aw-capture session`.
+The `research_slack`, `log_session`, `monitor_pipeline`, and `clean_artifacts` keys are no longer bundled as separate skills. For Slack research, agents use available tools (MCP servers, browser, etc.) directly; set `workflow.auxiliary.research_slack.skill` for enterprise routing. Session logging is now part of `aw-capture session`. Post-PR CI monitoring is config-only via `workflow.steps.monitor_pipeline.skill`. Archived artifact cleanup is now `aw-refresh cleanup`.
 
-Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` have been replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill`, and older helper keys misplaced under `workflow.steps`, have been replaced by `workflow.auxiliary`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, and `review_code` have been replaced by `prd` and `review`. Old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, and `refresh_decisions` have been replaced by `refresh` and `capture`. If they appear in older repos, migrate them. Non-skill configuration fields remain authoritative, including `git.commit.format`, `pull_request.template`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` have been replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill`, and older helper keys misplaced under `workflow.steps`, have been replaced by `workflow.auxiliary`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, and `review_code` have been replaced by `prd` and `review`. Old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions`, `clean_artifacts`, and `log_session` have been replaced by `refresh`, `capture`, and (for cleanup) `aw-refresh cleanup` mode. If they appear in older repos, migrate them. Non-skill configuration fields remain authoritative, including `git.commit.format`, `pull_request.template`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
 
 Custom replacement skills must preserve the default step contract: accept the same handoff artifact or identifier, read relevant workflow config, return the expected artifact path/ID/result, and report unsupported behavior clearly.
 
@@ -168,10 +167,10 @@ Each workflow step should return the artifact path or ID that becomes input to t
 - `aw-brainstorm` usually outputs `docs/features/<feature>/spec.md` -> pass to `aw-plan`; when the user asks for PRD output, route to `aw-create-prd`.
 - `aw-create-spec` outputs `docs/features/<feature>/spec.md` -> pass to `aw-plan`.
 - When a PRD becomes a spec, mark the PRD `status: promoted`, set `promoted_to` to the spec path, and leave the PRD body unchanged.
-- When a source artifact is no longer needed in the working tree, mark it `status: archived`; `aw-clean-artifacts` removes it from the working tree and index while git preserves history.
+- When a source artifact is no longer needed in the working tree, mark it `status: archived`; `aw-refresh cleanup` removes it from the working tree and index while git preserves history.
 - `aw-plan` outputs `docs/features/<feature>/plan.md` -> pass to `aw-create-tickets` or `aw-work`.
 - `aw-create-tickets` outputs ticket IDs/URLs -> pass one ticket at a time to `aw-work`.
-- `aw-commit-push-pr` outputs PR URL -> pass to `aw-monitor-pipeline` when configured.
+- `aw-commit-push-pr` outputs PR URL -> invoke `workflow.steps.monitor_pipeline.skill` with it when configured.
 
 ### Human Review Gates
 
@@ -218,9 +217,8 @@ Each workflow step should return the artifact path or ID that becomes input to t
 ### CI/CD Routing
 
 - Read `docs/workflow/config.yml` before post-PR pipeline monitoring.
-- `aw-monitor-pipeline` is a config router: it invokes `workflow.steps.monitor_pipeline.skill` when set, or skips cleanly when `post_pr.ci_monitor.provider` is `manual` or missing.
-- Set `workflow.steps.monitor_pipeline.skill` to a custom skill that handles the repo's CI provider (GitHub Actions, CircleCI, Jenkins, etc.). That skill owns retry limits, polling cadence, and fix logic.
-- If `post_pr.ci_monitor.provider` is `manual` or absent, skip post-PR monitoring without error.
+- There is no bundled pipeline monitor skill. Set `workflow.steps.monitor_pipeline.skill` to a custom skill that handles the repo's CI provider (GitHub Actions, CircleCI, Jenkins, etc.). That skill owns retry limits, polling cadence, and fix logic.
+- If `workflow.steps.monitor_pipeline.skill` is blank or absent, or if `post_pr.ci_monitor.provider` is `manual` or missing, skip post-PR monitoring without error.
 - Fix only failures caused by the current branch. Do not hide external, flaky, credential, quota, or default-branch failures.
 
 ### Slack Research
@@ -319,7 +317,7 @@ Do not rely on the user to remember capture skills. At natural pauses, proactive
 - Use `aw-check-workflow-compliance` after pushing and before PR creation for non-trivial changes when workflow routing, implementation test policy, acceptance coverage, README updates, or review gates need verification.
 - Use `aw-commit` when the user asks to commit.
 - Use `aw-commit-push-pr` when the user asks to push, ship, or open a PR. Apply configured `pull_request.template` title/body templates when present.
-- Use `aw-monitor-pipeline` after PR creation when post-PR CI monitoring is configured. Handles GitHub Actions, CircleCI, and other configured providers natively.
+- After PR creation, if `workflow.steps.monitor_pipeline.skill` is configured, invoke it with the PR URL for post-PR CI monitoring. There is no bundled pipeline monitor.
 
 ### Knowledge Capture
 
@@ -333,7 +331,7 @@ Do not rely on the user to remember capture skills. At natural pauses, proactive
 - For Slack context, use available MCP tools directly; if `workflow.auxiliary.research_slack.skill` is configured, invoke that skill.
 - Use `aw-capture session` at the end of a meaningful session to record what was attempted, corrections made, dead ends hit, and useful sources.
 - Use `aw-synthesize-memory` to batch-process accumulated session logs into learnings, refresh `docs/context/wiki.md`, and surface pattern candidates for promotion to standards.
-- Use `aw-clean-artifacts` when artifacts marked `status: archived` should be removed from the working tree.
+- Use `aw-refresh cleanup` when artifacts marked `status: archived` should be removed from the working tree.
 - Do not create learning docs for trivial fixes or unsupported conclusions.
 
 ## Default Execution Flow
@@ -354,7 +352,7 @@ For a normal feature request:
 12. Run the capture checkpoint: `aw-capture decision/learning/solution/session` when appropriate. Offer `aw-capture session` at natural session ends to feed the synthesis loop.
 13. Commit/push/PR only when the user asks.
 14. After push and before PR creation, run the configured `check_workflow_compliance` step for non-trivial changes.
-15. After PR creation, run `aw-monitor-pipeline` if configured.
+15. After PR creation, if `workflow.steps.monitor_pipeline.skill` is configured, invoke it with the PR URL.
 
 For a bug:
 
