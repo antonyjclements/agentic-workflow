@@ -104,7 +104,7 @@ The config migrator preserves unknown fields, adds missing current defaults, and
 - `git.commit.skill` -> `workflow.steps.commit.skill`
 - `research.slack.skill` -> `workflow.auxiliary.research_slack.skill`
 - custom `post_pr.ci_monitor.skill` -> `workflow.steps.monitor_pipeline.skill` and `post_pr.ci_monitor.provider: github-actions` when no provider was set
-- `post_pr.ci_monitor.skill: aw-monitor-circleci` -> `post_pr.ci_monitor.provider: circleci`
+- `post_pr.ci_monitor.skill: aw-monitor-circleci` → `post_pr.ci_monitor.provider: circleci` (CircleCI logic is now built into `aw-monitor-pipeline`)
 
 ## Cross-Agent Skill Install
 
@@ -208,25 +208,25 @@ docs/
 
 ### 1. Start with PRD intake, discovery, or a spec
 
-When you have a PRD from pasted content, a local file, markdown, or a document link, first preserve it with `aw-import-prd`.
+When you have a PRD from pasted content, a local file, markdown, or a document link, or when you want to author a PRD from ideas or notes, use `aw-prd`. It routes internally between import and create modes.
 
 Example prompts:
 
 ```text
-Use aw-import-prd to create a PRD from this Google Doc.
+Use aw-prd to import this PRD from this Google Doc.
 ```
 
 ```text
-Use aw-import-prd to save this pasted PRD.
+Use aw-prd to draft a PRD from these notes.
 ```
 
-Imported PRDs are historical source artifacts:
+Imported and authored PRDs are stored as source artifacts:
 
 ```text
 docs/product/prds/<date>-<slug>.md
 ```
 
-Then pass the imported PRD path to `aw-brainstorm` unless the PRD is already clear and you explicitly want a spec draft. PRDs often contain implicit ambiguity, assumptions, and open questions. `aw-brainstorm` resolves that ambiguity and creates or updates the living feature spec in the same run.
+Then pass the PRD path to `aw-brainstorm` unless the PRD is already clear and you explicitly want a spec draft. PRDs often contain implicit ambiguity, assumptions, and open questions. `aw-brainstorm` resolves that ambiguity and creates or updates the living feature spec in the same run.
 
 ```text
 Use aw-brainstorm with docs/product/prds/2026-05-24-checkout-redesign.md.
@@ -250,19 +250,13 @@ Specs are stored by feature:
 docs/features/<feature>/spec.md
 ```
 
-They are indexed by `docs/features/index.yml`. To generate or refresh that index, ask the agent to use `aw-index-features`:
+They are indexed by `docs/features/index.yml`. To generate or refresh that index:
 
 ```text
-Use aw-index-features to generate docs/features/index.yml.
+Use aw-refresh features to generate docs/features/index.yml.
 ```
 
-Use `aw-create-prd` when you want an authored PRD instead of immediately committing intent to a living spec:
-
-```text
-Use aw-create-prd to turn this idea into a PRD draft.
-```
-
-`aw-create-prd` uses `docs/product/prds/template.md` when a repo provides one, otherwise it falls back to its bundled template.
+`aw-prd create` uses `docs/product/prds/template.md` when a repo provides one, otherwise it falls back to its bundled template.
 
 PRD lifecycle statuses are:
 
@@ -303,10 +297,10 @@ Use aw-plan to plan the implementation from docs/features/mfa/spec.md.
 
 Plans are execution scaffolding. They live at `docs/features/<feature>/plan.md` and should be removed when they are no longer active.
 
-After a plan is created, run `aw-review-doc` before human review, ticket creation, or implementation. It catches plan coherence, feasibility, scope, and role-specific issues while the plan is still cheap to change.
+After a plan is created, run `aw-review plan` before human review, ticket creation, or implementation. It catches plan coherence, feasibility, scope, and role-specific issues while the plan is still cheap to change.
 
 ```text
-Use aw-review-doc on docs/features/mfa/plan.md before we create tickets.
+Use aw-review on docs/features/mfa/plan.md before we create tickets.
 ```
 
 ### 4. Implement the work
@@ -404,17 +398,14 @@ Set `workflow.auxiliary.<key>.skill` to replace helper skills that can be invoke
 Default workflow step keys:
 
 ```text
-import_prd -> aw-import-prd
-create_prd -> aw-create-prd
+prd -> aw-prd
 brainstorm -> aw-brainstorm
 create_spec -> aw-create-spec
-review_spec -> aw-review-spec
 request_human_review -> aw-request-human-review
 plan -> aw-plan
-review_plan -> aw-review-doc
+review -> aw-review
 create_tickets -> aw-create-tickets
 work -> aw-work
-review_code -> aw-review-code
 check_workflow_compliance -> aw-check-workflow-compliance
 commit -> aw-commit
 commit_push_pr -> aw-commit-push-pr
@@ -424,15 +415,10 @@ monitor_pipeline -> aw-monitor-pipeline
 Auxiliary skill keys:
 
 ```text
-index_features -> aw-index-features
+refresh -> aw-refresh
 debug -> aw-debug
 create_worktree -> aw-create-worktree
-simplify_code -> aw-simplify-code
-log_decision -> aw-log-decision
-record_retrospective -> aw-record-retrospective
-capture_solution -> aw-capture-solution
-refresh_solutions -> aw-refresh-solutions
-refresh_decisions -> aw-refresh-decisions
+capture -> aw-capture
 discover_standards -> aw-discover-standards
 research_slack -> aw-research-slack
 clean_artifacts -> aw-clean-artifacts
@@ -441,7 +427,7 @@ log_session -> aw-log-session
 synthesize_memory -> aw-synthesize-memory
 ```
 
-Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill`, and older helper keys misplaced under `workflow.steps`, are replaced by `workflow.auxiliary`. Migrate old values to the matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entry instead of maintaining both shapes.
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill`, and older helper keys misplaced under `workflow.steps`, are replaced by `workflow.auxiliary`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code` are now `prd` and `review`; old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions` are now `refresh` and `capture`. Migrate old values to the matching current keys instead of maintaining both shapes.
 
 Valid `workflow.implementation.test_policy` values:
 
@@ -475,7 +461,7 @@ post_pr:
     provider: circleci
 ```
 
-CircleCI-specific settings are not part of the default `docs/workflow/config.yml`. `aw-monitor-circleci` will infer them from the git remote, PR URL, and `.circleci/config.yml` where possible. If a repo needs explicit settings, the skill can create `docs/workflow/circleci.yml`:
+CircleCI-specific settings are not part of the default `docs/workflow/config.yml`. `aw-monitor-pipeline` will infer them from the git remote, PR URL, and `.circleci/config.yml` where possible. If a repo needs explicit settings, it can create `docs/workflow/circleci.yml`:
 
 ```yaml
 vcs: github
@@ -523,12 +509,12 @@ During implementation, the agent should:
 
 ### 6. Log decisions as they happen
 
-When ambiguity is resolved, ask the agent to use `aw-log-decision`.
+When ambiguity is resolved, ask the agent to use `aw-capture decision`.
 
 Example prompts:
 
 ```text
-Use aw-log-decision to record that MFA recovery codes are single-use.
+Use aw-capture decision to record that MFA recovery codes are single-use.
 ```
 
 ```text
@@ -539,22 +525,22 @@ Decision records live in `docs/decisions/` and are indexed in `docs/decisions/in
 
 Do not edit old decision records to change history. Create a new decision that supersedes the old one.
 
-When the decision folder gets large or the index looks stale, use `aw-refresh-decisions`.
+When the decision folder gets large or the index looks stale, use `aw-refresh decisions`.
 
 ```text
-Use aw-refresh-decisions to rebuild the decision index and create summaries for large areas.
+Use aw-refresh decisions to rebuild the decision index and create summaries for large areas.
 ```
 
 That skill preserves immutable decision files, refreshes `docs/decisions/index.yml`, flags metadata gaps, follows supersession chains, and creates derived summaries under `docs/decisions/summaries/` when useful.
 
-### 7. Review specs before shipping
+### 7. Review before shipping
 
-Before opening a PR, ask the agent to use `aw-review-spec`.
+Before opening a PR, ask the agent to use `aw-review`. It routes by target: code diff → code review; spec → spec drift check; doc/plan → document review; "simplify" → simplification pass.
 
 Example prompts:
 
 ```text
-Use aw-review-spec to check this branch for spec drift.
+Use aw-review to check this branch for spec drift and code issues.
 ```
 
 ```text
@@ -570,12 +556,12 @@ The review should catch:
 
 ### 8. Capture corrections as learnings
 
-When you correct an agent and the correction should matter in the future, the agent should use `aw-record-retrospective`.
+When you correct an agent and the correction should matter in the future, the agent should use `aw-capture learning`.
 
 Example prompts:
 
 ```text
-Use aw-record-retrospective to save that learning for this repo.
+Use aw-capture learning to save that for this repo.
 ```
 
 ```text
@@ -666,13 +652,13 @@ Before commit or PR, the agent should explicitly check whether the diff changes 
 ### New Feature
 
 ```text
-Use aw-import-prd to persist the pasted/file/link PRD.
+Use aw-prd to persist the pasted/file/link PRD.
 Use aw-brainstorm with the imported PRD path to clarify requirements and create/update the feature spec.
 Use aw-plan with the feature spec path to plan implementation.
 Use aw-create-tickets with the plan path to turn the plan into stories.
 Have an agent pick up the first ticket ID/URL with aw-work.
-Use aw-log-decision for any choices we make during build.
-Use aw-review-spec before opening the PR.
+Use aw-capture decision for any choices we make during build.
+Use aw-review before opening the PR (spec drift + code review in one step).
 Run the capture checkpoint.
 Update README.md if setup, commands, config, or workflow behavior changed.
 Use aw-commit-push-pr to commit, push, run workflow compliance, and create the PR.
@@ -702,7 +688,7 @@ Use aw-discover-standards to capture any repeated billing conventions you find.
 
 ```text
 Actually, that behavior should be parent-controlled, not child-controlled.
-Use aw-record-retrospective if this should affect future agent behavior, and use aw-log-decision if it changes the product contract.
+Use aw-capture learning if this should affect future agent behavior, and aw-capture decision if it changes the product contract.
 ```
 
 ### Session Memory
@@ -722,7 +708,7 @@ After a sprint or when several unprocessed session logs have accumulated, use aw
 ### PR Readiness
 
 ```text
-Run aw-review-spec and aw-review-code, then update any stale specs or missing decisions before creating the PR.
+Run aw-review to check for spec drift and code issues, then update any stale specs or missing decisions before creating the PR.
 ```
 
 ## Installer Options
@@ -744,41 +730,32 @@ Environment overrides:
 ```bash
 AGENTIC_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/aw-init/scripts/install.sh --repo .
 AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/install.sh --repo .
-AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.3.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
+AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.4.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
 ```
 
 ## Included Skills
 
 - `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, global learnings index, and bundled `docs/standards/coding-approach.md`
 - `aw-upgrade`: upgrade existing installs and safely migrate older `docs/workflow/config.yml` shapes
-- `aw-import-prd`: persist pasted/file/link PRDs in `docs/product/prds/`
-- `aw-create-prd`: author PRDs from ideas, brainstorms, or notes using a repo-defined template when available
+- `aw-prd`: create or import PRDs under `docs/product/prds/`; routes by source between import mode (pasted content/file/URL) and create mode (ideas/notes)
 - `aw-clean-artifacts`: remove workflow artifacts marked `status: archived`
 - `aw-brainstorm`: clarify ambiguous PRDs or ideas and create the right artifact, usually a living feature spec
 - `aw-create-spec`: directly create or update living feature specs in `docs/features/<feature>/spec.md`
-- `aw-index-features`: generate `docs/features/index.yml` from `docs/features/<feature>/spec.md`
 - `aw-plan`: create implementation plans from specs or requirements
-- `aw-review-doc`: review requirements and plans before handoff
-- `aw-review-spec`: catch drift between implementation and specs before shipping
+- `aw-review`: review code, docs, plans, and specs — routes by target: code diff → code review with P0-P3 findings; simplify/refactor → 3-agent simplification pass; doc/plan → document review; spec → spec drift check
 - `aw-create-tickets`: turn plans into configured Linear/Jira/custom implementation tickets
 - `aw-work`: implement plans, tickets, specs, or concrete requests
 - `aw-debug`: investigate and fix bugs systematically
-- `aw-simplify-code`: simplify recently changed code while preserving behavior
-- `aw-review-code`: review code before PRs
 - `aw-check-workflow-compliance`: check workflow routing, test policy, acceptance coverage, README expectations, and review gates after push and before PR creation
 - `aw-commit`: create focused commits
 - `aw-commit-push-pr`: commit, push, create/update PRs with optional configured title/body templates, and invoke configured post-PR monitoring
-- `aw-monitor-pipeline`: run the configured post-PR CI monitor/fix loop
-- `aw-monitor-circleci`: monitor CircleCI pipelines and fix branch-caused failures
+- `aw-monitor-pipeline`: run the post-PR CI monitor/fix loop; handles GitHub Actions and CircleCI natively; routes to custom skills when configured
 - `aw-request-human-review`: create spec/plan sign-off PRs and request configured GitHub reviewers
-- `aw-log-decision`: record immutable decisions in `docs/decisions/`
-- `aw-refresh-decisions`: refresh decision indexes and summaries without rewriting immutable decision records
+- `aw-capture`: capture durable knowledge — routes by type: `decision` → immutable record in `docs/decisions/`; `learning` → correction-driven learning in `docs/learnings/` or `~/.agents/learnings/`; `solution` → reusable solved-problem doc in `docs/solutions/`
+- `aw-refresh`: refresh and maintain docs registries — routes by scope: `decisions` → rebuild index and summaries without rewriting records; `solutions` → audit and update stale solution docs; `features` → regenerate `docs/features/index.yml`
 - `aw-discover-standards`: extract repeated codebase conventions into `docs/standards/`
-- `aw-record-retrospective`: capture correction-driven learnings in `docs/learnings/` or `~/.agents/learnings/`
 - `aw-log-session`: capture a structured session log in `docs/sessions/` at session end, feeding the memory synthesis loop
 - `aw-synthesize-memory`: process session logs into learnings, regenerate `docs/context/wiki.md`, surface pattern candidates for standards promotion, and expire old processed logs
-- `aw-capture-solution`: capture reusable solved-problem knowledge
-- `aw-refresh-solutions`: refresh stale solution docs
 - `aw-resolve-pr-feedback`: resolve PR review comments
 - `aw-create-worktree`: create isolated git worktrees
 - `aw-research-slack`: research organizational context from Slack, optionally routed through a configured enterprise Slack skill
