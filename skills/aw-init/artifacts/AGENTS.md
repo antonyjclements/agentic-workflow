@@ -104,7 +104,6 @@ Use the repo as the source of truth for product intent, standards, and decisions
 - Use configured commit-message formatting before committing.
 - Use configured PR templates when opening pull requests. If `pull_request.template.title` or `pull_request.template.body` is blank, use the normal generated title/body for that part.
 - After PR creation, if `workflow.steps.monitor_pipeline.skill` is configured, invoke it directly to handle post-PR CI monitoring.
-- A normal feature flow is: pasted/file/link PRD -> imported PRD artifact -> brainstorm/discovery creates or updates the living feature spec -> temporary feature plan -> tickets/stories -> implementation agent picks up a ticket -> decisions logged as they happen -> spec review before PR.
 
 ### Workflow Step Routing
 
@@ -250,24 +249,6 @@ Supported values:
 - Update `README.md` in the same change when setup, installation, commands, configuration, repo structure, architecture, or workflow behavior changes.
 - Before commit/PR, check whether the diff changes anything a future user needs to know. If yes, update `README.md`; if no, state why no README update was needed.
 - Do not let README instructions drift from `AGENTS.md`, `docs/workflow/config.yml`, installer behavior, or skill names.
-
-### Workflow Maturity
-
-Not all artifact types pay back at every project stage. Activate them progressively rather than all at once.
-
-**New project (fewer than four sessions)**
-Log decisions and session logs. The overhead of learnings, synthesis, and a wiki exceeds the payback when there is no accumulated history to synthesize.
-
-**Early project (four or more sessions, roughly one month)**
-Run `aw-synthesize-memory` for the first time. If patterns are emerging across sessions, promote them to learnings. Skip wiki generation until there is enough signal to make it useful.
-
-**Growing project (two or more months or two or more active contributors)**
-The context wiki earns its place when onboarding or cross-session continuity becomes a pain point. Standards become worth maintaining when the same conventions need enforcing repeatedly.
-
-**Mature project (multi-quarter, multi-contributor)**
-The full workflow compounds: specs, plans, tickets, decisions, learnings, standards, wiki, and synthesis all reinforce each other. This is when the ROI curve turns strongly positive.
-
-When unsure whether to create a durable artifact at the current project stage, prefer a session log.
 
 ### Artifact Discipline
 
