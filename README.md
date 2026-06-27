@@ -83,28 +83,28 @@ The repository root `aw-version.txt` is the single version source for installer-
 
 ## Upgrade Existing Installs
 
-Use `aw-upgrade` when an existing repo already has Agentic Workflow files and you need to adopt a newer workflow version:
-
-```text
-Use aw-upgrade to upgrade /path/to/target/repo.
-```
-
-The upgrade path dry-runs first, then can apply a safe migration for `docs/workflow/config.yml`:
+Upgrade via the bundled script rather than an agent skill:
 
 ```bash
-ruby skills/aw-init/scripts/upgrade-config.rb --repo /path/to/target/repo --dry-run
-ruby skills/aw-init/scripts/upgrade-config.rb --repo /path/to/target/repo --apply
+skills/aw-init/scripts/upgrade.sh --repo /path/to/target/repo --dry-run
+skills/aw-init/scripts/upgrade.sh --repo /path/to/target/repo --apply
+```
+
+Pass `--refresh-skills --remote` to also refresh global skills and repo-local agent instructions:
+
+```bash
+skills/aw-init/scripts/upgrade.sh --repo /path/to/target/repo --apply --refresh-skills --remote
 ```
 
 Applying the migration creates a timestamped backup beside the original config and writes the current `.agentic-workflow-version`.
 
 The config migrator preserves unknown fields, adds missing current defaults, and moves old skill selector fields into `workflow.steps` or `workflow.auxiliary`:
 
-- `ticket_creation.skill` -> `workflow.steps.create_tickets.skill`
-- `git.commit.skill` -> `workflow.steps.commit.skill`
-- `research.slack.skill` -> `workflow.auxiliary.research_slack.skill`
-- custom `post_pr.ci_monitor.skill` -> `workflow.steps.monitor_pipeline.skill` and `post_pr.ci_monitor.provider: github-actions` when no provider was set
-- `post_pr.ci_monitor.skill: aw-monitor-circleci` -> `post_pr.ci_monitor.provider: circleci`
+- `ticket_creation.skill` → `workflow.steps.create_tickets.skill`
+- `git.commit.skill` → `workflow.steps.commit.skill`
+- `research.slack.skill` → `workflow.auxiliary.research_slack.skill`
+- custom `post_pr.ci_monitor.skill` → `workflow.steps.monitor_pipeline.skill` and `post_pr.ci_monitor.provider: github-actions` when no provider was set
+- `post_pr.ci_monitor.skill: aw-monitor-circleci` → `post_pr.ci_monitor.provider: circleci`
 
 ## Cross-Agent Skill Install
 
@@ -147,7 +147,7 @@ Five artifact types compound over time and live permanently in the repo:
 Two additional artifact types form the memory synthesis loop:
 
 - **Session logs** (`docs/sessions/`) are transient synthesis input — raw material written by
-  `aw-log-session` and consumed by `aw-synthesize-memory`. They are not durable project
+  `aw-capture session` and consumed by `aw-synthesize-memory`. They are not durable project
   knowledge; they decay once their signal has been promoted to learnings.
 - **The context wiki** (`docs/context/wiki.md`) is a generated artifact, never a source artifact.
   Regenerated in full on each synthesis run, it gives agents a compact project briefing at
@@ -208,25 +208,25 @@ docs/
 
 ### 1. Start with PRD intake, discovery, or a spec
 
-When you have a PRD from pasted content, a local file, markdown, or a document link, first preserve it with `aw-import-prd`.
+When you have a PRD from pasted content, a local file, markdown, or a document link, or when you want to author a PRD from ideas or notes, use `aw-prd`. It routes internally between import and create modes.
 
 Example prompts:
 
 ```text
-Use aw-import-prd to create a PRD from this Google Doc.
+Use aw-prd to import this PRD from this Google Doc.
 ```
 
 ```text
-Use aw-import-prd to save this pasted PRD.
+Use aw-prd to draft a PRD from these notes.
 ```
 
-Imported PRDs are historical source artifacts:
+Imported and authored PRDs are stored as source artifacts:
 
 ```text
 docs/product/prds/<date>-<slug>.md
 ```
 
-Then pass the imported PRD path to `aw-brainstorm` unless the PRD is already clear and you explicitly want a spec draft. PRDs often contain implicit ambiguity, assumptions, and open questions. `aw-brainstorm` resolves that ambiguity and creates or updates the living feature spec in the same run.
+Then pass the PRD path to `aw-brainstorm` unless the PRD is already clear and you explicitly want a spec draft. PRDs often contain implicit ambiguity, assumptions, and open questions. `aw-brainstorm` resolves that ambiguity and creates or updates the living feature spec in the same run.
 
 ```text
 Use aw-brainstorm with docs/product/prds/2026-05-24-checkout-redesign.md.
@@ -250,19 +250,13 @@ Specs are stored by feature:
 docs/features/<feature>/spec.md
 ```
 
-They are indexed by `docs/features/index.yml`. To generate or refresh that index, ask the agent to use `aw-index-features`:
+They are indexed by `docs/features/index.yml`. To generate or refresh that index:
 
 ```text
-Use aw-index-features to generate docs/features/index.yml.
+Use aw-refresh features to generate docs/features/index.yml.
 ```
 
-Use `aw-create-prd` when you want an authored PRD instead of immediately committing intent to a living spec:
-
-```text
-Use aw-create-prd to turn this idea into a PRD draft.
-```
-
-`aw-create-prd` uses `docs/product/prds/template.md` when a repo provides one, otherwise it falls back to its bundled template.
+`aw-prd create` uses `docs/product/prds/template.md` when a repo provides one, otherwise it falls back to its bundled template.
 
 PRD lifecycle statuses are:
 
@@ -271,9 +265,9 @@ PRD lifecycle statuses are:
 - `ready-for-spec`: stable enough to promote into a living spec
 - `promoted`: a living spec has been created from the PRD
 - `superseded`: replaced before promotion by newer product input
-- `archived`: safe to remove from the working tree with `aw-clean-artifacts`
+- `archived`: safe to remove from the working tree with `aw-refresh cleanup`
 
-When a spec is created from a PRD, the agent marks the PRD `promoted` and links `promoted_to` to the spec. The PRD body stays unchanged. To remove old artifacts, mark them `archived` and run `aw-clean-artifacts`; git history is the long-term archive.
+When a spec is created from a PRD, the agent marks the PRD `promoted` and links `promoted_to` to the spec. The PRD body stays unchanged. To remove old artifacts, mark them `archived` and run `aw-refresh cleanup`; git history is the long-term archive.
 
 ### 2. Discover or enforce standards
 
@@ -303,10 +297,10 @@ Use aw-plan to plan the implementation from docs/features/mfa/spec.md.
 
 Plans are execution scaffolding. They live at `docs/features/<feature>/plan.md` and should be removed when they are no longer active.
 
-After a plan is created, run `aw-review-doc` before human review, ticket creation, or implementation. It catches plan coherence, feasibility, scope, and role-specific issues while the plan is still cheap to change.
+After a plan is created, run `aw-review plan` before human review, ticket creation, or implementation. It catches plan coherence, feasibility, scope, and role-specific issues while the plan is still cheap to change.
 
 ```text
-Use aw-review-doc on docs/features/mfa/plan.md before we create tickets.
+Use aw-review on docs/features/mfa/plan.md before we create tickets.
 ```
 
 ### 4. Implement the work
@@ -404,44 +398,35 @@ Set `workflow.auxiliary.<key>.skill` to replace helper skills that can be invoke
 Default workflow step keys:
 
 ```text
-import_prd -> aw-import-prd
-create_prd -> aw-create-prd
+prd -> aw-prd
 brainstorm -> aw-brainstorm
 create_spec -> aw-create-spec
-review_spec -> aw-review-spec
 request_human_review -> aw-request-human-review
 plan -> aw-plan
-review_plan -> aw-review-doc
+review -> aw-review
 create_tickets -> aw-create-tickets
 work -> aw-work
-review_code -> aw-review-code
 check_workflow_compliance -> aw-check-workflow-compliance
 commit -> aw-commit
 commit_push_pr -> aw-commit-push-pr
-monitor_pipeline -> aw-monitor-pipeline
+monitor_pipeline -> (no bundled skill; set workflow.steps.monitor_pipeline.skill)
 ```
 
 Auxiliary skill keys:
 
 ```text
-index_features -> aw-index-features
+refresh -> aw-refresh
 debug -> aw-debug
 create_worktree -> aw-create-worktree
-simplify_code -> aw-simplify-code
-log_decision -> aw-log-decision
-record_retrospective -> aw-record-retrospective
-capture_solution -> aw-capture-solution
-refresh_solutions -> aw-refresh-solutions
-refresh_decisions -> aw-refresh-decisions
+capture -> aw-capture
 discover_standards -> aw-discover-standards
-research_slack -> aw-research-slack
-clean_artifacts -> aw-clean-artifacts
 resolve_pr_feedback -> aw-resolve-pr-feedback
-log_session -> aw-log-session
 synthesize_memory -> aw-synthesize-memory
 ```
 
-Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old helper selector fields such as `research.slack.skill`, and older helper keys misplaced under `workflow.steps`, are replaced by `workflow.auxiliary`. Migrate old values to the matching `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` entry instead of maintaining both shapes.
+`research_slack`, `log_session`, `monitor_pipeline`, and `clean_artifacts` are no longer bundled keys. For Slack research, agents use available tools directly; set `workflow.auxiliary.research_slack.skill` for enterprise routing. Session logging is now `aw-capture session`. Post-PR CI monitoring requires a custom skill via `workflow.steps.monitor_pipeline.skill`. Archived artifact cleanup is now `aw-refresh cleanup`.
+
+Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code` are now `prd` and `review`; old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions`, `clean_artifacts`, and `log_session` are now `refresh` and `capture`. Migrate old values to the matching current keys.
 
 Valid `workflow.implementation.test_policy` values:
 
@@ -459,31 +444,15 @@ Blank or missing policy values default to `acceptance-first`.
 
 Set `workflow.steps.create_tickets.skill` to a Linear, Jira, or custom ticketing step when external tickets should be created. Leave it blank to use the bundled `aw-create-tickets` drafting step, which reports the proposed ticket split without creating external tickets.
 
-Set `workflow.auxiliary.research_slack.skill` when Slack access should route through an enterprise-specific Slack skill. Leave it blank to use the default `aw-research-slack` discovery path. Put workspace or channel defaults in that custom skill when a repo needs them.
+Set `workflow.auxiliary.research_slack.skill` when Slack access should route through an enterprise-specific Slack skill. When not set, agents use whatever Slack tools are available in the environment (MCP servers, etc.) directly.
 
 Set `pull_request.template.title` and `pull_request.template.body` when PR title/body text should follow organization templates. Each value should point to a markdown file by GitHub URL, raw GitHub URL, `file://` URL, absolute path, or repo-relative path. Leave either blank to use the default generated title or body for that part.
 
 Set `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` when commits or commit/push/PR should route through an enterprise-specific step. The bundled commit flow follows `git.commit.template`, `scope_required`, `allowed_types`, and `examples` when present, then falls back to repo instructions and recent commit history.
 
-Set `post_pr.ci_monitor.provider` to choose whether post-PR monitoring runs. `manual` disables monitoring. Use `workflow.steps.monitor_pipeline.skill` only when replacing the bundled provider-neutral monitoring step. Retry limits and polling cadence belong to the monitor skill, not the base workflow config.
+Set `workflow.steps.monitor_pipeline.skill` to a custom skill that handles post-PR CI monitoring for your provider (GitHub Actions, CircleCI, Jenkins, etc.). There is no bundled pipeline monitor — agents invoke the configured skill directly after PR creation, or skip cleanly when `post_pr.ci_monitor.provider` is `manual` or missing. Retry limits and polling cadence belong to the provider skill, not the base workflow config.
 
-For CircleCI:
-
-```yaml
-post_pr:
-  ci_monitor:
-    provider: circleci
-```
-
-CircleCI-specific settings are not part of the default `docs/workflow/config.yml`. `aw-monitor-circleci` will infer them from the git remote, PR URL, and `.circleci/config.yml` where possible. If a repo needs explicit settings, the skill can create `docs/workflow/circleci.yml`:
-
-```yaml
-vcs: github
-org: your-github-org
-project: your-repo
-branch: ""
-token_env: CIRCLECI_CLI_TOKEN
-```
+To enable monitoring, set `workflow.steps.monitor_pipeline.skill` to a skill that handles your CI provider. Set `post_pr.ci_monitor.provider` to a non-`manual` value to signal that monitoring is expected. Leave `post_pr.ci_monitor.provider: manual` (or omit it) to skip post-PR monitoring entirely.
 
 Set `human_review.spec.reviewers` and `human_review.plan.reviewers` to GitHub usernames that should be requested on spec and plan sign-off PRs. Leave the lists empty to create review PRs without automatic reviewer assignment.
 
@@ -523,12 +492,12 @@ During implementation, the agent should:
 
 ### 6. Log decisions as they happen
 
-When ambiguity is resolved, ask the agent to use `aw-log-decision`.
+When ambiguity is resolved, ask the agent to use `aw-capture decision`.
 
 Example prompts:
 
 ```text
-Use aw-log-decision to record that MFA recovery codes are single-use.
+Use aw-capture decision to record that MFA recovery codes are single-use.
 ```
 
 ```text
@@ -539,22 +508,22 @@ Decision records live in `docs/decisions/` and are indexed in `docs/decisions/in
 
 Do not edit old decision records to change history. Create a new decision that supersedes the old one.
 
-When the decision folder gets large or the index looks stale, use `aw-refresh-decisions`.
+When the decision folder gets large or the index looks stale, use `aw-refresh decisions`.
 
 ```text
-Use aw-refresh-decisions to rebuild the decision index and create summaries for large areas.
+Use aw-refresh decisions to rebuild the decision index and create summaries for large areas.
 ```
 
 That skill preserves immutable decision files, refreshes `docs/decisions/index.yml`, flags metadata gaps, follows supersession chains, and creates derived summaries under `docs/decisions/summaries/` when useful.
 
-### 7. Review specs before shipping
+### 7. Review before shipping
 
-Before opening a PR, ask the agent to use `aw-review-spec`.
+Before opening a PR, ask the agent to use `aw-review`. It routes by target: code diff → code review; spec → spec drift check; doc/plan → document review; "simplify" → simplification pass.
 
 Example prompts:
 
 ```text
-Use aw-review-spec to check this branch for spec drift.
+Use aw-review to check this branch for spec drift and code issues.
 ```
 
 ```text
@@ -570,12 +539,12 @@ The review should catch:
 
 ### 8. Capture corrections as learnings
 
-When you correct an agent and the correction should matter in the future, the agent should use `aw-record-retrospective`.
+When you correct an agent and the correction should matter in the future, the agent should use `aw-capture learning`.
 
 Example prompts:
 
 ```text
-Use aw-record-retrospective to save that learning for this repo.
+Use aw-capture learning to save that for this repo.
 ```
 
 ```text
@@ -666,17 +635,17 @@ Before commit or PR, the agent should explicitly check whether the diff changes 
 ### New Feature
 
 ```text
-Use aw-import-prd to persist the pasted/file/link PRD.
+Use aw-prd to persist the pasted/file/link PRD.
 Use aw-brainstorm with the imported PRD path to clarify requirements and create/update the feature spec.
 Use aw-plan with the feature spec path to plan implementation.
 Use aw-create-tickets with the plan path to turn the plan into stories.
 Have an agent pick up the first ticket ID/URL with aw-work.
-Use aw-log-decision for any choices we make during build.
-Use aw-review-spec before opening the PR.
+Use aw-capture decision for any choices we make during build.
+Use aw-review before opening the PR (spec drift + code review in one step).
 Run the capture checkpoint.
 Update README.md if setup, commands, config, or workflow behavior changed.
 Use aw-commit-push-pr to commit, push, run workflow compliance, and create the PR.
-If configured, aw-monitor-pipeline watches CI and fixes failures until green.
+If `workflow.steps.monitor_pipeline.skill` is configured, invoke it with the PR URL to watch CI and fix failures until green.
 ```
 
 ### Ticket-First Implementation
@@ -702,18 +671,18 @@ Use aw-discover-standards to capture any repeated billing conventions you find.
 
 ```text
 Actually, that behavior should be parent-controlled, not child-controlled.
-Use aw-record-retrospective if this should affect future agent behavior, and use aw-log-decision if it changes the product contract.
+Use aw-capture learning if this should affect future agent behavior, and aw-capture decision if it changes the product contract.
 ```
 
 ### Session Memory
 
 For Claude Code, session logging is automatic. The Stop hook installed by `aw-init` fires when each session ends and writes a log to `docs/sessions/` without any manual step.
 
-For other agents (Codex, Codeium, Windsurf), invoke `aw-log-session` manually at session end. The log format is cross-agent — all logs land in `docs/sessions/` and are processed identically.
+For other agents (Codex, Codeium, Windsurf), invoke `aw-capture session` manually at session end. The session log format is cross-agent — all logs land in `docs/sessions/` and are processed identically.
 
 ```text
 # manual invocation (any agent)
-Use aw-log-session to record what was attempted, what worked, any corrections, and dead ends.
+Use aw-capture session to record what was attempted, what worked, any corrections, and dead ends.
 
 # synthesis (any agent, run periodically)
 After a sprint or when several unprocessed session logs have accumulated, use aw-synthesize-memory to distill logs into learnings and regenerate docs/context/wiki.md.
@@ -722,7 +691,7 @@ After a sprint or when several unprocessed session logs have accumulated, use aw
 ### PR Readiness
 
 ```text
-Run aw-review-spec and aw-review-code, then update any stale specs or missing decisions before creating the PR.
+Run aw-review to check for spec drift and code issues, then update any stale specs or missing decisions before creating the PR.
 ```
 
 ## Installer Options
@@ -744,44 +713,30 @@ Environment overrides:
 ```bash
 AGENTIC_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/aw-init/scripts/install.sh --repo .
 AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/install.sh --repo .
-AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.3.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
+AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.5.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
 ```
 
 ## Included Skills
 
-- `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, global learnings index, and bundled `docs/standards/coding-approach.md`
-- `aw-upgrade`: upgrade existing installs and safely migrate older `docs/workflow/config.yml` shapes
-- `aw-import-prd`: persist pasted/file/link PRDs in `docs/product/prds/`
-- `aw-create-prd`: author PRDs from ideas, brainstorms, or notes using a repo-defined template when available
-- `aw-clean-artifacts`: remove workflow artifacts marked `status: archived`
+- `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, global learnings index, and bundled `docs/standards/coding-approach.md`; upgrade via `skills/aw-init/scripts/upgrade.sh`
+- `aw-prd`: create or import PRDs under `docs/product/prds/`; routes by source between import mode (pasted content/file/URL) and create mode (ideas/notes)
 - `aw-brainstorm`: clarify ambiguous PRDs or ideas and create the right artifact, usually a living feature spec
 - `aw-create-spec`: directly create or update living feature specs in `docs/features/<feature>/spec.md`
-- `aw-index-features`: generate `docs/features/index.yml` from `docs/features/<feature>/spec.md`
 - `aw-plan`: create implementation plans from specs or requirements
-- `aw-review-doc`: review requirements and plans before handoff
-- `aw-review-spec`: catch drift between implementation and specs before shipping
+- `aw-review`: review code, docs, plans, and specs — routes by target: code diff → code review with P0-P3 findings; simplify/refactor → 3-agent simplification pass; doc/plan → document review; spec → spec drift check
 - `aw-create-tickets`: turn plans into configured Linear/Jira/custom implementation tickets
 - `aw-work`: implement plans, tickets, specs, or concrete requests
 - `aw-debug`: investigate and fix bugs systematically
-- `aw-simplify-code`: simplify recently changed code while preserving behavior
-- `aw-review-code`: review code before PRs
 - `aw-check-workflow-compliance`: check workflow routing, test policy, acceptance coverage, README expectations, and review gates after push and before PR creation
 - `aw-commit`: create focused commits
 - `aw-commit-push-pr`: commit, push, create/update PRs with optional configured title/body templates, and invoke configured post-PR monitoring
-- `aw-monitor-pipeline`: run the configured post-PR CI monitor/fix loop
-- `aw-monitor-circleci`: monitor CircleCI pipelines and fix branch-caused failures
 - `aw-request-human-review`: create spec/plan sign-off PRs and request configured GitHub reviewers
-- `aw-log-decision`: record immutable decisions in `docs/decisions/`
-- `aw-refresh-decisions`: refresh decision indexes and summaries without rewriting immutable decision records
+- `aw-capture`: capture durable knowledge — routes by type: `decision` → immutable record in `docs/decisions/`; `learning` → correction-driven learning in `docs/learnings/`; `solution` → reusable solved-problem doc in `docs/solutions/`; `session` → structured session log in `docs/sessions/` feeding the memory synthesis loop
+- `aw-refresh`: refresh and maintain docs registries — routes by scope: `decisions` → rebuild index and summaries without rewriting records; `solutions` → audit and update stale solution docs; `features` → regenerate `docs/features/index.yml`; `cleanup` → remove workflow artifacts marked `status: archived`
 - `aw-discover-standards`: extract repeated codebase conventions into `docs/standards/`
-- `aw-record-retrospective`: capture correction-driven learnings in `docs/learnings/` or `~/.agents/learnings/`
-- `aw-log-session`: capture a structured session log in `docs/sessions/` at session end, feeding the memory synthesis loop
 - `aw-synthesize-memory`: process session logs into learnings, regenerate `docs/context/wiki.md`, surface pattern candidates for standards promotion, and expire old processed logs
-- `aw-capture-solution`: capture reusable solved-problem knowledge
-- `aw-refresh-solutions`: refresh stale solution docs
 - `aw-resolve-pr-feedback`: resolve PR review comments
 - `aw-create-worktree`: create isolated git worktrees
-- `aw-research-slack`: research organizational context from Slack, optionally routed through a configured enterprise Slack skill
 
 The repo carries a curated skill set under `skills/`. Deprecated or unrelated skills should be removed rather than kept for completeness.
 
@@ -794,5 +749,5 @@ When changing this workflow:
 - update `skills/aw-init/scripts/install.sh` if repo-local structure changes
 - update this README so humans know how to use the system
 - keep install guidance sourced from `aw-init`
-- run `bash -n skills/aw-init/scripts/install.sh`
+- run `bash -n skills/aw-init/scripts/install.sh && bash -n skills/aw-init/scripts/upgrade.sh`
 - run `bash scripts/test-install.sh`
