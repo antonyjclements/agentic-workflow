@@ -28,7 +28,7 @@ Create or import a product requirements document and store it under `docs/produc
 - `ready-for-spec`: stable enough to promote into a living spec
 - `promoted`: a living spec has been created from this PRD
 - `superseded`: replaced before promotion
-- `archived`: safe for `aw-clean-artifacts` to remove from the working tree
+- `archived`: safe for `aw-refresh cleanup` to remove from the working tree
 
 ---
 
@@ -85,7 +85,7 @@ Persist external product input as a historical source artifact.
 - Preserve the PRD as input, including ambiguity and open questions.
 - Do not rewrite the imported PRD into living truth — that belongs in the spec.
 - After a spec is created from the PRD, only update frontmatter lifecycle metadata (`status: promoted`, `promoted_to`). Do not rewrite the PRD body.
-- Do not remove imported PRDs just because they were promoted. Removal requires `status: archived` and cleanup through `aw-clean-artifacts`.
+- Do not remove imported PRDs just because they were promoted. Removal requires `status: archived` and cleanup through `aw-refresh cleanup`.
 - Avoid storing secrets, customer-private data, or credentials; redact only when necessary.
 
 ---

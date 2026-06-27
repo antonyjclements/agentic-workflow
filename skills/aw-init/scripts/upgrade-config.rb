@@ -307,32 +307,36 @@ delete_empty_path(config, "workflow", "steps")
 # Consolidate pre-0.5.0 auxiliary keys (check both auxiliary and misplaced-under-steps)
 # index_features + refresh_decisions + refresh_solutions -> refresh
 %w[index_features refresh_decisions refresh_solutions].each do |old_key|
-  old_skill = dig_hash(existing, "workflow", "auxiliary", old_key, "skill") ||
-              dig_hash(existing, "workflow", "steps", old_key, "skill")
+  aux_skill = dig_hash(existing, "workflow", "auxiliary", old_key, "skill")
+  steps_skill = dig_hash(existing, "workflow", "steps", old_key, "skill")
+  old_skill = blank?(aux_skill) ? steps_skill : aux_skill
   assign_auxiliary(config, "refresh", old_skill, "workflow.auxiliary.#{old_key}.skill", actions, conflicts)
   config.dig("workflow", "auxiliary")&.delete(old_key)
   config.dig("workflow", "steps")&.delete(old_key)
 end
 
 # simplify_code (old auxiliary) -> review (step)
-simplify_skill = dig_hash(existing, "workflow", "auxiliary", "simplify_code", "skill") ||
-                 dig_hash(existing, "workflow", "steps", "simplify_code", "skill")
+aux_simplify = dig_hash(existing, "workflow", "auxiliary", "simplify_code", "skill")
+steps_simplify = dig_hash(existing, "workflow", "steps", "simplify_code", "skill")
+simplify_skill = blank?(aux_simplify) ? steps_simplify : aux_simplify
 assign_step(config, "review", simplify_skill, "workflow.auxiliary.simplify_code.skill", actions, conflicts)
 config.dig("workflow", "auxiliary")&.delete("simplify_code")
 config.dig("workflow", "steps")&.delete("simplify_code")
 
 # log_decision + record_retrospective + capture_solution + log_session -> capture
 %w[log_decision record_retrospective capture_solution log_session].each do |old_key|
-  old_skill = dig_hash(existing, "workflow", "auxiliary", old_key, "skill") ||
-              dig_hash(existing, "workflow", "steps", old_key, "skill")
+  aux_skill = dig_hash(existing, "workflow", "auxiliary", old_key, "skill")
+  steps_skill = dig_hash(existing, "workflow", "steps", old_key, "skill")
+  old_skill = blank?(aux_skill) ? steps_skill : aux_skill
   assign_auxiliary(config, "capture", old_skill, "workflow.auxiliary.#{old_key}.skill", actions, conflicts)
   config.dig("workflow", "auxiliary")&.delete(old_key)
   config.dig("workflow", "steps")&.delete(old_key)
 end
 
 # clean_artifacts -> removed (cleanup is now aw-refresh cleanup mode; no config key)
-clean_skill = dig_hash(existing, "workflow", "auxiliary", "clean_artifacts", "skill") ||
-              dig_hash(existing, "workflow", "steps", "clean_artifacts", "skill")
+aux_clean = dig_hash(existing, "workflow", "auxiliary", "clean_artifacts", "skill")
+steps_clean = dig_hash(existing, "workflow", "steps", "clean_artifacts", "skill")
+clean_skill = blank?(aux_clean) ? steps_clean : aux_clean
 unless blank?(clean_skill)
   actions << "removed workflow.auxiliary.clean_artifacts.skill=#{clean_skill.inspect}; " \
              "cleanup is now aw-refresh cleanup mode (no replacement config key)"
