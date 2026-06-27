@@ -58,6 +58,7 @@ assert_repo_install() {
   assert_file "$target_repo/docs/decisions/index.yml"
   assert_file "$target_repo/docs/learnings/index.yml"
   assert_file "$target_repo/docs/workflow/README.md"
+  assert_file "$target_repo/docs/workflow/field-guide.md"
   assert_file "$target_repo/docs/workflow/config.yml"
   assert_contains "$target_repo/docs/workflow/README.md" "Workflow Config"
   assert_contains "$target_repo/docs/workflow/README.md" "Schema"

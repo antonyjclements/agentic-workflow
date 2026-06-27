@@ -206,6 +206,8 @@ docs/
 
 ## How To Use It
 
+For a quick reference on which skills to run and when — by task type and team size — see [operating_model.md](operating_model.md).
+
 ### 1. Start with PRD intake, discovery, or a spec
 
 When you have a PRD from pasted content, a local file, markdown, or a document link, or when you want to author a PRD from ideas or notes, use `aw-prd`. It routes internally between import and create modes.
