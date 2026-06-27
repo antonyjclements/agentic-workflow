@@ -4,6 +4,8 @@
 
 Task-size routing belongs in `AGENTS.md`. Use `config.yml` for execution details such as replacement skills, implementation test policy, PR templates, commit conventions, CI monitoring, and human reviewers.
 
+For a step-by-step guide on which skills to run and when — by task type and team size — see [field-guide.md](field-guide.md).
+
 ## Minimal Example
 
 ```yaml
