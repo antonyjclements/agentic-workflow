@@ -108,7 +108,7 @@ Before finishing:
 - ensure docs/config/tests match behavior
 - update `README.md` when user-facing setup, commands, configuration, architecture, or workflow behavior changed
 - check the diff against applicable standards from `docs/standards/index.yml`
-- run `aw-review-code` for non-trivial or risky changes when time/context allows
+- run `aw-review` for non-trivial or risky changes when time/context allows
 - address safe findings; surface judgment calls
 - record ship-readiness evidence needed by `aw-check-workflow-compliance`: effective test policy, tests/checks run, acceptance coverage, README status, review gates run/skipped, and justified exceptions
 
@@ -118,9 +118,9 @@ Only when implementation and verification are complete:
 
 - mark active plan completed if applicable
 - run a capture checkpoint:
-  - log durable decisions with `aw-log-decision`
-  - capture correction-driven lessons with `aw-record-retrospective`
-  - suggest `aw-capture-solution` for non-trivial solved problems or reusable patterns
+  - log durable decisions with `aw-capture decision`
+  - capture correction-driven lessons with `aw-capture learning`
+  - suggest `aw-capture solution` for non-trivial solved problems or reusable patterns
 - summarize changed files and behavior
 - summarize effective implementation test policy, tests added/updated/run, manual checks, acceptance coverage, and justified exceptions
 - list tests/checks run and failures

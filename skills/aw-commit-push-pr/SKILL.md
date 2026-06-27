@@ -85,13 +85,13 @@ Removed legacy field: `git.commit.skill`. If it appears in an older repo, tell t
 
 For PR titles, match repo style (project instructions in context > recent commits > conventional commits as default). With conventional commits, default to `fix:` over `feat:` when ambiguous — adding code to remedy broken or missing behavior is `fix:`. Reserve `feat:` for capabilities the user could not previously accomplish. The user may override.
 
-If the branch changes durable behavior, workflow, API contracts, UX, or product intent, run a spec drift check before committing: read `docs/features/index.yml` when present, update affected specs or report why no spec applies, and log missing decisions with `aw-log-decision` when ambiguity was resolved.
+If the branch changes durable behavior, workflow, API contracts, UX, or product intent, run a spec drift check before committing: read `docs/features/index.yml` when present, update affected specs or report why no spec applies, and log missing decisions with `aw-capture decision` when ambiguity was resolved.
 
 If the branch changes user-facing setup, commands, configuration, architecture, or workflow behavior, update `README.md` before committing. Treat missing README updates as a shipping blocker unless the change is clearly internal or the repo has no README.
 
-Run a capture checkpoint before committing non-trivial work: confirm decisions are logged, correction learnings are captured, and solved reusable problems have been offered for `aw-capture-solution`. Keep the prompt concise; skip it when the diff is trivial or capture already happened.
+Run a capture checkpoint before committing non-trivial work: confirm decisions are logged, correction learnings are captured, and solved reusable problems have been offered for `aw-capture solution`. Keep the prompt concise; skip it when the diff is trivial or capture already happened.
 
-Run `aw-review-code` before pushing or opening a PR for non-trivial changes. Address safe findings before Step 3; carry judgment calls into the PR body when not fixed.
+Run `aw-review` before pushing or opening a PR for non-trivial changes. Address safe findings before Step 3; carry judgment calls into the PR body when not fixed.
 
 ## Step 3: Commit and push
 
@@ -185,7 +185,7 @@ Templates customize PR text only. PR creation still uses the built-in behavior b
 After a new PR is created, or after pushing commits to an existing PR, read `docs/workflow/config.yml`.
 
 - If `post_pr.ci_monitor.provider` is `manual` or missing, skip monitoring and report that post-PR CI monitoring is disabled.
-- If configured, invoke `workflow.steps.monitor_pipeline.skill` when set; otherwise invoke `aw-monitor-pipeline` with the PR URL/branch.
+- If `workflow.steps.monitor_pipeline.skill` is set, invoke it with the PR URL. Skip monitoring otherwise.
 - The monitor/fix loop should continue until checks pass, the configured max attempts is reached, or failures are blocked by external infrastructure, credentials, flakes, quota, or unrelated base-branch issues.
 
 ---
