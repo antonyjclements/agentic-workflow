@@ -247,6 +247,15 @@ install_skills() {
   cp "$source_dir/aw-version.txt" "$skills_dir/aw-version.txt"
   echo "version: $AGENTIC_WORKFLOW_VERSION -> $skills_dir/aw-version.txt"
 
+  # Remove all existing aw-* skills so stale or removed skills never linger
+  # across upgrades. The current skill set is written fresh below.
+  for existing in "$skills_dir"/aw-*; do
+    [ -d "$existing" ] || continue
+    rm -rf "$existing"
+    echo "skill removed: $(basename "$existing")"
+  done
+
+  # Remove retired skills that carried a different prefix
   for deprecated_skill in \
     lfg \
     ce-agent-native-architecture \
@@ -299,40 +308,7 @@ install_skills() {
     ce-spec-review \
     ce-test-browser \
     ce-work \
-    ce-worktree \
-    aw-dogfood-beta \
-    aw-test-browser \
-    aw-code-review \
-    aw-compound \
-    aw-compound-refresh \
-    aw-decision-log \
-    aw-decisions-refresh \
-    aw-doc-review \
-    aw-slack-research \
-    aw-spec-create \
-    aw-spec-review \
-    aw-worktree \
-    aw-agent-native-architecture \
-    aw-agent-native-audit \
-    aw-clean-gone-branches \
-    aw-demo-reel \
-    aw-dhh-rails-style \
-    aw-frontend-design \
-    aw-gemini-imagegen \
-    aw-ideate \
-    aw-optimize \
-    aw-polish-beta \
-    aw-product-pulse \
-    aw-proof \
-    aw-release-notes \
-    aw-report-bug \
-    aw-riffrec-feedback-analysis \
-    aw-sessions \
-    aw-setup \
-    aw-strategy \
-    aw-test-xcode \
-    aw-update \
-    aw-work-beta; do
+    ce-worktree; do
     if [ -e "$skills_dir/$deprecated_skill" ]; then
       rm -rf "$skills_dir/$deprecated_skill"
       echo "skill removed: $deprecated_skill"
@@ -530,7 +506,7 @@ install_claude_hooks() {
     return 0
   fi
 
-  local hook_src="$source_dir/skills/aw-log-session/hooks/log-session.sh"
+  local hook_src="$source_dir/skills/aw-init/hooks/log-session.sh"
   if [ ! -f "$hook_src" ]; then
     echo "hooks skip: log-session.sh not found at $hook_src"
     return 0
@@ -613,13 +589,14 @@ Target repo:   $repo_dir
 Next steps:
 1. Review AGENTS.md and CLAUDE.md.
 2. Configure docs/workflow/config.yml for workflow step overrides, implementation test policy, commit messages, PR templates, human reviewers, and CI monitoring.
-   For CircleCI, set post_pr.ci_monitor.provider=circleci; aw-monitor-circleci will set up any CircleCI-specific config when needed.
-3. If this is an existing install with an older docs/workflow/config.yml, run: aw-upgrade
-4. If this repo already has docs/features/*/spec.md, run: aw-index-features
-5. If importing an external PRD, run: aw-import-prd. If authoring a PRD from an idea, run: aw-create-prd.
+   Set workflow.steps.monitor_pipeline.skill to enable post-PR CI monitoring for your provider (GitHub Actions, CircleCI, Jenkins, etc.).
+3. If this is an existing install with an older docs/workflow/config.yml, run:
+   skills/aw-init/scripts/upgrade.sh --repo $repo_dir --dry-run
+4. If this repo already has docs/features/*/spec.md, run: aw-refresh features
+5. If importing an external PRD, or authoring a PRD from ideas or notes, run: aw-prd
 6. Continue the handoff chain: aw-brainstorm -> aw-plan -> aw-create-tickets or aw-work. Use aw-create-spec directly only when requirements are already clear.
 7. Keep README.md updated when setup, commands, configuration, architecture, or workflow behavior changes.
-8. Session logging is now automatic for Claude Code: .claude/hooks/log-session.sh fires when each session ends.
+8. Session logging is automatic for Claude Code: .claude/hooks/log-session.sh fires when each session ends.
    Run aw-synthesize-memory periodically to distill session logs into learnings and refresh docs/context/wiki.md.
-   Other agents (Codex, Codeium, Windsurf) can invoke aw-log-session manually; the session log format is cross-agent.
+   Other agents (Codex, Codeium, Windsurf) can invoke aw-capture session manually; the session log format is cross-agent.
 EOF
