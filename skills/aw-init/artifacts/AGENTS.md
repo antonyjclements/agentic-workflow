@@ -104,7 +104,7 @@ Custom replacement skills must preserve the default step contract: accept the sa
 | `create_spec` | `aw-create-spec` | `docs/features/<feature>/spec.md` | Use directly only when requirements are already clear, existing behavior needs documentation, or the user asks to skip exploratory discovery. |
 | `review_spec` | `aw-review-spec` | — | |
 | `request_human_review` | `aw-request-human-review` | — | |
-| `plan` | `aw-plan` | `docs/features/<feature>/plan.md` | Use when work is multi-step or risky. Pass to `create_tickets` or `work`. |
+| `plan` | `aw-plan` | `docs/features/<feature>/plan.md` | Use when work is multi-step or risky; not a substitute for `work` on direct implementation requests. Pass to `create_tickets` or `work`. |
 | `review_plan` | `aw-review-doc` | — | Run after `plan` and before human review, ticket creation, or implementation. |
 | `create_tickets` | `aw-create-tickets` | Ticket IDs/URLs | Tickets should trace back to spec, plan, decisions, standards, acceptance criteria, and test expectations. A later agent starting from only a ticket ID is a valid entrypoint. |
 | `work` | `aw-work` | — | |
@@ -120,7 +120,7 @@ Custom replacement skills must preserve the default step contract: accept the sa
 |---|---|---|
 | `index_features` | `aw-index-features` | |
 | `debug` | `aw-debug` | |
-| `create_worktree` | `aw-create-worktree` | |
+| `create_worktree` | `aw-create-worktree` | Offered by `work` and `review_code` for isolation. |
 | `simplify_code` | `aw-simplify-code` | |
 | `log_decision` | `aw-log-decision` | |
 | `record_retrospective` | `aw-record-retrospective` | |
