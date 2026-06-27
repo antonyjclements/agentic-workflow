@@ -399,6 +399,7 @@ install_repo_files() {
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
   write_file_if_missing "$repo_dir/docs/sessions/index.yml" "sessions: []"
   copy_prompted "$artifact_dir/workflow-readme.md" "$repo_dir/docs/workflow/README.md"
+  copy_prompted "$artifact_dir/field-guide.md" "$repo_dir/docs/workflow/field-guide.md"
   write_file_if_missing "$repo_dir/docs/workflow/config.yml" "workflow:
   implementation:
     test_policy: acceptance-first
