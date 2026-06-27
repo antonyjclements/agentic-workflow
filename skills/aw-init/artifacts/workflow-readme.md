@@ -61,39 +61,31 @@ human_review:
 ## Workflow Step Keys
 
 ```text
-import_prd -> aw-import-prd
-create_prd -> aw-create-prd
+prd -> aw-prd
 brainstorm -> aw-brainstorm
 create_spec -> aw-create-spec
-review_spec -> aw-review-spec
 request_human_review -> aw-request-human-review
 plan -> aw-plan
-review_plan -> aw-review-doc
+review -> aw-review
 create_tickets -> aw-create-tickets
 work -> aw-work
-review_code -> aw-review-code
 check_workflow_compliance -> aw-check-workflow-compliance
 commit -> aw-commit
 commit_push_pr -> aw-commit-push-pr
-monitor_pipeline -> aw-monitor-pipeline
+monitor_pipeline -> (no bundled skill; set workflow.steps.monitor_pipeline.skill)
 ```
 
 ## Auxiliary Skill Keys
 
 ```text
-index_features -> aw-index-features
+refresh -> aw-refresh
 debug -> aw-debug
 create_worktree -> aw-create-worktree
-simplify_code -> aw-simplify-code
-log_decision -> aw-log-decision
-record_retrospective -> aw-record-retrospective
-capture_solution -> aw-capture-solution
-refresh_solutions -> aw-refresh-solutions
-refresh_decisions -> aw-refresh-decisions
+capture -> aw-capture
 discover_standards -> aw-discover-standards
-research_slack -> aw-research-slack
-clean_artifacts -> aw-clean-artifacts
+research_slack -> (no bundled skill; set workflow.auxiliary.research_slack.skill for enterprise routing)
 resolve_pr_feedback -> aw-resolve-pr-feedback
+synthesize_memory -> aw-synthesize-memory
 ```
 
 ## Test Policies
@@ -110,4 +102,4 @@ resolve_pr_feedback -> aw-resolve-pr-feedback
 
 ## Legacy Fields
 
-Older skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` are replaced by `workflow.steps` or `workflow.auxiliary`. Run `aw-upgrade` to migrate older configs safely.
+Older skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` are replaced by `workflow.steps` or `workflow.auxiliary`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code` and old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions`, `clean_artifacts`, `log_session` are also migrated automatically. Run `skills/aw-init/scripts/upgrade.sh --repo /path/to/repo --apply` to migrate older configs safely.

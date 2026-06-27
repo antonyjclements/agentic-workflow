@@ -403,27 +403,21 @@ install_repo_files() {
   implementation:
     test_policy: acceptance-first
   steps:
-    import_prd:
-      skill: \"\"
-    create_prd:
+    prd:
       skill: \"\"
     brainstorm:
       skill: \"\"
     create_spec:
       skill: \"\"
-    review_spec:
-      skill: \"\"
     request_human_review:
       skill: \"\"
     plan:
       skill: \"\"
-    review_plan:
+    review:
       skill: \"\"
     create_tickets:
       skill: \"\"
     work:
-      skill: \"\"
-    review_code:
       skill: \"\"
     check_workflow_compliance:
       skill: \"\"
@@ -434,33 +428,19 @@ install_repo_files() {
     monitor_pipeline:
       skill: \"\"
   auxiliary:
-    index_features:
+    refresh:
       skill: \"\"
     debug:
       skill: \"\"
     create_worktree:
       skill: \"\"
-    simplify_code:
-      skill: \"\"
-    log_decision:
-      skill: \"\"
-    record_retrospective:
-      skill: \"\"
-    capture_solution:
-      skill: \"\"
-    refresh_solutions:
-      skill: \"\"
-    refresh_decisions:
+    capture:
       skill: \"\"
     discover_standards:
       skill: \"\"
     research_slack:
       skill: \"\"
-    clean_artifacts:
-      skill: \"\"
     resolve_pr_feedback:
-      skill: \"\"
-    log_session:
       skill: \"\"
     synthesize_memory:
       skill: \"\"

@@ -7,17 +7,14 @@ require "time"
 require "yaml"
 
 DEFAULT_STEPS = %w[
-  import_prd
-  create_prd
+  prd
   brainstorm
   create_spec
-  review_spec
   request_human_review
   plan
-  review_plan
+  review
   create_tickets
   work
-  review_code
   check_workflow_compliance
   commit
   commit_push_pr
@@ -25,19 +22,14 @@ DEFAULT_STEPS = %w[
 ].freeze
 
 DEFAULT_AUXILIARY = %w[
-  index_features
+  refresh
   debug
   create_worktree
-  simplify_code
-  log_decision
-  record_retrospective
-  capture_solution
-  refresh_solutions
-  refresh_decisions
+  capture
   discover_standards
   research_slack
-  clean_artifacts
   resolve_pr_feedback
+  synthesize_memory
 ].freeze
 
 DEFAULT_CONFIG = {
@@ -293,6 +285,62 @@ unless blank?(monitor_circleci_skill)
   end
 end
 config.dig("workflow", "steps")&.delete("monitor_circleci")
+delete_empty_path(config, "workflow", "steps")
+
+# Consolidate pre-0.5.0 step keys into unified steps
+# import_prd + create_prd -> prd
+%w[import_prd create_prd].each do |old_step|
+  old_skill = dig_hash(existing, "workflow", "steps", old_step, "skill")
+  assign_step(config, "prd", old_skill, "workflow.steps.#{old_step}.skill", actions, conflicts)
+  config.dig("workflow", "steps")&.delete(old_step)
+end
+delete_empty_path(config, "workflow", "steps")
+
+# review_code + review_spec + review_plan -> review
+%w[review_code review_spec review_plan].each do |old_step|
+  old_skill = dig_hash(existing, "workflow", "steps", old_step, "skill")
+  assign_step(config, "review", old_skill, "workflow.steps.#{old_step}.skill", actions, conflicts)
+  config.dig("workflow", "steps")&.delete(old_step)
+end
+delete_empty_path(config, "workflow", "steps")
+
+# Consolidate pre-0.5.0 auxiliary keys (check both auxiliary and misplaced-under-steps)
+# index_features + refresh_decisions + refresh_solutions -> refresh
+%w[index_features refresh_decisions refresh_solutions].each do |old_key|
+  old_skill = dig_hash(existing, "workflow", "auxiliary", old_key, "skill") ||
+              dig_hash(existing, "workflow", "steps", old_key, "skill")
+  assign_auxiliary(config, "refresh", old_skill, "workflow.auxiliary.#{old_key}.skill", actions, conflicts)
+  config.dig("workflow", "auxiliary")&.delete(old_key)
+  config.dig("workflow", "steps")&.delete(old_key)
+end
+
+# simplify_code (old auxiliary) -> review (step)
+simplify_skill = dig_hash(existing, "workflow", "auxiliary", "simplify_code", "skill") ||
+                 dig_hash(existing, "workflow", "steps", "simplify_code", "skill")
+assign_step(config, "review", simplify_skill, "workflow.auxiliary.simplify_code.skill", actions, conflicts)
+config.dig("workflow", "auxiliary")&.delete("simplify_code")
+config.dig("workflow", "steps")&.delete("simplify_code")
+
+# log_decision + record_retrospective + capture_solution + log_session -> capture
+%w[log_decision record_retrospective capture_solution log_session].each do |old_key|
+  old_skill = dig_hash(existing, "workflow", "auxiliary", old_key, "skill") ||
+              dig_hash(existing, "workflow", "steps", old_key, "skill")
+  assign_auxiliary(config, "capture", old_skill, "workflow.auxiliary.#{old_key}.skill", actions, conflicts)
+  config.dig("workflow", "auxiliary")&.delete(old_key)
+  config.dig("workflow", "steps")&.delete(old_key)
+end
+
+# clean_artifacts -> removed (cleanup is now aw-refresh cleanup mode; no config key)
+clean_skill = dig_hash(existing, "workflow", "auxiliary", "clean_artifacts", "skill") ||
+              dig_hash(existing, "workflow", "steps", "clean_artifacts", "skill")
+unless blank?(clean_skill)
+  actions << "removed workflow.auxiliary.clean_artifacts.skill=#{clean_skill.inspect}; " \
+             "cleanup is now aw-refresh cleanup mode (no replacement config key)"
+end
+config.dig("workflow", "auxiliary")&.delete("clean_artifacts")
+config.dig("workflow", "steps")&.delete("clean_artifacts")
+
+delete_empty_path(config, "workflow", "auxiliary")
 delete_empty_path(config, "workflow", "steps")
 
 DEFAULT_STEPS.each do |step|
