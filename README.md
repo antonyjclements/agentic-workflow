@@ -713,7 +713,7 @@ Environment overrides:
 ```bash
 AGENTIC_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/aw-init/scripts/install.sh --repo .
 AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/install.sh --repo .
-AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.4.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
+AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.5.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
 ```
 
 ## Included Skills
