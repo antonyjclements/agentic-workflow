@@ -32,7 +32,7 @@ deepened: YYYY-MM-DD  # optional, set when the confidence check substantively st
 
 <!-- Include ONLY in non-interactive (headless) mode when the agent had Inferred bets that
      were not user-confirmed. Lists the un-validated agent inferences explicitly so downstream
-     review (aw-review-doc, aw-work, human PR review) can scrutinize them as bets, not as
+     review (aw-review, aw-work, human PR review) can scrutinize them as bets, not as
      authoritative decisions. Omit entirely in interactive mode — Inferred bets get user-
      corrected in chat and become Key Technical Decisions or are revised away. -->
 ## Assumptions
