@@ -294,6 +294,10 @@ Do not rely on the user to remember capture skills. At natural pauses, proactive
 
 ## Skill Quick Reference
 
+### Help and Orientation
+
+- Use `aw-help` when you are unsure which skill to run next, want a guided recommendation for your situation (bug fix, new feature, PR review, etc.), or want to understand where you are in the workflow and what comes next.
+
 ### Idea and Requirements
 
 - Use `aw-init` when installing this workflow into a repository.

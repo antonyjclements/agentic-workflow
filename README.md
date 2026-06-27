@@ -1,8 +1,8 @@
 # Agentic Workflow
 
-Portable agent workflow instructions and skills for spec-driven development.
+Agentic Workflow is a lightweight repo-native operating model for teams using coding agents on real, long-lived codebases. It keeps product intent, standards, decisions, corrections, and session memory versioned with the code, so agents and humans can pick up work without losing context.
 
-This repo helps you install the same agent operating model into any codebase:
+This repo installs the same operating model into any codebase:
 
 - living specs for product intent
 - indexed standards for how the team works
@@ -721,6 +721,7 @@ AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/
 ## Included Skills
 
 - `aw-init`: install repo-local `AGENTS.md`, `CLAUDE.md`, docs indexes, workflow config, version marker, skill links, global learnings index, and bundled `docs/standards/coding-approach.md`; upgrade via `skills/aw-init/scripts/upgrade.sh`
+- `aw-help`: get a guided recommendation for which skill to run next based on what you're trying to do and where you are in the workflow; reads `docs/workflow/field-guide.md` when available
 - `aw-prd`: create or import PRDs under `docs/product/prds/`; routes by source between import mode (pasted content/file/URL) and create mode (ideas/notes)
 - `aw-brainstorm`: clarify ambiguous PRDs or ideas and create the right artifact, usually a living feature spec
 - `aw-create-spec`: directly create or update living feature specs in `docs/features/<feature>/spec.md`
