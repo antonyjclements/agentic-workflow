@@ -12,7 +12,7 @@ Its distinctive claim is that the repo is the memory boundary. Everything agents
 
 | Tool | Best At | Memory Model | Ceremony Level | Fit |
 | --- | --- | --- | --- | --- |
-| Agentic Workflow | Durable repo memory, living specs, decisions, correction learning, upgradeable workflow routing | Repo-native (versioned markdown) | Low–medium; progressive | Long-lived codebases, existing teams |
+| Agentic Workflow | Durable repo memory, living specs, decisions, correction learning, upgradeable workflow routing | Repo-native (versioned markdown) | Low–medium; progressive | Any team using AI agents across sessions; scales from solo to multi-team |
 | BMAD | Full AI agile lifecycle: guided roles, agents, phases, help | External docs + agent prompts | High; method adoption | New AI-native projects, structured teams |
 | Spec Kit | Spec-driven feature pipeline: constitution → specify → plan → tasks → implement | Spec files as source of truth | Medium; command-driven | Feature factories, spec-first culture |
 | Cursor Rules | Per-repo editor instructions and lint-like conventions | Flat rules files in the repo | Very low | Quick editor conventions, small teams |
@@ -176,37 +176,27 @@ Sweep handles simple automation. Agentic Workflow handles institutional memory. 
 
 ## When to Choose Agentic Workflow
 
-Agentic Workflow is strongest when:
+The case for Agentic Workflow applies from the first session. A compounding knowledge base has to start somewhere — and the cost of not capturing a decision or correction is always higher than the cost of capturing it.
 
-1. **The project is long-lived.** The compounding value of decisions, learnings, and synthesis requires history to work. A one-week project has nothing to synthesize. A six-month project has made hundreds of implicit choices that agents should respect.
+1. **Any project where agents will work more than once.** Every captured decision is available to every future session. Every correction logged as a learning prevents the same mistake from recurring. This compounds from session two, not month six.
 
-2. **More than one agent session touches the same codebase.** The correction-learning loop only matters if there is a next session to benefit from it. The context wiki only earns its place when continuity across sessions is a real cost.
+2. **Teams that already use AI coding agents and want structured context without adopting a new methodology.** Agentic Workflow installs beside whatever tool the team uses — Cursor, Copilot, Aider, Claude Code. It is the memory and routing layer, not a replacement for the editor or the agent.
 
-3. **The team already has coding agents and wants structured context, not a new methodology.** Teams using Cursor, Copilot, Aider, or similar tools can add Agentic Workflow without replacing their existing tools. It is the memory and routing layer that sits beside whatever implementation tool the team already uses.
+3. **When mistakes repeat across sessions.** If agents make the same class of errors repeatedly, `aw-capture learning` and `aw-synthesize-memory` are the fix. No other tool in this analysis has a purpose-built correction-learning loop.
 
-4. **Mistakes are being repeated across sessions.** If agents make the same class of errors repeatedly, `aw-capture learning` and `aw-synthesize-memory` are the fix. This is not addressed by any other tool in this analysis.
+4. **When the team is growing or context handoffs are expensive.** When a second contributor joins, shared context becomes a bottleneck immediately. Standards, decisions, and the context wiki exist precisely for this transition — and they are far easier to build progressively than to reconstruct retroactively.
 
-5. **The team is growing.** When a second or third contributor joins, shared context becomes a bottleneck. Standards, decisions, and the context wiki exist precisely for this moment.
+5. **When the codebase has history worth respecting.** A mature repo has made hundreds of implicit choices — architectural, product, conventions. Agentic Workflow makes those choices explicit and agent-readable.
 
-## When to Choose Something Else
+## Progressive Activation
 
-- **New project, first few sessions:** Start with decisions and session logs only. The broader workflow adds ceremony before there is anything to synthesize. Return to Agentic Workflow when patterns emerge.
-
-- **Simple codebase, solo developer, stable conventions:** Cursor rules or a simple `.github/copilot-instructions.md` file may be all the overhead you need.
-
-- **Greenfield AI-native product with a team new to structured AI development:** BMAD's full methodology and guided onboarding (`bmad-help`) may be more accessible than Agentic Workflow's self-directed model.
-
-- **Feature factory with stable spec-to-code pipeline:** Spec Kit's cleaner feature pipeline may be a better fit for teams that want spec discipline without broader lifecycle management.
-
-## Maturity Model
-
-Agentic Workflow's value is back-loaded. The overhead is front-loaded.
+Install immediately; activate progressively. The knowledge base starts compounding on the first captured decision — ceremony scales with team size and project complexity.
 
 | Stage | Recommended activation |
 | --- | --- |
-| New project (< 4 sessions) | Decisions + session logs only |
-| Early project (4+ sessions) | Add learnings; first synthesis run |
-| Growing project (2+ months or 2+ contributors) | Add context wiki + standards |
-| Mature project (multi-quarter, multi-contributor) | Full workflow: specs, plans, tickets, decisions, learnings, standards, wiki, synthesis |
+| Any project, from session one | Decisions + session logs — lowest overhead, immediate value |
+| 4+ sessions or clear patterns emerging | Add learnings; first `aw-synthesize-memory` run |
+| 2+ months or 2+ contributors | Add context wiki + standards |
+| Multi-quarter, multi-contributor | Full workflow: specs, plans, tickets, decisions, learnings, standards, wiki, synthesis |
 
-Install now; activate progressively. The structured disciplines earn their keep at different stages, and the system is designed to be adopted layer by layer.
+The system is designed so that starting small is never the wrong choice. Solo developers benefit from captured decisions. Small teams benefit from shared session memory. Larger teams benefit from the full chain. The parts you do not activate cost nothing.
