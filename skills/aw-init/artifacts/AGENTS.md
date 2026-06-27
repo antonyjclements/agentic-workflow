@@ -6,6 +6,7 @@ This file guides coding agents working in this repository. Follow it in addition
 ## Operating Principles
 
 - Read the codebase before changing it. Prefer existing patterns, helpers, tests, and architecture over new conventions.
+- Read `docs/workflow/field-guide.md` when starting a session with an unfamiliar task type or an unclear workflow position. It maps task types and team sizes to the right skill sequence.
 - Keep changes scoped to the user request. Do not perform unrelated refactors or cleanup unless required to finish safely.
 - Preserve user work. Never revert or overwrite changes you did not make unless explicitly asked.
 - Prefer small, verifiable steps: inspect, plan when useful, implement, test, review, summarize.
@@ -293,10 +294,6 @@ Do not rely on the user to remember capture skills. At natural pauses, proactive
 - Skip capture for trivial edits, unsupported conclusions, secrets, sensitive incident details, or one-off preferences the user says are temporary.
 
 ## Skill Quick Reference
-
-### Help and Orientation
-
-- Use `aw-help` when you are unsure which skill to run next, want a guided recommendation for your situation (bug fix, new feature, PR review, etc.), or want to understand where you are in the workflow and what comes next.
 
 ### Idea and Requirements
 
