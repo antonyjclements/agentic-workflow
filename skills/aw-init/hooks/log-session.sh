@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stop hook for agentic-workflow session logging.
 # Installed by aw-init into .claude/hooks/log-session.sh.
-# Fires when a Claude Code session ends and writes a session log via aw-log-session.
+# Fires when a Claude Code session ends and writes a session log via aw-capture session.
 set -euo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
@@ -41,13 +41,13 @@ if [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
   claude --print "A Claude Code session just ended in this repository. \
 The session transcript is at: $transcript_path \
 Read the transcript to understand what was worked on. \
-Then use aw-log-session to write a brief structured session log: \
+Then use aw-capture session to write a brief structured session log: \
 what was attempted, what worked, any corrections the user made, and dead ends hit. \
 Write to docs/sessions/ and update docs/sessions/index.yml. \
 Keep the log under 300 words."
 else
   claude --print "A Claude Code session just ended in this repository. \
-Use aw-log-session to write a brief session log based on recent git activity. \
+Use aw-capture session to write a brief session log based on recent git activity. \
 Check: git log --oneline -5 and git diff --stat HEAD to understand what changed. \
 Write to docs/sessions/ and update docs/sessions/index.yml. \
 Keep the log under 300 words."

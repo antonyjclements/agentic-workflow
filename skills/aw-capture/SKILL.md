@@ -1,7 +1,7 @@
 ---
 name: aw-capture
-description: "Capture durable knowledge from the current session: log an immutable decision under docs/decisions/, save a reusable learning under docs/learnings/, or document a solved problem under docs/solutions/. Routes by what is being captured. Use when ambiguity is resolved, an agent is corrected, or a non-trivial problem is solved."
-argument-hint: "[decision|learning|solution] [context, correction, or description]"
+description: "Capture durable knowledge from the current session: log an immutable decision, save a reusable learning, document a solved problem, or write a session log. Routes by what is being captured. Invoked proactively by agents at natural pauses and automatically by the Claude Code Stop hook for session logging."
+argument-hint: "[decision|learning|solution|session] [context, correction, or description]"
 ---
 
 # Capture
@@ -15,10 +15,11 @@ Determine mode from arguments and context before starting:
 - A product, architecture, API, or workflow choice was made → **Decision**
 - Agent was corrected, interrupted, or redirected; user says "remember", "next time", "you should have" → **Learning**
 - A non-trivial problem was just solved; root cause and fix are clear → **Solution**
+- A meaningful session just ended or is wrapping up → **Session**
 
 If both Decision and Learning apply, write a decision for the repo fact and a learning for the future agent behavior.
 
-Agents should proactively suggest this skill at natural pauses — after resolving ambiguity, after a correction, after closing a hard bug — rather than waiting for the user to invoke it.
+Agents should proactively suggest this skill at natural pauses — after resolving ambiguity, after a correction, after closing a hard bug, at the end of a meaningful session — rather than waiting for the user to invoke it.
 
 ---
 
@@ -213,6 +214,115 @@ Read only when needed:
 - If a duplicate doc exists, update/cross-link instead of creating redundant guidance.
 - Never fabricate session history or code evidence.
 - Do not commit unless the user asks.
+
+---
+
+## Session
+
+Record what happened in this session so the synthesis loop can extract durable memory.
+
+### Trigger Signals
+
+Use when:
+- A task or subtask completes and the user is satisfied with the result
+- The user says "log session", "save session", "remember what we did", or similar
+- A session ends after meaningful work (not trivial one-line edits or read-only exploration)
+- `aw-synthesize-memory` is about to run and needs fresh logs to process
+- The Claude Code Stop hook fires at session end (automatic invocation)
+
+### Principles
+
+- Capture facts, not feelings. No blame, apology, or verbose narrative.
+- One log per meaningful session or self-contained work chunk.
+- Corrections are worth logging even when small — patterns emerge across sessions.
+- Dead ends are worth logging even when embarrassing — they prevent wasted future effort.
+- Keep logs short. A good session log is under 400 words.
+- Never include secrets, credentials, API keys, or private customer data.
+
+### Storage
+
+```text
+docs/sessions/
+docs/sessions/index.yml
+```
+
+### Workflow
+
+1. Review what happened in this session from the conversation and files changed.
+2. Identify: what was attempted, what worked, any user corrections, dead ends hit, and files/sources that were most useful.
+3. Draft the session log using the format below.
+4. Write the file to `docs/sessions/YYYY-MM-DD-<slug>.md`.
+5. Update `docs/sessions/index.yml`, adding the new entry with `status: unprocessed`.
+6. Report the file written and the index entry added.
+
+### Session Log Format
+
+```markdown
+---
+title: <Short description of the session task>
+date: YYYY-MM-DD
+status: unprocessed
+tags:
+  - <tag>
+---
+
+## What Was Attempted
+
+- <action and outcome>
+
+## What Worked
+
+- <approach that succeeded and why>
+
+## Corrections Made
+
+- <what the user corrected and what the missed assumption was>
+
+## Dead Ends
+
+- <approach that failed, why it failed, and what to try instead>
+
+## Key Files
+
+- <repo-relative paths that were most useful or changed>
+
+## Open Questions
+
+- <unresolved questions or deferred decisions>
+```
+
+Leave any section that does not apply with a `_none_` placeholder. Do not omit sections — the synthesis loop expects consistent structure.
+
+### Index Format
+
+```yaml
+sessions:
+  - path: docs/sessions/YYYY-MM-DD-<slug>.md
+    title: <Short session description>
+    date: YYYY-MM-DD
+    status: unprocessed
+    tags:
+      - <tag>
+```
+
+Status values: `unprocessed` (default), `processed` (set by `aw-synthesize-memory` after extraction).
+
+### File Naming
+
+Use lowercase kebab-case: `YYYY-MM-DD-<slug>.md`. Append `-2`, `-3` if multiple sessions occur on the same date with similar topics.
+
+### Automation (Claude Code)
+
+`aw-init` installs a Stop hook for Claude Code that invokes `aw-capture session` automatically when each session ends:
+
+```text
+.claude/hooks/log-session.sh    # hook script
+.claude/settings.json           # Stop hook registration
+```
+
+The hook spawns a non-interactive `claude --print` subprocess. A lock file (`.claude/hooks/.aw-log-session-active`) prevents recursion when the subprocess itself ends.
+
+Other agents (Codex, Codeium, Windsurf) do not have an equivalent lifecycle hook but can invoke `aw-capture session` manually. The session log format is cross-agent.
 
 ---
 
