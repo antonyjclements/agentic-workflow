@@ -8,6 +8,8 @@ aw-init
 
 That's it. Review `AGENTS.md` and `docs/workflow/config.yml`, then start working.
 
+Not sure which skill fits your situation? Use `aw-help` for an interactive recommendation.
+
 ---
 
 ## By task type
