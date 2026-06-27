@@ -580,4 +580,5 @@ Next steps:
 8. Session logging is automatic for Claude Code: .claude/hooks/log-session.sh fires when each session ends.
    Run aw-synthesize-memory periodically to distill session logs into learnings and refresh docs/context/wiki.md.
    Other agents (Codex, Codeium, Windsurf) can invoke aw-capture session manually; the session log format is cross-agent.
+9. Read docs/workflow/field-guide.md for a step-by-step guide on which skills to run and when.
 EOF

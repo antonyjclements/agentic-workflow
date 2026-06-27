@@ -5,6 +5,11 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/agentic-workflow-install.XXXXXX")"
 workflow_version="$(sed -n '1p' "$repo_root/aw-version.txt" | tr -d '[:space:]')"
 
+if ! diff -q "$repo_root/operating_model.md" "$repo_root/skills/aw-init/artifacts/field-guide.md" > /dev/null 2>&1; then
+  echo "operating_model.md and skills/aw-init/artifacts/field-guide.md are out of sync" >&2
+  exit 1
+fi
+
 cleanup() {
   rm -rf "$tmp_root"
 }
