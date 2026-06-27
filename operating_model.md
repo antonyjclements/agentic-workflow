@@ -17,16 +17,19 @@ That's it. Review `AGENTS.md` and `docs/workflow/config.yml`, then start working
 ```
 1. aw-debug                     ← skip if root cause is already clear
 2. fix it, run tests
-3. aw-capture learning          ← only if the bug was non-obvious or
-                                   likely to recur
+3. aw-capture learning          ← if the bug was non-obvious or likely
+                                   to recur
+   aw-capture decision          ← if the fix resolved ambiguous intended
+                                   behavior (not just a clear defect)
 4. aw-commit-push-pr
 ```
 
 ### Small feature or config change (< 1 day, clear scope)
 
 ```
-1. aw-create-spec               ← skip if spec already exists or the
-                                   change is truly trivial
+1. update/create spec           ← only if durable behavior or workflow
+                                   intent changes; skip for most config
+                                   changes and internal-only fixes
 2. aw-work
 3. aw-capture decision          ← if you resolved a real tradeoff
 4. aw-commit-push-pr
