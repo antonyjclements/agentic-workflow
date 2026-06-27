@@ -167,9 +167,9 @@ Keep the wiki under 500 words. It is loaded into agent context at session start,
 
 ## Relation to Other Skills
 
-- `aw-record-retrospective` handles immediate single-session corrections. `aw-synthesize-memory` batch-processes across sessions.
+- `aw-capture learning` handles immediate single-session corrections. `aw-synthesize-memory` batch-processes across sessions.
 - `aw-discover-standards` is for code-style and project-wide coding conventions. `aw-synthesize-memory` handles workflow-level and process patterns.
-- `aw-refresh-decisions` manages the decision index. `aw-synthesize-memory` reads decisions to populate the wiki but does not rewrite or index decisions.
+- `aw-refresh decisions` manages the decision index. `aw-synthesize-memory` reads decisions to populate the wiki but does not rewrite or index decisions.
 
 ## Final Output
 
