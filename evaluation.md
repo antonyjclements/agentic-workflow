@@ -50,9 +50,8 @@ BMAD's memory lives primarily in per-session agent shims and project brief docum
 
 **When to choose BMAD over Agentic Workflow**
 
-- Starting a greenfield AI-native project and want the full method from day one
-- The team is new to structured AI development and wants guided, facilitated workflows
-- The team values the named-agent mental model and wants explicit role separation
+- The team wants explicit named-agent roles (Analyst, Architect, Developer, QA) with structured handoff protocols between them
+- The team values a richer community, extensive pre-built documentation, and guided onboarding through `bmad-help`
 
 ---
 
@@ -74,15 +73,11 @@ Spec Kit has no explicit decision log, no session memory loop, no learning captu
 
 Spec Kit also does not define how to handle bugs, refactors, or non-feature work. It is strongest in feature factories but thinner on the rest of the development lifecycle.
 
-**When to choose Spec Kit over Agentic Workflow**
-
-- Primarily building net-new features with relatively stable requirements
-- The team wants a very simple, consistent spec-to-code pipeline without broader workflow concerns
-- External stakeholders produce specs in a known format that maps cleanly into the pipeline
-
 **When to combine Spec Kit with Agentic Workflow**
 
-They are not mutually exclusive. Spec Kit can handle the specify → plan → implement pipeline for feature work, while Agentic Workflow provides the memory layer: decisions, learnings, standards, session logs, synthesis. A team running Spec Kit for features can still use `aw-capture decision` and `aw-synthesize-memory` to maintain institutional memory.
+Agentic Workflow covers the same spec-to-code pipeline — `aw-brainstorm → aw-create-spec → aw-plan → aw-work` — and adds the compounding knowledge layer that Spec Kit lacks. For most teams, Agentic Workflow is the more complete choice.
+
+If a team is already committed to Spec Kit's constitution-driven uniformity approach, the two are not mutually exclusive: use Spec Kit for the specify → plan → implement pipeline and Agentic Workflow's capture and synthesis skills to build institutional memory alongside it.
 
 ---
 
@@ -101,12 +96,6 @@ Cursor rules are also composable: different rules can apply to different directo
 Cursor rules are static instructions, not a workflow. They tell the agent how to write code but not how to make decisions, capture learnings, review specs, or synthesize memory. There is no artifact lifecycle, no decisions log, no correction-learning loop, and no upgrade path as conventions evolve.
 
 Rules also live outside the agent's workflow context. There is no routing — Cursor reads the rules on every invocation, whether helpful or not, rather than routing tasks to the right skill for the situation.
-
-**When to choose Cursor rules over Agentic Workflow**
-
-- Solo developer or very small team
-- Conventions are simple and stable
-- No multi-contributor context management problem yet
 
 **When to combine them**
 
