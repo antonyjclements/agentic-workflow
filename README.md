@@ -206,7 +206,7 @@ docs/
 
 ## How To Use It
 
-For a quick reference on which skills to run and when — by task type and team size — see [operating_model.md](operating_model.md).
+For a quick reference on which skills to run and when — by task type and team size — see [operating_model.md](operating_model.md). If you're not sure which skill fits your situation, use `aw-help` for an interactive recommendation.
 
 ### 1. Start with PRD intake, discovery, or a spec
 

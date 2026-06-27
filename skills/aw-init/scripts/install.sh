@@ -568,17 +568,15 @@ Global learnings: $learnings_dir
 Target repo:   $repo_dir
 
 Next steps:
-1. Review AGENTS.md and CLAUDE.md.
-2. Configure docs/workflow/config.yml for workflow step overrides, implementation test policy, commit messages, PR templates, human reviewers, and CI monitoring.
+1. Read docs/workflow/field-guide.md — step-by-step guide on which skills to run for bug fixes, new features, refactors, and more, by team size.
+2. Not sure which skill fits your situation? Use aw-help for an interactive recommendation.
+3. Review AGENTS.md and CLAUDE.md for workflow routing details.
+4. Configure docs/workflow/config.yml for workflow step overrides, implementation test policy, commit messages, PR templates, human reviewers, and CI monitoring.
    Set workflow.steps.monitor_pipeline.skill to enable post-PR CI monitoring for your provider (GitHub Actions, CircleCI, Jenkins, etc.).
-3. If this is an existing install with an older docs/workflow/config.yml, run:
+5. If this is an existing install with an older docs/workflow/config.yml, run:
    skills/aw-init/scripts/upgrade.sh --repo $repo_dir --dry-run
-4. If this repo already has docs/features/*/spec.md, run: aw-refresh features
-5. If importing an external PRD, or authoring a PRD from ideas or notes, run: aw-prd
-6. Continue the handoff chain: aw-brainstorm -> aw-plan -> aw-create-tickets or aw-work. Use aw-create-spec directly only when requirements are already clear.
-7. Keep README.md updated when setup, commands, configuration, architecture, or workflow behavior changes.
-8. Session logging is automatic for Claude Code: .claude/hooks/log-session.sh fires when each session ends.
+6. Keep README.md updated when setup, commands, configuration, architecture, or workflow behavior changes.
+7. Session logging is automatic for Claude Code: .claude/hooks/log-session.sh fires when each session ends.
    Run aw-synthesize-memory periodically to distill session logs into learnings and refresh docs/context/wiki.md.
    Other agents (Codex, Codeium, Windsurf) can invoke aw-capture session manually; the session log format is cross-agent.
-9. Read docs/workflow/field-guide.md for a step-by-step guide on which skills to run and when.
 EOF

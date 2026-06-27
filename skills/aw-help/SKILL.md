@@ -71,7 +71,9 @@ Use this when determining which skill to recommend:
 | Situation | Recommended skill |
 | --- | --- |
 | Broken behavior, failing test, error | `aw-debug` |
-| PRD or raw idea, no spec yet | `aw-brainstorm` → `aw-create-spec` (if already clear) |
+| External PRD, pasted content, file/link, or user wants a PRD artifact | `aw-prd` |
+| Raw or ambiguous idea, open scope, product questions | `aw-brainstorm` |
+| Clear requirements or existing behavior to document | `aw-create-spec` |
 | Spec exists, need a plan | `aw-plan` |
 | Plan exists, need tickets | `aw-create-tickets` |
 | Ticket or concrete task ready | `aw-work` |
