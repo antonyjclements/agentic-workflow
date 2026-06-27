@@ -164,7 +164,7 @@ skills/aw-init/scripts/upgrade.sh --repo /path/to/repo --apply
 Each workflow step should return the artifact path or ID that becomes input to the next step:
 
 - `aw-prd` outputs `docs/product/prds/<prd>.md` -> pass to `aw-brainstorm` when ambiguity remains or `aw-create-spec` when ready for a direct spec draft.
-- `aw-brainstorm` usually outputs `docs/features/<feature>/spec.md` -> pass to `aw-plan`; when the user asks for PRD output, route to `aw-create-prd`.
+- `aw-brainstorm` usually outputs `docs/features/<feature>/spec.md` -> pass to `aw-plan`; when the user asks for PRD output, route to `aw-prd`.
 - `aw-create-spec` outputs `docs/features/<feature>/spec.md` -> pass to `aw-plan`.
 - When a PRD becomes a spec, mark the PRD `status: promoted`, set `promoted_to` to the spec path, and leave the PRD body unchanged.
 - When a source artifact is no longer needed in the working tree, mark it `status: archived`; `aw-refresh cleanup` removes it from the working tree and index while git preserves history.
@@ -212,7 +212,7 @@ Each workflow step should return the artifact path or ID that becomes input to t
 - Use `pull_request.template.title` and `pull_request.template.body` when a repo configures enterprise PR title/body templates.
 - Template values may be `https://github.com/...` URLs, raw GitHub URLs, `file://...` URLs, absolute paths, or repo-relative paths to markdown files.
 - If a template value is blank, use the default generated title or body for that part.
-- A template customizes PR text only. PR creation still uses the normal `aw-commit-push-pr` flow and must return the PR URL so `aw-monitor-pipeline` can run afterward when configured.
+- A template customizes PR text only. PR creation still uses the normal `aw-commit-push-pr` flow and must return the PR URL; invoke `workflow.steps.monitor_pipeline.skill` with it when configured.
 
 ### CI/CD Routing
 

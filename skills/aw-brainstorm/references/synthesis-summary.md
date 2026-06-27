@@ -87,7 +87,7 @@ If the same decision dimension is revised repeatedly and the conversation is cir
 After confirmation:
 
 - For living specs, write durable current intent with sections such as Intent, Users, Current Behavior, Key Flows, Acceptance Criteria, Boundaries and Non-Goals, Open Questions / TODOs, and Decision Links.
-- For authored PRDs, route to `aw-create-prd`.
+- For authored PRDs, route to `aw-prd`.
 - For ideation artifacts, write problem, actors, goals, key flows, acceptance examples, boundaries, success criteria, constraints, open questions, and PRD/spec handoff.
 - Preserve unresolved product ambiguity as explicit open questions; do not turn assumptions into hidden decisions.
 - Keep implementation tasks for `aw-plan`.

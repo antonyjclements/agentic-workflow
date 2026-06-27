@@ -50,7 +50,7 @@ Update `docs/features/index.yml` after creating a new spec.
 
 ## Ideation Shape
 
-Use this shape when the user asks for options exploration or concept framing instead of a PRD or living spec. Route authored PRD requests to `aw-create-prd`.
+Use this shape when the user asks for options exploration or concept framing instead of a PRD or living spec. Route authored PRD requests to `aw-prd`.
 
 ```markdown
 # <Title>
@@ -81,7 +81,7 @@ Status: draft|ready-for-spec
 ## PRD / Spec Handoff
 ```
 
-Use `docs/brainstorms/YYYY-MM-DD-###-slug-idea.md` for exploratory artifacts. Use `aw-create-prd` for authored PRDs.
+Use `docs/brainstorms/YYYY-MM-DD-###-slug-idea.md` for exploratory artifacts. Use `aw-prd` for authored PRDs.
 
 ## Section Guidance
 

@@ -39,7 +39,7 @@ What would you like to do next? (Pick a number or describe what you want.)
 Present only the options that apply. Renumber visible options from 1.
 
 1. **Plan implementation with `aw-plan` (Recommended)** - Move to implementation planning. Shown only when a living spec exists and blocking product questions are resolved.
-2. **Create a PRD with `aw-create-prd`** - Turn the explored idea into an authored PRD. Shown when the user wants product-document output before spec creation.
+2. **Create a PRD with `aw-prd`** - Turn the explored idea into an authored PRD. Shown when the user wants product-document output before spec creation.
 3. **Product review with `aw-request-human-review`** - Open a product/human review PR for the spec. Shown only when a living spec exists.
 4. **Build it now with `aw-work` (skip planning)** - Skip planning and move to implementation. Shown only when blocking questions are resolved and the direct-to-work gate is satisfied: lightweight scope, clear success criteria, clear boundaries, and no meaningful technical or research questions.
 5. **More clarifying questions** - Keep refining scope, edge cases, constraints, and preferences through further dialogue. Always shown.
@@ -51,7 +51,7 @@ Selections may be the literal option label or the option number. Match numbers a
 
 If the user selects planning, load `aw-plan` with the spec path. If only an ideation artifact exists, first confirm whether to promote it into a spec or use `aw-create-spec`.
 
-If the user selects PRD creation, load `aw-create-prd` with the ideation artifact path or concise finalized brainstorm summary.
+If the user selects PRD creation, load `aw-prd` with the ideation artifact path or concise finalized brainstorm summary.
 
 If the user selects product review, load `aw-request-human-review spec <spec path>`.
 
