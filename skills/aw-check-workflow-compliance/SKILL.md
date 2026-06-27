@@ -6,7 +6,7 @@ argument-hint: "[optional: plan/spec/ticket path or branch ref]"
 
 # Check Workflow Compliance
 
-Review workflow-policy evidence after a branch has been pushed and before PR creation. This is an accountability check, not a security sandbox, and it does not replace CI, `aw-review-code`, or `aw-review-spec`.
+Review workflow-policy evidence after a branch has been pushed and before PR creation. This is an accountability check, not a security sandbox, and it does not replace CI or `aw-review`.
 
 ## Inputs
 
@@ -38,7 +38,7 @@ Read `docs/workflow/config.yml` first.
 5. Applicable `docs/standards/index.yml` entries when present.
 6. Tests/checks run, based on terminal/session context when available and changed test files in the diff.
 7. README changes when setup, commands, configuration, architecture, or workflow behavior changed.
-8. Evidence that `aw-review-spec` and `aw-review-code` ran, or a justified exception.
+8. Evidence that `aw-review` ran, or a justified exception.
 
 ## Checks
 
