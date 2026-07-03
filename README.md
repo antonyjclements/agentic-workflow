@@ -96,6 +96,8 @@ skills/aw-init/scripts/upgrade.sh --repo /path/to/target/repo --apply --refresh-
 
 Applying the migration creates a timestamped backup beside the original config and writes the current `.agentic-workflow-version`.
 
+See [CHANGELOG.md](CHANGELOG.md) for what changed between versions (new config keys, installer flags, behavior changes, and migrations). The version tracks `aw-version.txt`; `scripts/test-install.sh` fails if a version bump lacks a changelog entry.
+
 The config migrator preserves unknown fields, adds missing current defaults, and moves old skill selector fields into `workflow.steps` or `workflow.auxiliary`:
 
 - `ticket_creation.skill` → `workflow.steps.create_tickets.skill`
@@ -200,6 +202,9 @@ docs/
   workflow/
     README.md
     config.yml
+    field-guide.md
+    gates.md         # gates/telemetry/org how-to
+    org-knowledge.md # org knowledge governance guide
 .scripts/
   aw-gate.js         # optional; installed with aw-init --with-gates
 ```
@@ -806,7 +811,7 @@ Environment overrides:
 ```bash
 AGENTIC_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/aw-init/scripts/install.sh --repo .
 AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/install.sh --repo .
-AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.5.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
+AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.6.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
 ```
 
 ## Included Skills

@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- AGENTIC_WORKFLOW_VERSION=0.5.0 -->
+<!-- AGENTIC_WORKFLOW_VERSION=0.6.0 -->
 
 This file guides coding agents working in this repository. Follow it in addition to system, developer, and user instructions. It says when to act and where to look; skills and `docs/workflow/` say how.
 

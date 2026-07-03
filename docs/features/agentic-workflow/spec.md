@@ -40,6 +40,7 @@ related_decisions:
   - docs/decisions/2026-07-03-add-enforcement-gates-telemetry-org-knowledge.md
   - docs/decisions/2026-07-03-shard-telemetry-with-union-merge-and-retention.md
   - docs/decisions/2026-07-03-govern-the-org-knowledge-base.md
+  - docs/decisions/2026-07-03-maintain-a-version-anchored-changelog.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -153,11 +154,13 @@ The workflow routes:
 - Existing installs can refresh skills and repo-local agent artifacts without a local clone by running the installer with `--remote` or a pinned `--source-url`. The remote source must contain the same repo layout as a GitHub archive of `agentic-workflow`.
 - Derived registries must either be validated or removed: `scripts/test-install.sh` validates every `docs/**/index.yml` (YAML parses, referenced paths exist, every feature spec is indexed) in this repository and in test-installed targets, and enforces the `AGENTS.md` word budget.
 - Before commit/PR, agents check whether `README.md` needs an update and make that update when setup, commands, configuration, architecture, repo structure, or workflow behavior changed. The installed `docs/workflow/README.md` documents the config schema beside `docs/workflow/config.yml`.
+- User-visible releases bump `aw-version.txt` (and the self-host `.agentic-workflow-version` in lockstep) and add a matching `CHANGELOG.md` entry in Keep a Changelog format, keyed to the version. `CHANGELOG.md` records user-visible changes — new or changed config keys, installer flags, skills, behavior, and migrations — and links to `docs/decisions/` for rationale rather than duplicating it. `scripts/test-install.sh` fails when the version in `aw-version.txt` has no `CHANGELOG.md` entry.
 
 ## Acceptance Criteria
 
-- New installs create `.agentic-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/standards/coding-approach.md`, `docs/decisions/index.yml`, `docs/learnings/index.yml`, `docs/workflow/README.md`, `docs/workflow/field-guide.md`, and the optional Claude Code Stop hook (`.claude/hooks/log-session.sh` plus a `.claude/settings.json` entry). No index is created for `docs/brainstorms/` or `docs/sessions/`.
+- New installs create `.agentic-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/standards/coding-approach.md`, `docs/decisions/index.yml`, `docs/learnings/index.yml`, `docs/workflow/README.md`, `docs/workflow/field-guide.md`, `docs/workflow/gates.md`, `docs/workflow/org-knowledge.md`, `docs/metrics/README.md`, and the optional Claude Code Stop hook (`.claude/hooks/log-session.sh` plus a `.claude/settings.json` entry). No index is created for `docs/brainstorms/` or `docs/sessions/`. The installed workflow README and skills reference `gates.md`, `org-knowledge.md`, and `docs/metrics/README.md`, so those are installed too rather than left as dangling references.
 - The installed `AGENTS.md` version stamp, installer version marker, and config migration version marker are sourced from root `aw-version.txt` when a full source tree is available.
+- `CHANGELOG.md` exists and contains an entry for the version in `aw-version.txt` (Keep a Changelog format); `scripts/test-install.sh` fails when the current version has no changelog entry.
 - New installs include `AGENTS.md` and `CLAUDE.md`; `CLAUDE.md` delegates to `AGENTS.md`.
 - New installs place skills in `~/.agents/skills` and, when safe, symlink `~/.claude/skills`, `~/.codeium/skills`, and `~/.windsurf/skills` to that directory.
 - The agentic-workflow repository self-hosts its own install for dogfooding: root `AGENTS.md`/`CLAUDE.md` and the `docs/workflow/` copies are committed and must stay identical to their `skills/aw-init/artifacts/` sources, enforced by `scripts/test-install.sh`. Target repos receive those artifacts only through `aw-init`, and there is no root `scripts/install.sh`.
