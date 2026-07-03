@@ -385,7 +385,6 @@ install_repo_files() {
   write_file_if_missing "$repo_dir/.agentic-workflow-version" "$AGENTIC_WORKFLOW_VERSION"
   write_file_if_missing "$repo_dir/docs/product/prds/index.yml" "prds: []"
   copy_prompted "$artifact_dir/prd-template.md" "$repo_dir/docs/product/prds/template.md"
-  write_file_if_missing "$repo_dir/docs/brainstorms/index.yml" "brainstorms: []"
   write_file_if_missing "$repo_dir/docs/features/index.yml" "features: []"
   write_file_if_missing "$repo_dir/docs/standards/index.yml" "standards:
   - path: docs/standards/coding-approach.md
@@ -397,7 +396,6 @@ install_repo_files() {
   copy_prompted "$artifact_dir/coding-approach.md" "$repo_dir/docs/standards/coding-approach.md"
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
-  write_file_if_missing "$repo_dir/docs/sessions/index.yml" "sessions: []"
   copy_prompted "$artifact_dir/workflow-readme.md" "$repo_dir/docs/workflow/README.md"
   copy_prompted "$artifact_dir/field-guide.md" "$repo_dir/docs/workflow/field-guide.md"
   write_file_if_missing "$repo_dir/docs/workflow/config.yml" "workflow:

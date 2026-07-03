@@ -278,6 +278,23 @@ decisions:
       - workflow
       - automation
       - knowledge-capture
+  - path: docs/decisions/2026-07-02-remove-brainstorm-index-and-validate-registries.md
+    title: Remove the brainstorm index and validate remaining docs registries in CI
+    date: 2026-07-02
+    status: active
+    tags:
+      - workflow
+      - indexes
+      - testing
+  - path: docs/decisions/2026-07-02-session-logs-self-describing-and-hook-independent.md
+    title: Session logs are self-describing, hook-independent, and committed as chore exhaust
+    date: 2026-07-02
+    status: active
+    tags:
+      - workflow
+      - sessions
+      - memory-synthesis
+      - git
   - path: docs/decisions/2026-05-24-use-docs-for-spec-driven-workflow.md
     title: Use docs/ for spec-driven workflow registries
     date: 2026-05-24

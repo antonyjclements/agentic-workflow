@@ -242,18 +242,18 @@ Use when:
 ### Storage
 
 ```text
-docs/sessions/
-docs/sessions/index.yml
+docs/sessions/    # one self-describing markdown file per session; status lives in frontmatter
 ```
+
+There is no session index. Session logs are self-describing: `aw-synthesize-memory` globs `docs/sessions/*.md` and reads `status` from each file's frontmatter. If a legacy `docs/sessions/index.yml` exists, do not update it; `aw-synthesize-memory` removes it.
 
 ### Workflow
 
 1. Review what happened in this session from the conversation and files changed.
 2. Identify: what was attempted, what worked, any user corrections, dead ends hit, and files/sources that were most useful.
 3. Draft the session log using the format below.
-4. Write the file to `docs/sessions/YYYY-MM-DD-<slug>.md`.
-5. Update `docs/sessions/index.yml`, adding the new entry with `status: unprocessed`.
-6. Report the file written and the index entry added.
+4. Write the file to `docs/sessions/YYYY-MM-DD-<slug>.md` with `status: unprocessed` in the frontmatter, creating `docs/sessions/` if missing.
+5. Report the file written.
 
 ### Session Log Format
 
@@ -293,25 +293,23 @@ tags:
 
 Leave any section that does not apply with a `_none_` placeholder. Do not omit sections — the synthesis loop expects consistent structure.
 
-### Index Format
+Status values: `unprocessed` (default), `processed` (set by `aw-synthesize-memory` after extraction). Status lives only in the log's own frontmatter.
 
-```yaml
-sessions:
-  - path: docs/sessions/YYYY-MM-DD-<slug>.md
-    title: <Short session description>
-    date: YYYY-MM-DD
-    status: unprocessed
-    tags:
-      - <tag>
-```
+### Commit Convention
 
-Status values: `unprocessed` (default), `processed` (set by `aw-synthesize-memory` after extraction).
+Session logs are workflow exhaust, not part of the change they describe:
+
+- Never stage `docs/sessions/` files into a feature or fix commit.
+- When publishing, commit session logs separately: `chore(session): log YYYY-MM-DD-<slug>`.
+- Synthesis output is one batched commit created by the `aw-synthesize-memory` flow: `chore(memory): synthesize N sessions`.
+- Logs written on a feature branch ride along in the PR as clearly labeled chore commits; squash-merge absorbs them. Do not route them to separate branches.
+- As everywhere in this workflow: write the files, but commit only when the user asks to publish.
 
 ### File Naming
 
 Use lowercase kebab-case: `YYYY-MM-DD-<slug>.md`. Append `-2`, `-3` if multiple sessions occur on the same date with similar topics.
 
-### Automation (Claude Code)
+### Automation (Claude Code, optional)
 
 `aw-init` installs a Stop hook for Claude Code that invokes `aw-capture session` automatically when each session ends:
 
@@ -322,7 +320,7 @@ Use lowercase kebab-case: `YYYY-MM-DD-<slug>.md`. Append `-2`, `-3` if multiple 
 
 The hook spawns a non-interactive `claude --print` subprocess. A lock file (`.claude/hooks/.aw-log-session-active`) prevents recursion when the subprocess itself ends.
 
-Other agents (Codex, Codeium, Windsurf) do not have an equivalent lifecycle hook but can invoke `aw-capture session` manually. The session log format is cross-agent.
+The hook is a convenience, not the system of record. Hooks are disabled or unsupported in many environments (enterprise policy, CI, sandboxed harnesses, other agents such as Codex, Codeium, and Windsurf). Never assume the hook ran: agents should offer or run `aw-capture session` at the end of meaningful sessions regardless. The session log format is cross-agent.
 
 ---
 

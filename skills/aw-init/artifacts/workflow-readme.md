@@ -90,6 +90,19 @@ resolve_pr_feedback -> aw-resolve-pr-feedback
 synthesize_memory -> aw-synthesize-memory
 ```
 
+## Artifact Handoff Contract
+
+Each workflow step returns the artifact path or ID that becomes input to the next step. Custom replacement skills must preserve this contract.
+
+- `aw-prd` outputs `docs/product/prds/<prd>.md` -> pass to `aw-brainstorm` when ambiguity remains, or `aw-create-spec` when ready for a direct spec draft.
+- `aw-brainstorm` usually outputs `docs/features/<feature>/spec.md` -> pass to `aw-plan`; when the user asks for PRD output, route to `aw-prd`.
+- `aw-create-spec` outputs `docs/features/<feature>/spec.md` -> pass to `aw-plan`.
+- When a PRD becomes a spec, mark the PRD `status: promoted`, set `promoted_to` to the spec path, and leave the PRD body unchanged.
+- When a source artifact is no longer needed in the working tree, mark it `status: archived`; `aw-refresh cleanup` removes it from the working tree and index while git preserves history.
+- `aw-plan` outputs `docs/features/<feature>/plan.md` -> pass to `aw-create-tickets` or `aw-work`.
+- `aw-create-tickets` outputs ticket IDs/URLs -> pass one ticket at a time to `aw-work`.
+- `aw-commit-push-pr` outputs the PR URL -> invoke `workflow.steps.monitor_pipeline.skill` with it when configured.
+
 ## Test Policies
 
 | Value | Meaning |
@@ -104,4 +117,20 @@ synthesize_memory -> aw-synthesize-memory
 
 ## Legacy Fields
 
-Older skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` are replaced by `workflow.steps` or `workflow.auxiliary`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code` and old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions`, `clean_artifacts`, `log_session` are also migrated automatically. Run `skills/aw-init/scripts/upgrade.sh --repo /path/to/repo --apply` to migrate older configs safely.
+Older installs may contain renamed fields or keys. Run `skills/aw-init/scripts/upgrade.sh --repo /path/to/repo --dry-run` to preview the migration, then `--apply` to migrate safely. Do not maintain old and new shapes side by side.
+
+| Legacy shape | Current shape |
+| --- | --- |
+| `ticket_creation.skill` | `workflow.steps.create_tickets.skill` |
+| `git.commit.skill` | `workflow.steps.commit.skill` |
+| `post_pr.ci_monitor.skill` | `workflow.steps.monitor_pipeline.skill` |
+| `research.slack.skill` | `workflow.auxiliary.research_slack.skill` |
+| Step keys `import_prd`, `create_prd` | Step key `prd` |
+| Step keys `review_code`, `review_spec`, `review_plan` | Step key `review` |
+| Auxiliary key `simplify_code` | Step key `review` (`aw-review simplify`) |
+| Auxiliary keys `index_features`, `refresh_decisions`, `refresh_solutions` | Auxiliary key `refresh` |
+| Auxiliary keys `log_decision`, `record_retrospective`, `capture_solution`, `log_session` | Auxiliary key `capture` |
+| Auxiliary key `clean_artifacts` | Removed — cleanup is the `aw-refresh cleanup` mode, no config key |
+| Helper keys misplaced under `workflow.steps` | The matching `workflow.auxiliary.<key>.skill` |
+
+Non-skill configuration fields are unchanged and remain authoritative, including `git.commit.*`, `pull_request.template`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`. The migration preserves unknown fields and stops for manual review when old and new routing fields conflict.
