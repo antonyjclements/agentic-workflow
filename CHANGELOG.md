@@ -44,8 +44,11 @@ an older install, run `skills/aw-init/scripts/upgrade.sh --repo <path> --apply`.
   `retention_months`), and `org_knowledge.*`; the installer `--with-gates` flag;
   and a `.gitattributes` `merge=union` entry. `upgrade-config.rb` injects the new
   default sections into older configs. (#38, #43)
-- New docs: `docs/workflow/gates.md` (gates/telemetry/org how-to) and
-  `docs/metrics/README.md` (telemetry schema). (#39, #41)
+- New docs, installed into target repos alongside `README.md` and
+  `field-guide.md` so a fresh install has the same reference surfaces the workflow
+  points at: `docs/workflow/gates.md` (gates/telemetry/org how-to),
+  `docs/workflow/org-knowledge.md` (governance), and `docs/metrics/README.md`
+  (telemetry schema). (#39, #41, #44)
 
 ### Changed
 

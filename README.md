@@ -202,6 +202,9 @@ docs/
   workflow/
     README.md
     config.yml
+    field-guide.md
+    gates.md         # gates/telemetry/org how-to
+    org-knowledge.md # org knowledge governance guide
 .scripts/
   aw-gate.js         # optional; installed with aw-init --with-gates
 ```

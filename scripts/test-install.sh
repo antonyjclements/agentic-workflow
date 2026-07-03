@@ -14,6 +14,9 @@ for pair in \
   "CLAUDE.md:skills/aw-init/artifacts/CLAUDE.md" \
   "docs/workflow/README.md:skills/aw-init/artifacts/workflow-readme.md" \
   "docs/workflow/field-guide.md:skills/aw-init/artifacts/field-guide.md" \
+  "docs/workflow/gates.md:skills/aw-init/artifacts/gates.md" \
+  "docs/workflow/org-knowledge.md:skills/aw-init/artifacts/org-knowledge.md" \
+  "docs/metrics/README.md:skills/aw-init/artifacts/metrics-readme.md" \
   "docs/product/prds/template.md:skills/aw-init/artifacts/prd-template.md" \
   "docs/standards/coding-approach.md:skills/aw-init/artifacts/coding-approach.md" \
   ".scripts/aw-gate.js:skills/aw-init/artifacts/aw-gate.js" \
@@ -52,6 +55,13 @@ if [ ! -f "$repo_root/CHANGELOG.md" ]; then
 fi
 if ! grep -Fq "[$workflow_version]" "$repo_root/CHANGELOG.md"; then
   echo "CHANGELOG.md has no entry for the current version [$workflow_version]; add one when bumping aw-version.txt" >&2
+  exit 1
+fi
+
+# aw-version.txt is the single authoritative version source. The self-host
+# package.json (husky tooling) must track it, so a bump can't leave it stale.
+if ! grep -Fq "\"version\": \"$workflow_version\"" "$repo_root/package.json"; then
+  echo "package.json version does not match aw-version.txt ($workflow_version); keep it in lockstep" >&2
   exit 1
 fi
 
@@ -201,6 +211,9 @@ assert_repo_install() {
   assert_file "$target_repo/docs/learnings/index.yml"
   assert_file "$target_repo/docs/workflow/README.md"
   assert_file "$target_repo/docs/workflow/field-guide.md"
+  assert_file "$target_repo/docs/workflow/gates.md"
+  assert_file "$target_repo/docs/workflow/org-knowledge.md"
+  assert_file "$target_repo/docs/metrics/README.md"
   assert_file "$target_repo/docs/workflow/config.yml"
   assert_contains "$target_repo/docs/workflow/README.md" "Workflow Config"
   assert_contains "$target_repo/docs/workflow/README.md" "Schema"
