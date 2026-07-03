@@ -43,6 +43,18 @@ if [ "$self_host_version" != "$workflow_version" ]; then
   exit 1
 fi
 
+# A version bump must ship a changelog entry: the current aw-version.txt version
+# must have a heading in CHANGELOG.md. This keeps CHANGELOG.md from drifting behind
+# releases, the same way the drift guards keep installed copies honest.
+if [ ! -f "$repo_root/CHANGELOG.md" ]; then
+  echo "missing CHANGELOG.md" >&2
+  exit 1
+fi
+if ! grep -Fq "[$workflow_version]" "$repo_root/CHANGELOG.md"; then
+  echo "CHANGELOG.md has no entry for the current version [$workflow_version]; add one when bumping aw-version.txt" >&2
+  exit 1
+fi
+
 # AGENTS.md is loaded into agent context at the start of every session in every
 # installed repo. Keep it lightweight: fail if it grows past the word budget so
 # additions must cut something or consciously raise the budget in the same diff.
