@@ -362,8 +362,15 @@ org_knowledge:
 `node .scripts/aw-gate.js org-sync` shallow-clones or updates that repo into the
 git-ignored cache. `aw-capture`, `aw-synthesize-memory`, and
 `aw-discover-standards` read the org tier (repo-local first, then org-shared) so a
-repo-local entry does not duplicate an org-wide one. Contributing a learning
-upstream to the org repo is a separate, human-owned step.
+repo-local entry does not duplicate an org-wide one.
+
+Because one edit to the org base steers agents across every subscribing repo, it
+is **governed content, not just a synced folder**: one accountable owner (a senior
+lead or distinguished engineer), PR-reviewed changes, self-describing entries
+(`authority`, `applies_to`, `owner`, `reviewed`/`review_by`, `source`), advisory-
+by-default with repo-local precedence, and a human-gated promotion path — skills
+never write to it. Pin `org_knowledge.ref` to a reviewed tag for change control.
+The full model and templates are in [org-knowledge.md](org-knowledge.md).
 
 ---
 

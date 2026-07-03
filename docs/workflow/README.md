@@ -150,6 +150,26 @@ git-ignored `org_knowledge.cache_dir`. Skills that read learnings or standards
 (`aw-capture`, `aw-synthesize-memory`, `aw-discover-standards`) consult the org
 tier when it is configured. Precedence: repo-local first, then org-shared.
 
+Because one edit to the org base steers agents across every subscribing repo, it
+is **governed content, not just a synced folder**:
+
+- **One accountable owner** (a senior lead or distinguished engineer, named in the
+  org repo's `CODEOWNERS`) owns what earns org-wide status, the review cadence, and
+  retiring stale entries. Changes to the org base are PR-reviewed, not pushed.
+- **Advisory by default, repo-local always wins.** Agents treat an org entry as
+  advisory unless it is marked `authority: required`; a `required` entry that
+  conflicts with repo-local guidance is surfaced to a human, not auto-resolved.
+- **Entries are self-describing.** Each carries `authority`, `applies_to`,
+  `owner`, `reviewed`/`review_by`, and a `source` link; entries past `review_by`
+  or missing metadata are treated as lower-confidence.
+- **Promotion is human-gated.** A repo-local learning earns org-wide status via a
+  PR to the org base; skills never write to the org tier.
+- **Consumers pin `org_knowledge.ref`** to a reviewed tag for change control.
+
+The full governance model, templates (`CODEOWNERS`, `GOVERNANCE.md`, entry
+frontmatter), and promotion path live in the agentic-workflow project at
+`docs/workflow/org-knowledge.md`.
+
 ## Workflow Step Keys
 
 ```text

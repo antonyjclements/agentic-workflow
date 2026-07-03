@@ -704,6 +704,8 @@ org_knowledge:
 
 `node .scripts/aw-gate.js org-sync` shallow-clones or updates that repo into the git-ignored cache. `aw-capture`, `aw-synthesize-memory`, and `aw-discover-standards` read the org tier (repo-local first, then org-shared) so a repo-local entry does not duplicate an org-wide one.
 
+The org base is **governed content**: one accountable owner (a senior lead or distinguished engineer), PR-reviewed changes, self-describing entries, advisory-by-default with repo-local precedence, and a human-gated promotion path. The full governance model and templates are in [docs/workflow/org-knowledge.md](docs/workflow/org-knowledge.md).
+
 Full schema for all three is in [docs/workflow/README.md](docs/workflow/README.md).
 
 ### 11. Keep README.md current
