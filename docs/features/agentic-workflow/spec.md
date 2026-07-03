@@ -34,6 +34,7 @@ related_decisions:
   - docs/decisions/2026-05-28-rename-skills-to-aw-prefix.md
   - docs/decisions/2026-05-28-use-prd-lifecycle-statuses-and-cleanup.md
   - docs/decisions/2026-07-02-consolidate-skills-and-add-memory-loop.md
+  - docs/decisions/2026-07-02-make-human-review-gates-opt-in.md
   - docs/decisions/2026-07-02-session-logs-self-describing-and-hook-independent.md
   - docs/decisions/2026-07-02-remove-brainstorm-index-and-validate-registries.md
 ---

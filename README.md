@@ -458,15 +458,12 @@ Set `human_review.spec.reviewers` and `human_review.plan.reviewers` to GitHub us
 
 ### Human review gates
 
-After `aw-brainstorm` or `aw-create-spec` creates or updates a spec, the agent should ask whether you want product/human review of the spec. If yes, it runs:
+Human review is opt-in ceremony, not a default interrupt. After a spec or plan is created or updated, the agent offers a sign-off PR only when `human_review.spec.reviewers` / `human_review.plan.reviewers` is configured in `docs/workflow/config.yml`, the change is high-risk, or you asked for review. Otherwise it proceeds without asking — solo and pair repos typically skip this gate entirely (see the field guide).
+
+When review is wanted, it runs:
 
 ```text
 aw-request-human-review spec docs/features/<feature>/spec.md
-```
-
-After `aw-plan`, the agent should ask whether you want engineering/human review of the plan. If yes, it runs:
-
-```text
 aw-request-human-review plan docs/features/<feature>/plan.md
 ```
 

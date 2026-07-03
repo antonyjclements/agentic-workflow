@@ -1,9 +1,13 @@
 # Decision Summary: workflow
 
-Last refreshed: 2026-06-07
+Last refreshed: 2026-07-02
 
 ## Active Decisions
 
+- [Make human review gates opt-in instead of ask-always](../2026-07-02-make-human-review-gates-opt-in.md) - Offer spec/plan sign-off PRs only when reviewers are configured, the change is high-risk, or the user asks; never interrupt by default.
+- [Consolidate skills into mode-routed entrypoints and introduce the memory synthesis loop](../2026-07-02-consolidate-skills-and-add-memory-loop.md) - Backfill: merge ~33 single-purpose skills into 20 mode-routed ones and distill session logs into learnings and a generated wiki through corroboration.
+- [Remove the brainstorm index and validate remaining docs registries in CI](../2026-07-02-remove-brainstorm-index-and-validate-registries.md) - A derived index must either be validated by `scripts/test-install.sh` or removed; brainstorms are self-describing.
+- [Session logs are self-describing, hook-independent, and committed as chore exhaust](../2026-07-02-session-logs-self-describing-and-hook-independent.md) - No session index, never rely on lifecycle hooks, and commit session/synthesis output as separate `chore(session)`/`chore(memory)` commits.
 - [Use version file and remote installer source](../2026-06-07-use-version-file-and-remote-installer-source.md) - Keep installer-owned version markers sourced from `aw-version.txt` and let installed repos fetch updates from GitHub or pinned archives.
 - [Add upgrade config migration](../2026-06-07-add-upgrade-config-migration.md) - Give existing installs a dry-run/apply migration path for older workflow config shapes, with backups and conflict detection.
 - [Add workflow compliance check](../2026-06-07-add-workflow-compliance-check.md) - Check workflow routing, test policy, acceptance coverage, README updates, review gates, pushed-branch evidence, and PR readiness after push and before PR creation.
