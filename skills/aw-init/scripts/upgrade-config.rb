@@ -69,6 +69,28 @@ DEFAULT_CONFIG = {
     "plan" => {
       "reviewers" => []
     }
+  },
+  "gates" => {
+    "enabled" => false,
+    "state_file" => ".aw-gate-state.json",
+    "checks" => {
+      "review" => { "max_age_hours" => 24 },
+      "capture" => { "max_age_hours" => 168 },
+      "check_workflow_compliance" => { "max_age_hours" => 24 }
+    }
+  },
+  "telemetry" => {
+    "enabled" => false,
+    "path" => "docs/metrics/events.jsonl"
+  },
+  "org_knowledge" => {
+    "source" => "",
+    "ref" => "main",
+    "cache_dir" => ".aw-org-cache",
+    "paths" => {
+      "learnings" => "learnings",
+      "standards" => "standards"
+    }
   }
 }.freeze
 

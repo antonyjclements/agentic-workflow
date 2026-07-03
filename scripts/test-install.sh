@@ -5,11 +5,6 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/agentic-workflow-install.XXXXXX")"
 workflow_version="$(sed -n '1p' "$repo_root/aw-version.txt" | tr -d '[:space:]')"
 
-if ! diff -q "$repo_root/operating_model.md" "$repo_root/skills/aw-init/artifacts/field-guide.md" > /dev/null 2>&1; then
-  echo "operating_model.md and skills/aw-init/artifacts/field-guide.md are out of sync" >&2
-  exit 1
-fi
-
 # This repo self-hosts its own install for dogfooding (see
 # docs/decisions/2026-07-03-self-host-the-workflow-install.md). The committed
 # copies are derived install output; skills/aw-init/artifacts/ is the source
@@ -21,6 +16,7 @@ for pair in \
   "docs/workflow/field-guide.md:skills/aw-init/artifacts/field-guide.md" \
   "docs/product/prds/template.md:skills/aw-init/artifacts/prd-template.md" \
   "docs/standards/coding-approach.md:skills/aw-init/artifacts/coding-approach.md" \
+  ".scripts/aw-gate.js:skills/aw-init/artifacts/aw-gate.js" \
   ".claude/hooks/log-session.sh:skills/aw-init/hooks/log-session.sh"; do
   installed="${pair%%:*}"
   artifact="${pair##*:}"
@@ -209,6 +205,9 @@ assert_repo_install() {
   assert_contains "$target_repo/docs/workflow/config.yml" "capture:"
   assert_contains "$target_repo/docs/workflow/config.yml" "refresh:"
   assert_contains "$target_repo/docs/workflow/config.yml" "research_slack:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "gates:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "telemetry:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "org_knowledge:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "monitor_circleci:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "import_prd:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "log_decision:"
@@ -246,6 +245,93 @@ assert_file "$aw_init_learnings/index.yml"
 assert_symlink "$HOME/.claude/skills"
 assert_symlink "$HOME/.codeium/skills"
 assert_symlink "$HOME/.windsurf/skills"
+
+# --with-gates installs the deterministic gate helper and gitignores its state.
+gates_target="$tmp_root/gates-target"
+gates_learnings="$tmp_root/gates-learnings"
+
+"$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$gates_target" \
+  --learnings-dir "$gates_learnings" \
+  --with-gates \
+  --skip-skills \
+  --force
+
+assert_file "$gates_target/.scripts/aw-gate.js"
+assert_contains "$gates_target/.gitignore" ".aw-gate-state.json"
+assert_contains "$gates_target/.gitignore" ".aw-org-cache/"
+
+if command -v node >/dev/null 2>&1; then
+  # Gates disabled by default: check is a clean no-op (exit 0).
+  node "$gates_target/.scripts/aw-gate.js" check >/dev/null
+
+  # Enable only the gates block (leave telemetry off) and re-check: with no
+  # recorded runs, the deterministic gate must fail.
+  ruby -e 't=File.read(ARGV[0]); t.sub!("gates:\n  enabled: false", "gates:\n  enabled: true"); File.write(ARGV[0], t)' \
+    "$gates_target/docs/workflow/config.yml"
+  if node "$gates_target/.scripts/aw-gate.js" check >/dev/null 2>&1; then
+    echo "gate check should fail when gates are enabled but unrecorded" >&2
+    exit 1
+  fi
+
+  # Recording every configured gate makes the check pass.
+  node "$gates_target/.scripts/aw-gate.js" record review >/dev/null
+  node "$gates_target/.scripts/aw-gate.js" record capture >/dev/null
+  node "$gates_target/.scripts/aw-gate.js" record check_workflow_compliance >/dev/null
+  node "$gates_target/.scripts/aw-gate.js" check >/dev/null
+  echo "gate functional test passed"
+else
+  echo "gate functional test skipped: node not available"
+fi
+
+# commit-mode gate: fresh until scoped paths change since the recorded commit.
+if command -v node >/dev/null 2>&1 && command -v git >/dev/null 2>&1; then
+  commit_gate="$tmp_root/commit-gate-target"
+  mkdir -p "$commit_gate/docs/workflow" "$commit_gate/.scripts" "$commit_gate/src" "$commit_gate/docs"
+  cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$commit_gate/.scripts/aw-gate.js"
+  cat > "$commit_gate/docs/workflow/config.yml" <<'YAML'
+gates:
+  enabled: true
+  state_file: .aw-gate-state.json
+  checks:
+    review:
+      mode: commit
+      paths:
+        - "src"
+YAML
+  git init -q "$commit_gate"
+  git -C "$commit_gate" config user.email test@example.com
+  git -C "$commit_gate" config user.name test
+  echo one > "$commit_gate/src/a.txt"
+  echo doc > "$commit_gate/docs/n.md"
+  git -C "$commit_gate" add -A
+  git -C "$commit_gate" commit -qm c1
+
+  # Unrecorded commit-mode gate must fail.
+  if node "$commit_gate/.scripts/aw-gate.js" check >/dev/null 2>&1; then
+    echo "commit-mode gate should fail when unrecorded" >&2
+    exit 1
+  fi
+  # Record, then check passes.
+  node "$commit_gate/.scripts/aw-gate.js" record review >/dev/null
+  node "$commit_gate/.scripts/aw-gate.js" check >/dev/null
+  # An unrelated (out-of-paths) commit keeps the gate fresh.
+  echo more >> "$commit_gate/docs/n.md"
+  git -C "$commit_gate" add -A
+  git -C "$commit_gate" commit -qm docs-only
+  node "$commit_gate/.scripts/aw-gate.js" check >/dev/null
+  # A change inside the scoped paths makes it stale.
+  echo two >> "$commit_gate/src/a.txt"
+  git -C "$commit_gate" add -A
+  git -C "$commit_gate" commit -qm src-change
+  if node "$commit_gate/.scripts/aw-gate.js" check >/dev/null 2>&1; then
+    echo "commit-mode gate should fail after scoped paths change" >&2
+    exit 1
+  fi
+  echo "commit-mode gate functional test passed"
+else
+  echo "commit-mode gate functional test skipped: node or git not available"
+fi
 
 migration_target="$tmp_root/migration-target"
 mkdir -p "$migration_target/docs/workflow"
@@ -292,6 +378,9 @@ assert_contains "$migration_target/docs/workflow/config.yml" "commit:"
 assert_contains "$migration_target/docs/workflow/config.yml" "skill: enterprise-commit"
 assert_contains "$migration_target/docs/workflow/config.yml" "provider: circleci"
 assert_contains "$migration_target/docs/workflow/config.yml" "scope_required: true"
+assert_contains "$migration_target/docs/workflow/config.yml" "gates:"
+assert_contains "$migration_target/docs/workflow/config.yml" "telemetry:"
+assert_contains "$migration_target/docs/workflow/config.yml" "org_knowledge:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "monitor_circleci:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "ticket_creation:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "research:"

@@ -59,6 +59,78 @@ human_review:
 | `post_pr.ci_monitor.provider` | string | `manual` | Post-PR monitor provider. `manual` disables automated monitoring. |
 | `human_review.spec.reviewers` | string list | `[]` | GitHub usernames requested on spec review PRs. |
 | `human_review.plan.reviewers` | string list | `[]` | GitHub usernames requested on plan review PRs. |
+| `gates.enabled` | boolean | `false` | Master switch for freshness enforcement. When false, `aw-gate.js check` is a no-op. |
+| `gates.state_file` | string | `.aw-gate-state.json` | Git-ignored per-checkout file holding the last-run timestamp and commit for each gate. |
+| `gates.checks.<name>.mode` | string | `age` | `age` (wall-clock window), `commit` (relevant paths changed since the recorded commit), or `commit-and-age` (both must pass). |
+| `gates.checks.<name>.max_age_hours` | number | — | Maximum age, in hours, a recorded gate stays fresh. Required for `age` and `commit-and-age` modes. |
+| `gates.checks.<name>.paths` | string list | whole tree | Git pathspecs scoping which changes invalidate a `commit`-mode gate, e.g. `["src", ":(exclude)docs"]`. Omitted means any commit invalidates it. |
+| `telemetry.enabled` | boolean | `false` | When true, `aw-gate.js record` appends a no-PII event to the telemetry log. |
+| `telemetry.path` | string | `docs/metrics/events.jsonl` | Git-tracked JSONL log of workflow events for effectiveness reporting. |
+| `org_knowledge.source` | string | `""` | Git URL of the org-shared learnings/standards repo. Blank disables org sync. |
+| `org_knowledge.ref` | string | `main` | Branch or tag of the org knowledge repo to sync. |
+| `org_knowledge.cache_dir` | string | `.aw-org-cache` | Git-ignored local cache the org repo is cloned into. |
+| `org_knowledge.paths.learnings` | string | `learnings` | Learnings subdirectory within the org knowledge repo. |
+| `org_knowledge.paths.standards` | string | `standards` | Standards subdirectory within the org knowledge repo. |
+
+## Enforcement Gates, Telemetry, and Org Knowledge
+
+These three capabilities are opt-in, disabled by default, and all powered by one
+dependency-free helper, `.scripts/aw-gate.js`, installed with
+`aw-init --with-gates` (or by re-running the installer with that flag). None of
+them require an agent to run in CI — the enforcement path is fully deterministic.
+
+### Freshness gates (`gates`)
+
+The LLM-driven review and compliance skills cannot run as a blocking CI check on
+their own. Instead, this workflow converts them into a **freshness contract**:
+
+1. After a successful run, the skill stamps a marker:
+   `node .scripts/aw-gate.js record <gate> [--detail "..."]`. This writes the
+   last-run timestamp **and the current commit** to the git-ignored `gates.state_file`.
+2. A deterministic checker enforces the contract:
+   `node .scripts/aw-gate.js check` exits non-zero when any gate under
+   `gates.checks` fails its mode, and exits 0 when `gates.enabled` is false.
+
+Wire `check` wherever you want it to block: a Git `pre-commit`/`pre-push` hook, or
+a required CI job. The workflow ships the script and the contract; the consumer
+chooses the enforcement point. The default gates map to `review`, `capture`, and
+`check_workflow_compliance`.
+
+Each gate picks a **mode**:
+
+- **`age`** (default): the gate is fresh while it was recorded within its
+  `max_age_hours` window. Simple and git-free; a gate recorded within its window
+  passes regardless of intervening commits. Best for time-triggered checks that
+  should re-run periodically even when nothing changed (e.g. compliance).
+- **`commit`**: the gate is fresh while nothing in its `paths` changed since the
+  recorded commit (`git diff` between that commit and `HEAD`). Answers "has the
+  *current* code been reviewed?" rather than "did review run recently?", and is
+  fully deterministic in CI. Best for change-triggered checks (review, spec drift).
+- **`commit-and-age`**: both conditions must hold.
+
+`check` compares `commit`-mode gates against `HEAD` by default; pass
+`--against worktree` in a `pre-commit` hook so staged/unstaged edits (not yet in
+`HEAD`) are considered. Commit mode requires that the recorded commit still be
+reachable — a rebase, squash, or shallow clone that drops it fails the gate and
+asks you to re-run. In CI, fetch enough history (e.g. `fetch-depth: 0`) so the
+recorded commit is present.
+
+### Telemetry (`telemetry`)
+
+When `telemetry.enabled` is true, the same `record` call also appends a no-PII
+event (`ts`, `event`, `detail`, `source`) to `telemetry.path`. The log is plain
+git-tracked JSONL so an engineering-effectiveness team can aggregate it directly
+from version control. Schema and aggregation notes live in `docs/metrics/README.md`.
+
+### Org-shared knowledge (`org_knowledge`)
+
+Set `org_knowledge.source` to a git URL to add a second, org-wide tier of
+learnings and standards alongside the repo-local `docs/learnings/` and
+`docs/standards/`, replacing the per-machine `~/.agents/learnings/` fallback.
+`node .scripts/aw-gate.js org-sync` shallow-clones (or updates) that repo into the
+git-ignored `org_knowledge.cache_dir`. Skills that read learnings or standards
+(`aw-capture`, `aw-synthesize-memory`, `aw-discover-standards`) consult the org
+tier when it is configured. Precedence: repo-local first, then org-shared.
 
 ## Workflow Step Keys
 
