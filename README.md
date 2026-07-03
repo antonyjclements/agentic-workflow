@@ -42,7 +42,7 @@ From a clone of this repo, the same installer is available inside the skill:
 skills/aw-init/scripts/install.sh --repo /path/to/target/repo
 ```
 
-There is intentionally no root `AGENTS.md`, `CLAUDE.md`, or `scripts/install.sh` in this repository. `aw-init` is the source of truth for install artifacts and installer behavior.
+This repository self-hosts its own install for dogfooding: root `AGENTS.md`, `CLAUDE.md`, and the `docs/workflow/` files are committed install output. `skills/aw-init/artifacts/` remains the source of truth — `scripts/test-install.sh` fails if the installed copies drift from the artifacts. There is still no root `scripts/install.sh`; `aw-init` owns installer behavior.
 
 The installer:
 

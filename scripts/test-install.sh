@@ -10,6 +10,23 @@ if ! diff -q "$repo_root/operating_model.md" "$repo_root/skills/aw-init/artifact
   exit 1
 fi
 
+# This repo self-hosts its own install for dogfooding (see
+# docs/decisions/2026-07-03-self-host-the-workflow-install.md). The committed
+# copies are derived install output; skills/aw-init/artifacts/ is the source
+# of truth, and the copies must not drift from it.
+for pair in \
+  "AGENTS.md:skills/aw-init/artifacts/AGENTS.md" \
+  "CLAUDE.md:skills/aw-init/artifacts/CLAUDE.md" \
+  "docs/workflow/README.md:skills/aw-init/artifacts/workflow-readme.md" \
+  "docs/workflow/field-guide.md:skills/aw-init/artifacts/field-guide.md"; do
+  installed="${pair%%:*}"
+  artifact="${pair##*:}"
+  if ! diff -q "$repo_root/$installed" "$repo_root/$artifact" > /dev/null 2>&1; then
+    echo "self-hosted install drift: $installed does not match $artifact" >&2
+    exit 1
+  fi
+done
+
 # AGENTS.md is loaded into agent context at the start of every session in every
 # installed repo. Keep it lightweight: fail if it grows past the word budget so
 # additions must cut something or consciously raise the budget in the same diff.
