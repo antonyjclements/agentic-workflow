@@ -6,3 +6,15 @@ learnings:
       - workflow
       - tickets
       - configuration
+  - path: docs/learnings/2026-07-02-verify-repo-state-before-evaluating.md
+    title: Verify current repo state before evaluating or reviewing
+    scope: repo
+    tags:
+      - process
+      - evaluation
+  - path: docs/learnings/2026-07-02-confirm-file-absence-with-git.md
+    title: Confirm file absence with git, not filtered shell output
+    scope: repo
+    tags:
+      - tooling
+      - shell

@@ -1,7 +1,7 @@
 ---
 title: Slim AGENTS.md under an enforced budget; make sessions/brainstorms index-free
 date: 2026-07-02
-status: unprocessed
+status: processed
 tags:
   - agents-md
   - indexes
