@@ -46,7 +46,7 @@ function fail(msg) {
 // Supported:
 //   - nested block mappings by indentation (`key:` then indented children)
 //   - scalars: strings (optionally "double"/'single' quoted), booleans
-//     (true/false), null (empty, ~, null), integers, floats
+//     (true/false), null (`~` or `null`), integers, floats
 //   - block scalar lists:          paths:\n  - a\n  - b
 //   - inline flow scalar arrays:   paths: ["a", "b"]   (no commas inside items)
 //   - full-line comments (`# ...`) and blank lines
@@ -56,6 +56,8 @@ function fail(msg) {
 //   - inline flow maps (`{a: b}`) and block lists of maps (`- key: value`)
 //   - multi-line/folded scalars (`|`, `>`), anchors/aliases (`&`, `*`), tags (`!!type`)
 //   - commas inside a quoted item of an inline array
+//   - a bare `key:` with no value: this parser opens a child MAPPING ({}), not
+//     null or "". For a blank string value write `key: ""` (e.g. source: "").
 function parseScalar(s) {
   s = s.trim();
   // Inline flow array, e.g. ["src", ":(exclude)docs"]. Split on commas (pathspecs
@@ -306,8 +308,11 @@ function cmdCheck(args) {
 function cmdOrgSync() {
   const config = loadConfig();
   const org = config.org_knowledge || {};
+  // Require a non-empty string. A bare `source:` parses as an empty mapping ({})
+  // under this reader, not "" — guard against it so we skip rather than trying to
+  // clone "[object Object]".
   const source = org.source;
-  if (!source || source === '') {
+  if (typeof source !== 'string' || source.trim() === '') {
     process.stdout.write('aw-gate: org_knowledge.source not configured — skipping\n');
     process.exit(0);
   }

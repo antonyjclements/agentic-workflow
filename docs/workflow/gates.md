@@ -165,7 +165,7 @@ YAML library instead of stretching the parser):
 
 - Nested block mappings by indentation (`key:` then indented children).
 - Scalars: strings (optionally `"double"`/`'single'` quoted), booleans
-  (`true`/`false`), null (empty, `~`, `null`), integers, floats.
+  (`true`/`false`), null (`~` or `null`), integers, floats.
 - Block scalar lists — `paths:` then indented `- item` lines.
 - Inline flow scalar arrays — `paths: ["src", ":(exclude)docs"]` (no commas
   *inside* an item).
@@ -176,6 +176,10 @@ YAML library instead of stretching the parser):
 - **Trailing/inline comments on a value line.** `enabled: true # note` parses the
   value as the string `"true # note"`, so the gate is silently treated as
   disabled. Put comments on their own line.
+- **A bare `key:` with no value.** This parser reads it as a child *mapping*
+  (`{}`), not null or `""`. For a blank string, write it explicitly — e.g.
+  `source: ""`, not `source:`. (A bare `org_knowledge.source:` yields an object,
+  which `org-sync` now treats as unset and skips rather than misusing.)
 - Inline flow maps (`{a: b}`) and block lists of maps (`- key: value`).
 - Multi-line/folded scalars (`|`, `>`), anchors/aliases (`&`, `*`), tags (`!!type`).
 - A comma inside a quoted item of an inline array.
