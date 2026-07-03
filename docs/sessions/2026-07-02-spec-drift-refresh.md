@@ -1,7 +1,7 @@
 ---
 title: Refresh the agentic-workflow living spec for memory-loop coverage and consolidated skill names
 date: 2026-07-02
-status: unprocessed
+status: processed
 tags:
   - spec-drift
   - memory-loop

@@ -67,11 +67,13 @@ Not sure which skill fits your situation? Use `aw-help` for an interactive recom
 ### Refactor or simplification
 
 ```
-1. aw-review simplify           ← scopes what to change
-2. aw-work
-3. aw-review                    ← verify the result
-4. aw-commit-push-pr
+1. aw-review simplify           ← finds AND applies behavior-preserving
+                                   simplifications, verifying as it goes
+2. aw-review                    ← optional second pass for large refactors
+3. aw-commit-push-pr
 ```
+
+For refactors that change behavior or need structural work beyond simplification, use the feature path (spec if intent changes → `aw-work` → `aw-review`) instead.
 
 ### Reviewing someone else's PR or spec
 

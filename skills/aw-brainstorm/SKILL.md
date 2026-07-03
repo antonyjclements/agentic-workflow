@@ -97,7 +97,7 @@ Rules for spec output:
 - Keep specs focused on durable behavior and intent, not implementation tasks or progress.
 - Link imported PRDs, idea docs, brainstorm notes, and related decisions when they exist.
 - When a source PRD under `docs/product/prds/` informs the spec, mark that PRD `status: promoted` in frontmatter and `docs/product/prds/index.yml`, and add `promoted: YYYY-MM-DD` plus `promoted_to: <spec path>`. Do not rewrite the PRD body.
-- Ask whether the user wants product/human review for the spec. If yes, invoke `aw-request-human-review spec <spec path>`.
+- Offer product/human review for the spec only when `human_review.spec.reviewers` is configured in `docs/workflow/config.yml`, the change is high-risk, or the user asked for review; otherwise finish without asking. If review is wanted, invoke `aw-request-human-review spec <spec path>`.
 
 ## Ideation Output
 

@@ -17,7 +17,7 @@ tags:
 
 ## Lesson
 
-When `ticket_creation.skill` is blank in `docs/workflow/config.yml`, treat ticket creation as disabled instead of asking the user to choose a ticketing skill.
+When `workflow.steps.create_tickets.skill` is blank in `docs/workflow/config.yml`, treat external ticket creation as disabled instead of asking the user to choose a ticketing skill.
 
 ## Applies When
 
