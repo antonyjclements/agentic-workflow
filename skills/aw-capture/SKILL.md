@@ -129,7 +129,7 @@ Use repo-specific storage for lessons tied to this codebase, product, architectu
 
 1. Identify the correction and the missed assumption.
 2. Decide whether there is a durable lesson. If not, state that no entry is warranted and continue.
-3. Check existing `docs/learnings/index.yml` to avoid duplicates. When `org_knowledge.source` is set in `docs/workflow/config.yml`, run `node .scripts/aw-gate.js org-sync` and also check the org-shared learnings tier (`<org_knowledge.cache_dir>/<paths.learnings>`) so a repo-local lesson does not duplicate an org-wide one.
+3. Check existing `docs/learnings/index.yml` to avoid duplicates. When `org_knowledge.source` is set in `docs/workflow/config.yml`, run `node .scripts/aw-gate.js org-sync` and also check the org-shared learnings tier (`<org_knowledge.cache_dir>/<paths.learnings>`) so a repo-local lesson does not duplicate an org-wide one. The org tier is governed content: repo-local always wins, entries are advisory unless marked `authority: required`, honor `applies_to`, and treat entries past `review_by` or missing metadata as lower-confidence. Never write to the org tier — if a lesson deserves org-wide status, note it for the human-gated promotion path in `docs/workflow/org-knowledge.md`.
 4. Classify scope: repo-specific or global. When ambiguous, ask one blocking question.
 5. Draft one concise learning and write it.
 6. Update the matching `index.yml`.

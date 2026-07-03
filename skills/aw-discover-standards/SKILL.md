@@ -26,7 +26,7 @@ If `docs/standards/index.yml` exists:
 
 If it does not exist, plan to create it after the first approved standard.
 
-When `org_knowledge.source` is configured in `docs/workflow/config.yml`, also run `node .scripts/aw-gate.js org-sync` and scan the org-shared standards tier in `<org_knowledge.cache_dir>/<paths.standards>`. Do not re-document an org-wide standard locally — reference the org entry instead, and only write a repo-local standard when the convention is genuinely specific to this repo.
+When `org_knowledge.source` is configured in `docs/workflow/config.yml`, also run `node .scripts/aw-gate.js org-sync` and scan the org-shared standards tier in `<org_knowledge.cache_dir>/<paths.standards>`. Do not re-document an org-wide standard locally — reference the org entry instead, and only write a repo-local standard when the convention is genuinely specific to this repo. The org tier is governed content: repo-local always wins, org entries are advisory unless marked `authority: required`, honor `applies_to`, and treat entries past `review_by` or missing metadata as lower-confidence. Never write to the org base; a repo-local standard earns org-wide status only through the human-gated promotion path in `docs/workflow/org-knowledge.md`.
 
 ## Step 2: Determine Focus
 

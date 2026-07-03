@@ -1,4 +1,12 @@
 decisions:
+  - path: docs/decisions/2026-07-03-govern-the-org-knowledge-base.md
+    title: Govern the org knowledge base with a single accountable owner
+    date: 2026-07-03
+    status: active
+    tags:
+      - workflow
+      - knowledge
+      - governance
   - path: docs/decisions/2026-07-03-shard-telemetry-with-union-merge-and-retention.md
     title: Shard telemetry by month with union-merge and prune-based retention
     date: 2026-07-03
