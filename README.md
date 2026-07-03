@@ -621,6 +621,8 @@ post_pr:
 
 ### Enforcement gates, telemetry, and org knowledge (optional)
 
+> Full how-to with CLI reference, modes, hook/CI wiring, and troubleshooting: [docs/workflow/gates.md](docs/workflow/gates.md).
+
 Three opt-in capabilities harden the workflow for larger teams. All are disabled by default and powered by one dependency-free helper, `.scripts/aw-gate.js`, installed with `aw-init --with-gates` (re-run the installer with that flag to add it to an existing install). None require an agent to run in CI — enforcement is fully deterministic.
 
 **Freshness gates.** The review and compliance skills are LLM-driven and cannot block a merge on their own. Instead they stamp a freshness marker after a successful run, and a deterministic checker enforces staleness windows:
