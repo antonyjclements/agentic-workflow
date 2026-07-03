@@ -26,6 +26,8 @@ If `docs/standards/index.yml` exists:
 
 If it does not exist, plan to create it after the first approved standard.
 
+When `org_knowledge.source` is configured in `docs/workflow/config.yml`, also run `node .scripts/aw-gate.js org-sync` and scan the org-shared standards tier in `<org_knowledge.cache_dir>/<paths.standards>`. Do not re-document an org-wide standard locally — reference the org entry instead, and only write a repo-local standard when the convention is genuinely specific to this repo.
+
 ## Step 2: Determine Focus
 
 Use `$ARGUMENTS` if it names a path, domain, or standard idea.

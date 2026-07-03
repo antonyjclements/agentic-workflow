@@ -140,3 +140,7 @@ Apply `safe_auto` edits. Interactive: ask whether to walk through findings, auto
 Report: target reviewed · mode used · findings by severity (P0 first) with file:line references · fixes applied · tests/checks run · remaining risks or open questions.
 
 Headless: end with `Review complete`.
+
+## Freshness Gate
+
+After a review completes, if `.scripts/aw-gate.js` exists, stamp the freshness gate: `node .scripts/aw-gate.js record review --detail "<mode>"`. This updates the git-ignored gate state (and appends a telemetry event when enabled) so a deterministic pre-push/CI `aw-gate.js check` can enforce that review ran recently. See `docs/workflow/README.md`.

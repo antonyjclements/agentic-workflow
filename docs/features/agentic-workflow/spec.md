@@ -37,6 +37,7 @@ related_decisions:
   - docs/decisions/2026-07-02-make-human-review-gates-opt-in.md
   - docs/decisions/2026-07-02-session-logs-self-describing-and-hook-independent.md
   - docs/decisions/2026-07-02-remove-brainstorm-index-and-validate-registries.md
+  - docs/decisions/2026-07-03-add-enforcement-gates-telemetry-org-knowledge.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -70,7 +71,7 @@ The workflow routes:
 - correction-driven learnings to `docs/learnings/` or `~/.agents/learnings/`
 - session logs to `docs/sessions/` (self-describing, no index)
 - the synthesized project wiki to `docs/context/wiki.md`
-- ticket creation, workflow step overrides, implementation test policy, PR templates, commit messages, post-PR CI monitoring, Slack research, and human review routing to `docs/workflow/config.yml`
+- ticket creation, workflow step overrides, implementation test policy, PR templates, commit messages, post-PR CI monitoring, Slack research, human review, enforcement gates, telemetry, and org-shared knowledge routing to `docs/workflow/config.yml`
 - repo initialization only through `aw-init`; upgrades through `skills/aw-init/scripts/upgrade.sh`
 - canonical bundled skill names under the `aw-*` prefix, in `aw-<verb>-<object>` form for multi-word names, with consolidated mode-routed skills (`aw-prd`, `aw-review`, `aw-capture`, `aw-refresh`)
 - README maintenance as a required check when user-facing workflow behavior changes
@@ -119,6 +120,14 @@ The workflow routes:
 - Repos can configure `workflow.steps.commit.skill` or `workflow.steps.commit_push_pr.skill` for enterprise-specific commit or shipping steps. If blank, commit skills follow the configured template, scope requirements, allowed types, examples, repo instructions, or recent history.
 - There is no bundled pipeline monitor skill. After PR creation, `workflow.steps.monitor_pipeline.skill` is invoked with the PR URL when configured; when it is blank or `post_pr.ci_monitor.provider` is `manual` or missing, post-PR monitoring is skipped cleanly. Retry limits and polling cadence are owned by the configured monitor skill.
 - Workflow exhaust is committed separately from feature work: session logs as `chore(session): log <slug>` commits and synthesis output as one batched `chore(memory): synthesize N sessions` commit. `docs/sessions/` files are never staged into feature or fix commits.
+
+### Enforcement Gates, Telemetry, and Org Knowledge
+
+- Three opt-in capabilities, disabled by default, are backed by one dependency-free helper installed at `<repo>/.scripts/aw-gate.js` via `aw-init --with-gates`. The self-hosting agentic-workflow repo installs its own copy; `.scripts/aw-gate.js` must stay identical to `skills/aw-init/artifacts/aw-gate.js`, enforced by `scripts/test-install.sh`.
+- Freshness gates convert LLM-driven review and compliance into a deterministic, agent-free CI/pre-push check. After a successful run, `aw-review`, `aw-capture`, and `aw-check-workflow-compliance` stamp a git-ignored `gates.state_file` (recording the current time and commit) via `node .scripts/aw-gate.js record <gate>`. Each gate under `gates.checks` picks a `mode`: `age` (fresh within `max_age_hours`), `commit` (fresh while the gate's `paths` are unchanged since the recorded commit, compared against `HEAD` or, with `--against worktree`, the working tree), or `commit-and-age` (both). `age` is the default. `node .scripts/aw-gate.js check` exits non-zero when any gate fails its mode, and exits zero when `gates.enabled` is false. The workflow ships the script and the freshness contract; the consumer wires `check` into a pre-commit/pre-push hook or CI job.
+- Telemetry: when `telemetry.enabled` is true, the same `record` call appends a no-PII event (`ts`, `event`, `detail`, `source`) to the git-tracked JSONL log at `telemetry.path` (default `docs/metrics/events.jsonl`, schema in `docs/metrics/README.md`) so effectiveness reporting can aggregate the flywheel directly from version control.
+- Org-shared knowledge: setting `org_knowledge.source` to a git URL adds an org-wide learnings/standards tier alongside repo-local `docs/learnings/` and `docs/standards/`, replacing the per-machine `~/.agents/learnings/` fallback as the second tier. `node .scripts/aw-gate.js org-sync` shallow-clones or updates that repo into the git-ignored `org_knowledge.cache_dir`. `aw-capture`, `aw-synthesize-memory`, and `aw-discover-standards` consult the org tier (read-only) before writing repo-local knowledge; precedence is repo-local first, then org-shared.
+- The config migrator (`upgrade-config.rb`) adds the `gates`, `telemetry`, and `org_knowledge` default sections to older configs while preserving existing overrides.
 
 ### Knowledge Capture and Memory Synthesis
 
@@ -169,3 +178,7 @@ The workflow routes:
 - `aw-synthesize-memory` promotes learnings only through corroboration (tentative until three sessions agree), expires uncorroborated learnings after three runs, requires user confirmation before writing standards, regenerates `docs/context/wiki.md` in full with a visible `generated` stamp, and removes processed logs past the retention window.
 - Agents treat a context wiki older than 30 days (or several unprocessed session logs behind) as stale and verify against the underlying registries.
 - Session logs and synthesis output are committed as separate `chore(session)` / `chore(memory)` commits, never inside feature commits.
+- New installs write `gates`, `telemetry`, and `org_knowledge` sections to `docs/workflow/config.yml`, all disabled by default. `aw-init --with-gates` additionally installs `.scripts/aw-gate.js` and appends `.aw-gate-state.json` and `.aw-org-cache/` to `.gitignore`.
+- `.scripts/aw-gate.js check` exits zero when `gates.enabled` is false, and exits non-zero when any gate under `gates.checks` fails its `mode` (`age` staleness, `commit` path changes since the recorded commit, or both); `record <gate>` stamps the git-ignored state file with the current time and commit and, when `telemetry.enabled`, appends a no-PII event to `telemetry.path`.
+- The self-hosted `.scripts/aw-gate.js` stays identical to `skills/aw-init/artifacts/aw-gate.js`, and `scripts/test-install.sh` fails on drift and exercises the gate's disabled/unrecorded/recorded behavior when `node` is available.
+- `upgrade-config.rb` injects the `gates`, `telemetry`, and `org_knowledge` default sections into older configs during migration without overwriting existing values.

@@ -177,6 +177,12 @@ Keep the wiki under 500 words. It is loaded into agent context at session start,
 - `aw-discover-standards` is for code-style and project-wide coding conventions. `aw-synthesize-memory` handles workflow-level and process patterns.
 - `aw-refresh decisions` manages the decision index. `aw-synthesize-memory` reads decisions to populate the wiki but does not rewrite or index decisions.
 
+## Org-Shared Knowledge
+
+When `org_knowledge.source` is configured in `docs/workflow/config.yml`, run `node .scripts/aw-gate.js org-sync` before extracting learnings and read the org-shared learnings tier in `<org_knowledge.cache_dir>/<paths.learnings>`. Prefer corroborating or linking to an existing org-wide lesson over re-deriving a near-duplicate locally. The org tier is read-only here; write new learnings to `docs/learnings/` (repo-specific) or `~/.agents/learnings/` (global) as before. Contributing a learning upstream to the org repo is a separate, human-owned step.
+
+After a synthesis run completes, if `.scripts/aw-gate.js` exists, record telemetry: `node .scripts/aw-gate.js record synthesize`.
+
 ## Final Output
 
 Report:

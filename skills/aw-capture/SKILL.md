@@ -129,7 +129,7 @@ Use repo-specific storage for lessons tied to this codebase, product, architectu
 
 1. Identify the correction and the missed assumption.
 2. Decide whether there is a durable lesson. If not, state that no entry is warranted and continue.
-3. Check existing `docs/learnings/index.yml` to avoid duplicates.
+3. Check existing `docs/learnings/index.yml` to avoid duplicates. When `org_knowledge.source` is set in `docs/workflow/config.yml`, run `node .scripts/aw-gate.js org-sync` and also check the org-shared learnings tier (`<org_knowledge.cache_dir>/<paths.learnings>`) so a repo-local lesson does not duplicate an org-wide one.
 4. Classify scope: repo-specific or global. When ambiguous, ask one blocking question.
 5. Draft one concise learning and write it.
 6. Update the matching `index.yml`.
@@ -327,3 +327,7 @@ The hook is a convenience, not the system of record. Hooks are disabled or unsup
 ## Output
 
 Report: mode used · file path created · index/registry updated · related artifacts touched · recommended next step.
+
+## Freshness Gate
+
+After a capture completes, if `.scripts/aw-gate.js` exists, stamp the freshness gate: `node .scripts/aw-gate.js record capture --detail "<mode>"`. This updates the git-ignored gate state (and appends a telemetry event when enabled) so a deterministic pre-push/CI `aw-gate.js check` can enforce that capture ran recently. See `docs/workflow/README.md`.

@@ -8,7 +8,7 @@ usage() {
 Install agentic-workflow globally and into a target repository.
 
 Usage:
-  install.sh [--repo PATH] [--skills-dir PATH] [--learnings-dir PATH] [--force] [--skip-skills] [--skip-skill-links] [--skip-repo] [--remote] [--source-url URL]
+  install.sh [--repo PATH] [--skills-dir PATH] [--learnings-dir PATH] [--force] [--skip-skills] [--skip-skill-links] [--skip-repo] [--with-gates] [--remote] [--source-url URL]
 
 Defaults:
   --repo          current directory
@@ -25,7 +25,8 @@ What it does:
   5. Writes .agentic-workflow-version.
   6. Creates global ~/.agents/learnings/index.yml if missing.
   7. Installs .claude/hooks/log-session.sh and merges a Stop hook into .claude/settings.json for automatic session logging (Claude Code only).
-  8. Prints recommended next steps.
+  8. With --with-gates, installs the deterministic .scripts/aw-gate.js helper (freshness gates, telemetry, org-knowledge sync) and gitignores its per-checkout state.
+  9. Prints recommended next steps.
 
 Existing files are preserved unless --force is passed.
 Existing non-symlink skill directories are always preserved.
@@ -40,6 +41,7 @@ force=0
 skip_skills=0
 skip_skill_links=0
 skip_repo=0
+with_gates=0
 use_remote=0
 source_url="${AGENTIC_WORKFLOW_SOURCE_URL:-}"
 remote_tmp_dir=""
@@ -82,6 +84,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --skip-repo)
       skip_repo=1
+      shift
+      ;;
+    --with-gates)
+      with_gates=1
       shift
       ;;
     --remote)
@@ -472,7 +478,51 @@ human_review:
   spec:
     reviewers: []
   plan:
-    reviewers: []"
+    reviewers: []
+gates:
+  enabled: false
+  state_file: .aw-gate-state.json
+  checks:
+    review:
+      max_age_hours: 24
+    capture:
+      max_age_hours: 168
+    check_workflow_compliance:
+      max_age_hours: 24
+telemetry:
+  enabled: false
+  path: docs/metrics/events.jsonl
+org_knowledge:
+  source: \"\"
+  ref: main
+  cache_dir: .aw-org-cache
+  paths:
+    learnings: learnings
+    standards: standards"
+}
+
+install_gate_script() {
+  local dest="$repo_dir/.scripts/aw-gate.js"
+  local src="$artifact_dir/aw-gate.js"
+  if [ ! -f "$src" ]; then
+    echo "gates skip: aw-gate.js not found at $src"
+    return 0
+  fi
+  mkdir -p "$repo_dir/.scripts"
+  if prompt_overwrite "$dest"; then
+    cp "$src" "$dest"
+    chmod +x "$dest"
+    echo "write: $dest"
+  fi
+
+  # The freshness state file and org cache are per-checkout, never committed.
+  local gitignore="$repo_dir/.gitignore"
+  for entry in ".aw-gate-state.json" ".aw-org-cache/"; do
+    if [ ! -f "$gitignore" ] || ! grep -Fqx "$entry" "$gitignore"; then
+      printf '%s\n' "$entry" >> "$gitignore"
+      echo "gitignore: $entry"
+    fi
+  done
 }
 
 install_global_learnings() {
@@ -553,6 +603,9 @@ fi
 if [ "$skip_repo" -ne 1 ]; then
   install_repo_files
   install_claude_hooks
+  if [ "$with_gates" -eq 1 ]; then
+    install_gate_script
+  fi
 fi
 
 install_global_learnings
@@ -577,4 +630,7 @@ Next steps:
 7. Session logging is automatic for Claude Code: .claude/hooks/log-session.sh fires when each session ends.
    Run aw-synthesize-memory periodically to distill session logs into learnings and refresh docs/context/wiki.md.
    Other agents (Codex, Codeium, Windsurf) can invoke aw-capture session manually; the session log format is cross-agent.
+8. Optional enforcement, telemetry, and org knowledge (see docs/workflow/README.md):
+   Re-run install with --with-gates to add .scripts/aw-gate.js. Set gates.enabled/telemetry.enabled/org_knowledge.source
+   in docs/workflow/config.yml, then wire \`node .scripts/aw-gate.js check\` into a pre-push hook or CI job.
 EOF

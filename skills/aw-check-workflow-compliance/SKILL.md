@@ -108,6 +108,10 @@ Expected result:
 - Effective test policy reported as `acceptance-first`.
 - Acceptance coverage reported as covered by tests.
 
+## Freshness Gate
+
+After the compliance review completes (reporting, not fixing), if `.scripts/aw-gate.js` exists, stamp the freshness gate: `node .scripts/aw-gate.js record check_workflow_compliance`. This writes only the git-ignored gate state (and an optional telemetry event); it is not a file mutation of tracked work. A deterministic pre-push/CI `aw-gate.js check` then enforces that compliance ran recently. See `docs/workflow/README.md`.
+
 ## Rules
 
 - Do not mutate files unless the user explicitly asks for fixes.
