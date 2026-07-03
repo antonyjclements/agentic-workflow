@@ -9,6 +9,14 @@ All three capabilities are **opt-in and disabled by default**. This guide covers
 what they are, how to configure them, and how to wire enforcement into a Git hook
 or CI. For the terse schema, see [README.md](README.md); this file is the how-to.
 
+> **What gates guarantee — and what they don't.** A gate proves a step *ran*
+> recently (`age` mode) or *against the current code* (`commit` mode). It does
+> **not** prove the step was done *well* — a rushed review still stamps the review
+> gate. Gates are workflow **accountability**, not quality assurance: they make
+> "did we review this?" enforceable and deterministic, while the judgment of
+> whether the review was any good stays with the agent and the humans. Keep that
+> boundary in mind when deciding what to gate on.
+
 ---
 
 ## 1. The idea in one paragraph
