@@ -155,7 +155,9 @@ decisions:
   - path: docs/decisions/2026-05-24-make-ce-init-the-install-source-of-truth.md
     title: Make ce-init the install source of truth
     date: 2026-05-24
-    status: active
+    status: superseded
+    superseded_by:
+      - docs/decisions/2026-07-03-retire-the-repo-clean-posture.md
     tags:
       - workflow
       - installer
@@ -278,6 +280,14 @@ decisions:
       - workflow
       - automation
       - knowledge-capture
+  - path: docs/decisions/2026-07-03-retire-the-repo-clean-posture.md
+    title: Retire the repo-clean posture while keeping aw-init as the artifact source of truth
+    date: 2026-07-03
+    status: active
+    tags:
+      - workflow
+      - installer
+      - dogfooding
   - path: docs/decisions/2026-07-03-self-host-the-workflow-install.md
     title: Self-host the workflow install in its own repository
     date: 2026-07-03

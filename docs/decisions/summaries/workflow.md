@@ -1,9 +1,11 @@
 # Decision Summary: workflow
 
-Last refreshed: 2026-07-02
+Last refreshed: 2026-07-03
 
 ## Active Decisions
 
+- [Retire the repo-clean posture while keeping aw-init as the artifact source of truth](../2026-07-03-retire-the-repo-clean-posture.md) - Supersedes the 2026-05-24 install-source-of-truth record: aw-init still owns installer behavior and artifacts, but root install copies are now committed and drift-guarded rather than removed.
+- [Self-host the workflow install in its own repository](../2026-07-03-self-host-the-workflow-install.md) - Commit the repo's own aw-init install output for dogfooding, with `scripts/test-install.sh` failing on drift from `skills/aw-init/` sources.
 - [Make human review gates opt-in instead of ask-always](../2026-07-02-make-human-review-gates-opt-in.md) - Offer spec/plan sign-off PRs only when reviewers are configured, the change is high-risk, or the user asks; never interrupt by default.
 - [Consolidate skills into mode-routed entrypoints and introduce the memory synthesis loop](../2026-07-02-consolidate-skills-and-add-memory-loop.md) - Backfill: merge ~33 single-purpose skills into 20 mode-routed ones and distill session logs into learnings and a generated wiki through corroboration.
 - [Remove the brainstorm index and validate remaining docs registries in CI](../2026-07-02-remove-brainstorm-index-and-validate-registries.md) - A derived index must either be validated by `scripts/test-install.sh` or removed; brainstorms are self-describing.
@@ -24,7 +26,6 @@ Last refreshed: 2026-07-02
 - [Use PR title and body templates](../2026-05-25-use-pr-title-and-body-templates.md) - Let repos apply enterprise PR text standards through linked markdown templates while keeping the default PR creation flow.
 - [Add decision refresh maintenance](../2026-05-25-add-decision-refresh-maintenance.md) - Keep large decision registries navigable through derived indexes and summaries without rewriting old records.
 - [Use single feature plan file](../2026-05-24-use-single-feature-plan-file.md) - Save the active feature plan at `docs/features/<feature>/plan.md`.
-- [Make ce-init the install source of truth](../2026-05-24-make-ce-init-the-install-source-of-truth.md) - Keep installer artifacts under `skills/aw-init/` and support ticket-first implementation handoff.
 - [Curate bundled skills and enforce README updates](../2026-05-24-curate-skills-and-enforce-readme-updates.md) - Keep the bundled workflow skill set focused and require README updates for user-facing workflow changes.
 - [Add ce-init installer skill](../2026-05-24-add-ce-init-installer-skill.md) - Install repo-local workflow files through a portable `aw-init` skill.
 - [Add human review gates for specs and plans](../2026-05-24-add-human-review-gates-for-specs-and-plans.md) - Support configured GitHub reviewer requests for spec and plan sign-off PRs.
@@ -34,6 +35,7 @@ Last refreshed: 2026-07-02
 
 ## Superseded Decisions
 
+- [Make ce-init the install source of truth](../2026-05-24-make-ce-init-the-install-source-of-truth.md) -> [Retire the repo-clean posture while keeping aw-init as the artifact source of truth](../2026-07-03-retire-the-repo-clean-posture.md)
 - [Use docs/ for spec-driven workflow registries](../2026-05-24-use-docs-for-spec-driven-workflow.md) -> [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md)
 - [Support feature spec indexes](../2026-05-24-support-feature-spec-indexes.md) -> [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md)
 - [Use feature directories for specs and plans](../2026-05-24-use-feature-directories-for-specs-and-plans.md) -> [Use single feature plan file](../2026-05-24-use-single-feature-plan-file.md)
