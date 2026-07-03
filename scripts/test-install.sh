@@ -380,6 +380,18 @@ YAML
   node "$org_consumer/.scripts/aw-gate.js" org-sync >/dev/null   # first: clone the tag
   node "$org_consumer/.scripts/aw-gate.js" org-sync >/dev/null   # second: update the tag (must not fail)
   assert_file "$org_consumer/.aw-org-cache/learnings/l1.md"
+
+  # A bare `source:` parses as an empty mapping ({}), not "". org-sync must treat
+  # it as unset and skip, not try to clone "[object Object]".
+  bare_src_consumer="$tmp_root/org-bare-source"
+  mkdir -p "$bare_src_consumer/docs/workflow" "$bare_src_consumer/.scripts"
+  cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$bare_src_consumer/.scripts/aw-gate.js"
+  printf 'org_knowledge:\n  source:\n  ref: main\n' > "$bare_src_consumer/docs/workflow/config.yml"
+  node "$bare_src_consumer/.scripts/aw-gate.js" org-sync >/dev/null
+  if [ -e "$bare_src_consumer/.aw-org-cache" ]; then
+    echo "org-sync should skip a bare (empty-mapping) source, not create a cache" >&2
+    exit 1
+  fi
   echo "org-sync tag-ref functional test passed"
 else
   echo "org-sync tag-ref functional test skipped: node or git not available"
