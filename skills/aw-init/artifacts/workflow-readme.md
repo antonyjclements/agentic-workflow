@@ -65,7 +65,9 @@ human_review:
 | `gates.checks.<name>.max_age_hours` | number | — | Maximum age, in hours, a recorded gate stays fresh. Required for `age` and `commit-and-age` modes. |
 | `gates.checks.<name>.paths` | string list | whole tree | Git pathspecs scoping which changes invalidate a `commit`-mode gate, e.g. `["src", ":(exclude)docs"]`. Omitted means any commit invalidates it. |
 | `telemetry.enabled` | boolean | `false` | When true, `aw-gate.js record` appends a no-PII event to the telemetry log. |
-| `telemetry.path` | string | `docs/metrics/events.jsonl` | Git-tracked JSONL log of workflow events for effectiveness reporting. |
+| `telemetry.path` | string | `docs/metrics/events.jsonl` | Base path of the git-tracked JSONL event log. With monthly rotation the month is inserted (`events-YYYY-MM.jsonl`). |
+| `telemetry.rotation` | string | `monthly` | `monthly` shards the log per month (bounds growth and cuts merge contention); `none` writes a single file. |
+| `telemetry.retention_months` | number | `12` | `prune-telemetry` deletes month shards older than this many months (git history is the archive). `0` keeps all. |
 | `org_knowledge.source` | string | `""` | Git URL of the org-shared learnings/standards repo. Blank disables org sync. |
 | `org_knowledge.ref` | string | `main` | Branch or tag of the org knowledge repo to sync. |
 | `org_knowledge.cache_dir` | string | `.aw-org-cache` | Git-ignored local cache the org repo is cloned into. |
@@ -118,9 +120,25 @@ recorded commit is present.
 ### Telemetry (`telemetry`)
 
 When `telemetry.enabled` is true, the same `record` call also appends a no-PII
-event (`ts`, `event`, `detail`, `source`) to `telemetry.path`. The log is plain
-git-tracked JSONL so an engineering-effectiveness team can aggregate it directly
-from version control. Schema and aggregation notes live in `docs/metrics/README.md`.
+event (`ts`, `event`, `detail`, `source`) to the git-tracked JSONL log, so an
+engineering-effectiveness team can aggregate it directly from version control.
+
+Because the log is append-only and git-tracked, two safeguards keep it from
+becoming a growth or merge-conflict problem:
+
+- **Monthly rotation** (`telemetry.rotation: monthly`, the default) writes to
+  `events-YYYY-MM.jsonl` instead of one ever-growing file. Each file stays bounded,
+  and concurrent branches usually append to different months. Set `rotation: none`
+  to keep the legacy single-file behavior.
+- **`union` merge** — `aw-init --with-gates` adds `docs/metrics/events*.jsonl merge=union`
+  to `.gitattributes`, so when branches do append to the same shard, git keeps both
+  sides' lines instead of raising a conflict. Order does not matter; every line
+  carries its own `ts`.
+- **Retention** — `node .scripts/aw-gate.js prune-telemetry` deletes shards older
+  than `telemetry.retention_months` (default 12; git history is the archive).
+  `aw-synthesize-memory` runs it as part of its retention pass.
+
+Schema and aggregation notes live in `docs/metrics/README.md`.
 
 ### Org-shared knowledge (`org_knowledge`)
 

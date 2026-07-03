@@ -181,7 +181,7 @@ Keep the wiki under 500 words. It is loaded into agent context at session start,
 
 When `org_knowledge.source` is configured in `docs/workflow/config.yml`, run `node .scripts/aw-gate.js org-sync` before extracting learnings and read the org-shared learnings tier in `<org_knowledge.cache_dir>/<paths.learnings>`. Prefer corroborating or linking to an existing org-wide lesson over re-deriving a near-duplicate locally. The org tier is read-only here; write new learnings to `docs/learnings/` (repo-specific) or `~/.agents/learnings/` (global) as before. Contributing a learning upstream to the org repo is a separate, human-owned step.
 
-After a synthesis run completes, if `.scripts/aw-gate.js` exists, record telemetry: `node .scripts/aw-gate.js record synthesize`.
+After a synthesis run completes, if `.scripts/aw-gate.js` exists, record telemetry: `node .scripts/aw-gate.js record synthesize`. Then run the telemetry retention pass in the same maintenance step: `node .scripts/aw-gate.js prune-telemetry` deletes month shards older than `telemetry.retention_months` (git history is the archive; no-op when telemetry rotation or retention is not configured). Include any removed shards in the batched `chore(memory)` commit.
 
 ## Final Output
 

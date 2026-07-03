@@ -81,7 +81,9 @@ DEFAULT_CONFIG = {
   },
   "telemetry" => {
     "enabled" => false,
-    "path" => "docs/metrics/events.jsonl"
+    "path" => "docs/metrics/events.jsonl",
+    "rotation" => "monthly",
+    "retention_months" => 12
   },
   "org_knowledge" => {
     "source" => "",

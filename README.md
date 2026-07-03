@@ -684,7 +684,11 @@ The same one-liner works as a CI step; in CI, check out full history (`fetch-dep
 telemetry:
   enabled: true
   path: docs/metrics/events.jsonl
+  rotation: monthly        # shard per month (events-YYYY-MM.jsonl); "none" for a single file
+  retention_months: 12     # prune-telemetry drops older shards; git history is the archive
 ```
+
+The log is append-only and git-tracked, so monthly rotation bounds each file and `aw-init --with-gates` registers `docs/metrics/events*.jsonl merge=union` in `.gitattributes` so concurrent appends merge without conflict. `node .scripts/aw-gate.js prune-telemetry` (run by `aw-synthesize-memory`) trims shards past the retention window.
 
 **Org-shared knowledge.** Point `org_knowledge.source` at a git repo of shared learnings and standards to add an org-wide tier alongside the repo-local ones — replacing the per-machine `~/.agents/learnings/` fallback as the second tier:
 

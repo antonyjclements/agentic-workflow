@@ -308,11 +308,34 @@ With `telemetry.enabled: true`, each `record` call also appends one JSON line to
 ```
 
 It records **only** an event name, timestamp, optional short detail, and source —
-no code, no diffs, no PII. The log is git-tracked JSONL, so an
-engineering-effectiveness view can aggregate it straight from version control:
+no code, no diffs, no PII.
+
+### Rotation, retention, and merge conflicts
+
+The log is append-only and git-tracked, which would otherwise grow without bound
+and conflict at the tail when branches merge. Two defaults prevent that:
+
+- **Monthly rotation** (`rotation: monthly`) writes to `events-YYYY-MM.jsonl`, so
+  each file stays bounded and concurrent branches usually touch different months.
+  `rotation: none` keeps a single `events.jsonl`.
+- **`union` merge** — `aw-init --with-gates` adds `docs/metrics/events*.jsonl merge=union`
+  to `.gitattributes`. When two branches do append to the same shard, git keeps
+  both sides' lines instead of raising a conflict; order is irrelevant since each
+  line carries its own `ts`.
+
+Prune old shards with retention (git history keeps the removed data):
 
 ```sh
-node -e 'const fs=require("fs");const c={};for(const l of fs.readFileSync("docs/metrics/events.jsonl","utf8").trim().split("\n"))if(l){const e=JSON.parse(l).event;c[e]=(c[e]||0)+1}console.log(c)'
+node .scripts/aw-gate.js prune-telemetry   # deletes shards older than telemetry.retention_months (default 12)
+```
+
+`aw-synthesize-memory` runs this as part of its retention pass, so you rarely call
+it by hand.
+
+Aggregate across all shards (`events*.jsonl`):
+
+```sh
+node -e 'const fs=require("fs"),p=require("path");const d="docs/metrics";const c={};for(const f of fs.readdirSync(d))if(/^events.*\.jsonl$/.test(f))for(const l of fs.readFileSync(p.join(d,f),"utf8").trim().split("\n"))if(l){const e=JSON.parse(l).event;c[e]=(c[e]||0)+1}console.log(c)'
 ```
 
 Telemetry is independent of gates — you can run either without the other. Schema

@@ -4,6 +4,7 @@ Last refreshed: 2026-07-03
 
 ## Active Decisions
 
+- [Shard telemetry by month with union-merge and prune-based retention](../2026-07-03-shard-telemetry-with-union-merge-and-retention.md) - The git-tracked telemetry log shards to `events-YYYY-MM.jsonl` (default), a `.gitattributes` `merge=union` rule keeps concurrent appends conflict-free, and `prune-telemetry` (run by `aw-synthesize-memory`) drops shards past `retention_months`; stays git-native until volume warrants an external sink.
 - [Add deterministic freshness gates, opt-in telemetry, and org-shared knowledge](../2026-07-03-add-enforcement-gates-telemetry-org-knowledge.md) - One dependency-free helper (`.scripts/aw-gate.js`) backs opt-in, default-off freshness gates (`age`/`commit` modes), no-PII telemetry, and an org-shared learnings/standards tier; consumers wire the deterministic `check` into a pre-push hook or CI.
 - [Retire the repo-clean posture while keeping aw-init as the artifact source of truth](../2026-07-03-retire-the-repo-clean-posture.md) - Supersedes the 2026-05-24 install-source-of-truth record: aw-init still owns installer behavior and artifacts, but root install copies are now committed and drift-guarded rather than removed.
 - [Self-host the workflow install in its own repository](../2026-07-03-self-host-the-workflow-install.md) - Commit the repo's own aw-init install output for dogfooding, with `scripts/test-install.sh` failing on drift from `skills/aw-init/` sources.

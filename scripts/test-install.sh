@@ -207,6 +207,8 @@ assert_repo_install() {
   assert_contains "$target_repo/docs/workflow/config.yml" "research_slack:"
   assert_contains "$target_repo/docs/workflow/config.yml" "gates:"
   assert_contains "$target_repo/docs/workflow/config.yml" "telemetry:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "rotation: monthly"
+  assert_contains "$target_repo/docs/workflow/config.yml" "retention_months: 12"
   assert_contains "$target_repo/docs/workflow/config.yml" "org_knowledge:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "monitor_circleci:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "import_prd:"
@@ -260,6 +262,7 @@ gates_learnings="$tmp_root/gates-learnings"
 assert_file "$gates_target/.scripts/aw-gate.js"
 assert_contains "$gates_target/.gitignore" ".aw-gate-state.json"
 assert_contains "$gates_target/.gitignore" ".aw-org-cache/"
+assert_contains "$gates_target/.gitattributes" "docs/metrics/events*.jsonl merge=union"
 
 if command -v node >/dev/null 2>&1; then
   # Gates disabled by default: check is a clean no-op (exit 0).
@@ -282,6 +285,41 @@ if command -v node >/dev/null 2>&1; then
   echo "gate functional test passed"
 else
   echo "gate functional test skipped: node not available"
+fi
+
+# Telemetry: record must write a month-sharded file, and prune-telemetry must
+# drop shards older than retention while keeping current ones.
+if command -v node >/dev/null 2>&1; then
+  tele_target="$tmp_root/telemetry-target"
+  mkdir -p "$tele_target/docs/workflow" "$tele_target/.scripts"
+  cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$tele_target/.scripts/aw-gate.js"
+  cat > "$tele_target/docs/workflow/config.yml" <<'YAML'
+telemetry:
+  enabled: true
+  path: docs/metrics/events.jsonl
+  rotation: monthly
+  retention_months: 12
+YAML
+  node "$tele_target/.scripts/aw-gate.js" record review --detail probe >/dev/null
+  shard="$(ls "$tele_target/docs/metrics/" | grep -E '^events-[0-9]{4}-[0-9]{2}\.jsonl$' | head -1)"
+  if [ -z "$shard" ]; then
+    echo "telemetry record should write a month-sharded events-YYYY-MM.jsonl" >&2
+    exit 1
+  fi
+  # An old shard is pruned; the current shard is kept.
+  touch "$tele_target/docs/metrics/events-2000-01.jsonl"
+  node "$tele_target/.scripts/aw-gate.js" prune-telemetry >/dev/null
+  if [ -e "$tele_target/docs/metrics/events-2000-01.jsonl" ]; then
+    echo "prune-telemetry should delete a shard older than retention_months" >&2
+    exit 1
+  fi
+  if [ ! -e "$tele_target/docs/metrics/$shard" ]; then
+    echo "prune-telemetry should keep the current shard" >&2
+    exit 1
+  fi
+  echo "telemetry rotation/prune functional test passed"
+else
+  echo "telemetry rotation/prune functional test skipped: node not available"
 fi
 
 # commit-mode gate: fresh until scoped paths change since the recorded commit.
@@ -444,6 +482,8 @@ assert_contains "$migration_target/docs/workflow/config.yml" "provider: circleci
 assert_contains "$migration_target/docs/workflow/config.yml" "scope_required: true"
 assert_contains "$migration_target/docs/workflow/config.yml" "gates:"
 assert_contains "$migration_target/docs/workflow/config.yml" "telemetry:"
+assert_contains "$migration_target/docs/workflow/config.yml" "rotation: monthly"
+assert_contains "$migration_target/docs/workflow/config.yml" "retention_months: 12"
 assert_contains "$migration_target/docs/workflow/config.yml" "org_knowledge:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "monitor_circleci:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "ticket_creation:"

@@ -1,4 +1,12 @@
 decisions:
+  - path: docs/decisions/2026-07-03-shard-telemetry-with-union-merge-and-retention.md
+    title: Shard telemetry by month with union-merge and prune-based retention
+    date: 2026-07-03
+    status: active
+    tags:
+      - workflow
+      - telemetry
+      - git
   - path: docs/decisions/2026-07-03-add-enforcement-gates-telemetry-org-knowledge.md
     title: Add deterministic freshness gates, opt-in telemetry, and org-shared knowledge
     date: 2026-07-03
