@@ -25,6 +25,7 @@ Use this skill when:
 - Dead ends are low-cost to record and high-value for future agents. Err toward preserving them.
 - `docs/context/wiki.md` is a synthesis artifact, not a source artifact. Regenerate it in full on each run; never manually edit it.
 - The wiki must carry its `generated` date both in frontmatter and in the visible header line, so consumers can judge staleness. Consumers treat a wiki older than 30 days as stale.
+- Every path the wiki references must exist in the repository the wiki is generated for; `scripts/test-install.sh` fails on dangling wiki references.
 - Prefer updating existing learnings to creating near-duplicate entries.
 - Do not promote a pattern to `docs/standards/` without user confirmation.
 - When the user asks to commit synthesis output, use one batched commit — `chore(memory): synthesize N sessions` — covering learnings, the regenerated wiki, frontmatter status updates, and expired-log removals. Do not commit unless the user asks.

@@ -122,6 +122,17 @@ if File.exist?(features_index)
   end
 end
 
+# The context wiki is derived state too: every repo path it references
+# (backticked docs/, scripts/, skills/ tokens) must exist.
+wiki = File.join(root, "docs", "context", "wiki.md")
+if File.exist?(wiki)
+  File.read(wiki, encoding: "UTF-8").scan(/`((?:docs|scripts|skills)\/[^`<>\s]+)`/).flatten.uniq.each do |ref|
+    unless File.exist?(File.join(root, ref))
+      failures << "#{wiki}: referenced path missing: #{ref}"
+    end
+  end
+end
+
 unless failures.empty?
   failures.each { |f| warn f }
   abort "docs index validation failed for #{root}"
