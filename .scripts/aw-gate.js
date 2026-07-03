@@ -37,9 +37,25 @@ function fail(msg) {
 }
 
 // --- Minimal YAML reader -------------------------------------------------
-// Handles the nested-mapping + scalar + block-scalar-list subset used by
-// config.yml. Enough to read gates, telemetry, and org_knowledge, including
-// the `paths` lists used by commit-mode gates.
+// A deliberately partial YAML parser — just enough to read this workflow's
+// config.yml without a dependency. Keep config.yml within the supported subset:
+// anything outside it MISPARSES SILENTLY (e.g. a trailing comment turns a value
+// into a string, which can quietly disable a gate). If the config grammar ever
+// needs more than this, switch to a real YAML library rather than extending it.
+//
+// Supported:
+//   - nested block mappings by indentation (`key:` then indented children)
+//   - scalars: strings (optionally "double"/'single' quoted), booleans
+//     (true/false), null (empty, ~, null), integers, floats
+//   - block scalar lists:          paths:\n  - a\n  - b
+//   - inline flow scalar arrays:   paths: ["a", "b"]   (no commas inside items)
+//   - full-line comments (`# ...`) and blank lines
+//
+// NOT supported — avoid in config.yml; these misparse WITHOUT erroring:
+//   - trailing/inline comments on a value line (`key: val # note` keeps "# note")
+//   - inline flow maps (`{a: b}`) and block lists of maps (`- key: value`)
+//   - multi-line/folded scalars (`|`, `>`), anchors/aliases (`&`, `*`), tags (`!!type`)
+//   - commas inside a quoted item of an inline array
 function parseScalar(s) {
   s = s.trim();
   // Inline flow array, e.g. ["src", ":(exclude)docs"]. Split on commas (pathspecs

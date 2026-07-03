@@ -152,6 +152,38 @@ paths:
 `:(exclude)<path>` (equivalently `:!<path>`) is git's exclude magic. At least one
 positive pathspec (like `.` or `src`) must be present alongside excludes.
 
+### Config parsing: the supported YAML subset
+
+`aw-gate.js` reads `config.yml` with a **deliberately partial, dependency-free
+YAML parser** — enough for this workflow's config and nothing more. The upside is
+zero dependencies and full portability; the cost is that config outside the
+supported subset **misparses silently rather than erroring**. Keep edits within
+this subset (or, if the grammar ever needs to grow, the tool should adopt a real
+YAML library instead of stretching the parser):
+
+**Supported**
+
+- Nested block mappings by indentation (`key:` then indented children).
+- Scalars: strings (optionally `"double"`/`'single'` quoted), booleans
+  (`true`/`false`), null (empty, `~`, `null`), integers, floats.
+- Block scalar lists — `paths:` then indented `- item` lines.
+- Inline flow scalar arrays — `paths: ["src", ":(exclude)docs"]` (no commas
+  *inside* an item).
+- Full-line comments (`# ...`) and blank lines.
+
+**Not supported — avoid these; they misparse without an error**
+
+- **Trailing/inline comments on a value line.** `enabled: true # note` parses the
+  value as the string `"true # note"`, so the gate is silently treated as
+  disabled. Put comments on their own line.
+- Inline flow maps (`{a: b}`) and block lists of maps (`- key: value`).
+- Multi-line/folded scalars (`|`, `>`), anchors/aliases (`&`, `*`), tags (`!!type`).
+- A comma inside a quoted item of an inline array.
+
+The same subset is documented at the top of `.scripts/aw-gate.js`, beside the
+parser. The installer's default `config.yml` and every example in this guide stay
+inside it.
+
 ---
 
 ## 5. Wiring enforcement
