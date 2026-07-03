@@ -10,6 +10,19 @@ if ! diff -q "$repo_root/operating_model.md" "$repo_root/skills/aw-init/artifact
   exit 1
 fi
 
+# AGENTS.md is loaded into agent context at the start of every session in every
+# installed repo. Keep it lightweight: fail if it grows past the word budget so
+# additions must cut something or consciously raise the budget in the same diff.
+agents_word_budget=2500
+agents_words="$(wc -w < "$repo_root/skills/aw-init/artifacts/AGENTS.md" | tr -d '[:space:]')"
+if [ "$agents_words" -gt "$agents_word_budget" ]; then
+  echo "skills/aw-init/artifacts/AGENTS.md exceeds word budget: $agents_words > $agents_word_budget" >&2
+  exit 1
+fi
+
+# This repo self-hosts the workflow's docs/ registries; validate them too.
+# (validate_docs_indexes is defined below, so defer the call until after definitions.)
+
 cleanup() {
   rm -rf "$tmp_root"
 }
@@ -49,15 +62,83 @@ assert_not_contains() {
   fi
 }
 
+# Validate docs/ indexes: every index.yml parses, every indexed path exists,
+# and every docs/features/*/spec.md has a features index entry. Indexes are
+# derived state; this is the drift guard that keeps them trustworthy.
+validate_docs_indexes() {
+  local root="$1"
+  ruby -ryaml -rdate - "$root" <<'RUBY'
+root = File.expand_path(ARGV[0])
+failures = []
+
+def load_yaml(text)
+  YAML.safe_load(text, permitted_classes: [Date, Time, Symbol], aliases: true)
+rescue ArgumentError
+  YAML.safe_load(text, [Date, Time, Symbol], [], true)
+end
+
+Dir.glob(File.join(root, "docs", "**", "index.yml")).each do |index|
+  begin
+    data = load_yaml(File.read(index))
+  rescue StandardError => e
+    failures << "#{index}: invalid YAML (#{e.class}: #{e.message})"
+    next
+  end
+  unless data.is_a?(Hash)
+    failures << "#{index}: expected a top-level mapping"
+    next
+  end
+  data.each_value do |entries|
+    next unless entries.is_a?(Array)
+    entries.each do |entry|
+      next unless entry.is_a?(Hash)
+      # "path" is the common file-reference key; the features index uses "spec".
+      %w[path spec].each do |key|
+        ref = entry[key]
+        next unless ref.is_a?(String) && ref.start_with?("docs/")
+        unless File.exist?(File.join(root, ref))
+          failures << "#{index}: indexed path missing: #{ref}"
+        end
+      end
+    end
+  end
+end
+
+features_index = File.join(root, "docs", "features", "index.yml")
+if File.exist?(features_index)
+  indexed = []
+  begin
+    data = load_yaml(File.read(features_index))
+    if data.is_a?(Hash)
+      indexed = data.values.select { |v| v.is_a?(Array) }.flatten
+                    .select { |e| e.is_a?(Hash) }
+                    .flat_map { |e| [e["path"], e["spec"]] }.compact
+    end
+  rescue StandardError
+  end
+  Dir.glob(File.join(root, "docs", "features", "*", "spec.md")).each do |spec|
+    rel = spec.sub(root + "/", "")
+    failures << "#{features_index}: spec not indexed: #{rel}" unless indexed.include?(rel)
+  end
+end
+
+unless failures.empty?
+  failures.each { |f| warn f }
+  abort "docs index validation failed for #{root}"
+end
+RUBY
+}
+
 assert_repo_install() {
   local target_repo="$1"
+
+  validate_docs_indexes "$target_repo"
 
   assert_file "$target_repo/AGENTS.md"
   assert_file "$target_repo/CLAUDE.md"
   assert_file "$target_repo/.agentic-workflow-version"
   assert_file "$target_repo/docs/product/prds/index.yml"
   assert_file "$target_repo/docs/product/prds/template.md"
-  assert_file "$target_repo/docs/brainstorms/index.yml"
   assert_file "$target_repo/docs/features/index.yml"
   assert_file "$target_repo/docs/standards/index.yml"
   assert_file "$target_repo/docs/decisions/index.yml"
@@ -90,6 +171,8 @@ assert_repo_install() {
   assert_contains "$target_repo/AGENTS.md" "workflow.implementation.test_policy"
   assert_contains "$target_repo/AGENTS.md" "AGENTIC_WORKFLOW_VERSION=$workflow_version"
 }
+
+validate_docs_indexes "$repo_root"
 
 export HOME="$tmp_root/home"
 mkdir -p "$HOME"

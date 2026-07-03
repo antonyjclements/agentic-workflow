@@ -49,7 +49,7 @@ Agentic Workflow should make spec-driven development portable across repositorie
 
 ## Current Behavior
 
-The workflow uses `AGENTS.md` as the portable orientation and routing file. The installer copies that file into a target repo, installs skills globally under `~/.agents/skills`, symlinks supported agent runtime skill directories to that canonical location when safe, writes `.agentic-workflow-version`, creates repo-local indexes for PRDs, brainstorms, features, standards, decisions, and learnings, and installs an editable PRD template at `docs/product/prds/template.md`.
+The workflow uses `AGENTS.md` as the portable orientation and routing file. The installer copies that file into a target repo, installs skills globally under `~/.agents/skills`, symlinks supported agent runtime skill directories to that canonical location when safe, writes `.agentic-workflow-version`, creates repo-local indexes for PRDs, features, standards, decisions, and learnings, and installs an editable PRD template at `docs/product/prds/template.md`. Brainstorms and session logs are self-describing files without an index.
 
 The repository root `aw-version.txt` is the single source for installer-owned workflow version markers. Installed `AGENTS.md` carries the same version stamp, and installers or migrators use `aw-version.txt` when running from a full source tree.
 
@@ -142,7 +142,7 @@ The workflow routes:
 
 ## Acceptance Criteria
 
-- New installs create `.agentic-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/brainstorms/index.yml`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/decisions/index.yml`, `docs/learnings/index.yml`, and `docs/workflow/README.md`.
+- New installs create `.agentic-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/decisions/index.yml`, `docs/learnings/index.yml`, and `docs/workflow/README.md`. No index is created for `docs/brainstorms/` or `docs/sessions/`.
 - The installed `AGENTS.md` version stamp, installer version marker, and config migration version marker are sourced from root `aw-version.txt` when a full source tree is available.
 - New installs include `AGENTS.md` and `CLAUDE.md`; `CLAUDE.md` delegates to `AGENTS.md`.
 - New installs place skills in `~/.agents/skills` and, when safe, symlink `~/.claude/skills`, `~/.codeium/skills`, and `~/.windsurf/skills` to that directory.
