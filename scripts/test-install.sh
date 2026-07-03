@@ -18,7 +18,10 @@ for pair in \
   "AGENTS.md:skills/aw-init/artifacts/AGENTS.md" \
   "CLAUDE.md:skills/aw-init/artifacts/CLAUDE.md" \
   "docs/workflow/README.md:skills/aw-init/artifacts/workflow-readme.md" \
-  "docs/workflow/field-guide.md:skills/aw-init/artifacts/field-guide.md"; do
+  "docs/workflow/field-guide.md:skills/aw-init/artifacts/field-guide.md" \
+  "docs/product/prds/template.md:skills/aw-init/artifacts/prd-template.md" \
+  "docs/standards/coding-approach.md:skills/aw-init/artifacts/coding-approach.md" \
+  ".claude/hooks/log-session.sh:skills/aw-init/hooks/log-session.sh"; do
   installed="${pair%%:*}"
   artifact="${pair##*:}"
   if ! diff -q "$repo_root/$installed" "$repo_root/$artifact" > /dev/null 2>&1; then
@@ -26,6 +29,13 @@ for pair in \
     exit 1
   fi
 done
+
+# .claude/settings.json is merged, not copied, so assert the Stop hook
+# registration is present rather than diffing the whole file.
+if ! grep -Fq ".claude/hooks/log-session.sh" "$repo_root/.claude/settings.json"; then
+  echo "self-hosted install drift: .claude/settings.json does not register the Stop hook" >&2
+  exit 1
+fi
 
 # AGENTS.md is loaded into agent context at the start of every session in every
 # installed repo. Keep it lightweight: fail if it grows past the word budget so
