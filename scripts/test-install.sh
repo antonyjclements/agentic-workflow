@@ -328,9 +328,61 @@ YAML
     echo "commit-mode gate should fail after scoped paths change" >&2
     exit 1
   fi
+
+  # Regression: inline flow-array paths (e.g. paths: ["src"]) must scope the same
+  # as a block list. A parser that ignores inline arrays would treat paths as
+  # absent (whole tree) and fail even on out-of-scope changes.
+  cat > "$commit_gate/docs/workflow/config.yml" <<'YAML'
+gates:
+  enabled: true
+  checks:
+    review:
+      mode: commit
+      paths: ["src"]
+YAML
+  node "$commit_gate/.scripts/aw-gate.js" record review >/dev/null
+  echo inline-docs >> "$commit_gate/docs/n.md"
+  git -C "$commit_gate" add -A
+  git -C "$commit_gate" commit -qm inline-docs-only
+  node "$commit_gate/.scripts/aw-gate.js" check >/dev/null
+  echo inline-src >> "$commit_gate/src/a.txt"
+  git -C "$commit_gate" add -A
+  git -C "$commit_gate" commit -qm inline-src-change
+  if node "$commit_gate/.scripts/aw-gate.js" check >/dev/null 2>&1; then
+    echo "inline-array paths should scope like a block list (docs-only fresh, src stale)" >&2
+    exit 1
+  fi
   echo "commit-mode gate functional test passed"
 else
   echo "commit-mode gate functional test skipped: node or git not available"
+fi
+
+# org-sync must resync a tag ref, not just a branch: the update path resets to
+# FETCH_HEAD, since origin/<ref> does not exist for tags.
+if command -v node >/dev/null 2>&1 && command -v git >/dev/null 2>&1; then
+  org_src="$tmp_root/org-knowledge-src"
+  org_consumer="$tmp_root/org-consumer"
+  mkdir -p "$org_src/learnings" "$org_consumer/docs/workflow" "$org_consumer/.scripts"
+  git init -q "$org_src"
+  git -C "$org_src" config user.email test@example.com
+  git -C "$org_src" config user.name test
+  echo lesson > "$org_src/learnings/l1.md"
+  git -C "$org_src" add -A
+  git -C "$org_src" commit -qm init
+  git -C "$org_src" tag v1
+  cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$org_consumer/.scripts/aw-gate.js"
+  cat > "$org_consumer/docs/workflow/config.yml" <<YAML
+org_knowledge:
+  source: "$org_src"
+  ref: v1
+  cache_dir: .aw-org-cache
+YAML
+  node "$org_consumer/.scripts/aw-gate.js" org-sync >/dev/null   # first: clone the tag
+  node "$org_consumer/.scripts/aw-gate.js" org-sync >/dev/null   # second: update the tag (must not fail)
+  assert_file "$org_consumer/.aw-org-cache/learnings/l1.md"
+  echo "org-sync tag-ref functional test passed"
+else
+  echo "org-sync tag-ref functional test skipped: node or git not available"
 fi
 
 migration_target="$tmp_root/migration-target"

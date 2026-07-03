@@ -4,6 +4,7 @@ Last refreshed: 2026-07-03
 
 ## Active Decisions
 
+- [Add deterministic freshness gates, opt-in telemetry, and org-shared knowledge](../2026-07-03-add-enforcement-gates-telemetry-org-knowledge.md) - One dependency-free helper (`.scripts/aw-gate.js`) backs opt-in, default-off freshness gates (`age`/`commit` modes), no-PII telemetry, and an org-shared learnings/standards tier; consumers wire the deterministic `check` into a pre-push hook or CI.
 - [Retire the repo-clean posture while keeping aw-init as the artifact source of truth](../2026-07-03-retire-the-repo-clean-posture.md) - Supersedes the 2026-05-24 install-source-of-truth record: aw-init still owns installer behavior and artifacts, but root install copies are now committed and drift-guarded rather than removed.
 - [Self-host the workflow install in its own repository](../2026-07-03-self-host-the-workflow-install.md) - Commit the repo's own aw-init install output for dogfooding, with `scripts/test-install.sh` failing on drift from `skills/aw-init/` sources.
 - [Make human review gates opt-in instead of ask-always](../2026-07-02-make-human-review-gates-opt-in.md) - Offer spec/plan sign-off PRs only when reviewers are configured, the change is high-risk, or the user asks; never interrupt by default.
