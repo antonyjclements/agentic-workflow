@@ -8,7 +8,8 @@
 //
 //   record <event>  Stamp a freshness marker (git-ignored state file) with the
 //                   current commit and time, and, when telemetry is enabled,
-//                   append a no-PII event to the metrics log.
+//                   append a no-PII event to the metrics log (month-sharded by
+//                   default: docs/metrics/events-YYYY-MM.jsonl).
 //   check           Fail (exit 1) when any configured gate is stale. Each gate
 //                   picks a mode: `age` (wall-clock window), `commit` (relevant
 //                   paths changed since the recorded commit), or both. Exits 0
@@ -16,6 +17,8 @@
 //                   Wire it into a pre-commit/pre-push hook or a CI job.
 //   org-sync        Shallow clone/update the org-shared knowledge repo into a
 //                   git-ignored cache dir so skills can read it as a second tier.
+//   prune-telemetry Delete telemetry month shards older than
+//                   telemetry.retention_months (git history is the archive).
 //
 // Zero runtime dependencies. Node >= 16.
 
@@ -196,6 +199,76 @@ function parseFlags(args) {
   return { positional, flags };
 }
 
+// --- Telemetry (git-tracked event log, optionally month-sharded) ---------
+function monthStamp(date) {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+// Resolve the log file to append to. With rotation `monthly` (the default), the
+// current month is inserted before the extension so each file stays bounded and
+// concurrent branches usually touch different files, e.g.
+// docs/metrics/events.jsonl -> docs/metrics/events-2026-07.jsonl.
+function telemetryShardPath(telemetry, date) {
+  const base = telemetry.path || 'docs/metrics/events.jsonl';
+  const rotation = telemetry.rotation || 'monthly';
+  if (rotation !== 'monthly') return base;
+  const ext = path.extname(base);
+  const stem = base.slice(0, base.length - ext.length);
+  return `${stem}-${monthStamp(date)}${ext}`;
+}
+
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Delete month shards older than telemetry.retention_months. Git history is the
+// archive. No-op unless rotation is monthly and retention_months is a positive
+// number. Invoked by aw-synthesize-memory, not on the hot `record` path.
+function cmdPruneTelemetry() {
+  const config = loadConfig();
+  const telemetry = config.telemetry || {};
+  const base = telemetry.path || 'docs/metrics/events.jsonl';
+  const rotation = telemetry.rotation || 'monthly';
+  const retention = Number(telemetry.retention_months);
+  if (rotation !== 'monthly' || !Number.isFinite(retention) || retention <= 0) {
+    process.stdout.write('aw-gate: telemetry retention not configured — keeping all shards\n');
+    process.exit(0);
+  }
+  const ext = path.extname(base);
+  const stem = path.basename(base, ext);
+  const dir = path.join(repoRoot, path.dirname(base));
+  const now = new Date();
+  // Keep the current month plus (retention - 1) prior months; drop anything older.
+  const cutoff = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (retention - 1), 1);
+  const re = new RegExp(`^${escapeRegExp(stem)}-(\\d{4})-(\\d{2})${escapeRegExp(ext)}$`);
+  const removed = [];
+  let entries = [];
+  try {
+    entries = fs.readdirSync(dir);
+  } catch (_) {
+    process.stdout.write('aw-gate: no telemetry directory — nothing to prune\n');
+    process.exit(0);
+  }
+  for (const f of entries) {
+    const m = f.match(re);
+    if (!m) continue;
+    const shardMs = Date.UTC(Number(m[1]), Number(m[2]) - 1, 1);
+    if (shardMs < cutoff) {
+      fs.unlinkSync(path.join(dir, f));
+      removed.push(f);
+    }
+  }
+  if (removed.length === 0) {
+    process.stdout.write(`aw-gate: no telemetry shards older than ${retention} month(s)\n`);
+  } else {
+    process.stdout.write(`aw-gate: pruned ${removed.length} telemetry shard(s) older than ${retention} month(s):\n`);
+    for (const f of removed) process.stdout.write(`  - ${f}\n`);
+    process.stdout.write('  (git history retains the removed data)\n');
+  }
+}
+
 function cmdRecord(args) {
   const { positional, flags } = parseFlags(args);
   const event = positional[0];
@@ -211,7 +284,7 @@ function cmdRecord(args) {
 
   const telemetry = config.telemetry || {};
   if (telemetry.enabled === true) {
-    const rel = telemetry.path || 'docs/metrics/events.jsonl';
+    const rel = telemetryShardPath(telemetry, new Date());
     const abs = path.join(repoRoot, rel);
     fs.mkdirSync(path.dirname(abs), { recursive: true });
     const line = JSON.stringify({ ts: now, event, detail, source: 'aw-gate' });
@@ -349,6 +422,7 @@ function usage() {
       '  node .scripts/aw-gate.js record <event> [--detail "text"]',
       '  node .scripts/aw-gate.js check [--against head|worktree]',
       '  node .scripts/aw-gate.js org-sync',
+      '  node .scripts/aw-gate.js prune-telemetry',
       '',
       'Config: docs/workflow/config.yml (gates, telemetry, org_knowledge).',
       'All three are opt-in and disabled by default.',
@@ -366,6 +440,8 @@ function main() {
       return cmdCheck(rest);
     case 'org-sync':
       return cmdOrgSync();
+    case 'prune-telemetry':
+      return cmdPruneTelemetry();
     case 'help':
     case '--help':
     case '-h':

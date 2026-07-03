@@ -492,6 +492,8 @@ gates:
 telemetry:
   enabled: false
   path: docs/metrics/events.jsonl
+  rotation: monthly
+  retention_months: 12
 org_knowledge:
   source: \"\"
   ref: main
@@ -523,6 +525,15 @@ install_gate_script() {
       echo "gitignore: $entry"
     fi
   done
+
+  # Telemetry logs are append-only and git-tracked; the union merge driver keeps
+  # both sides' lines instead of conflicting when branches merge.
+  local gitattributes="$repo_dir/.gitattributes"
+  local attr_line="docs/metrics/events*.jsonl merge=union"
+  if [ ! -f "$gitattributes" ] || ! grep -Fqx "$attr_line" "$gitattributes"; then
+    printf '%s\n' "$attr_line" >> "$gitattributes"
+    echo "gitattributes: $attr_line"
+  fi
 }
 
 install_global_learnings() {
