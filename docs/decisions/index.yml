@@ -278,6 +278,14 @@ decisions:
       - workflow
       - automation
       - knowledge-capture
+  - path: docs/decisions/2026-07-02-make-human-review-gates-opt-in.md
+    title: Make human review gates opt-in instead of ask-always
+    date: 2026-07-02
+    status: active
+    tags:
+      - workflow
+      - human-review
+      - ceremony
   - path: docs/decisions/2026-07-02-consolidate-skills-and-add-memory-loop.md
     title: Consolidate skills into mode-routed entrypoints and introduce the memory synthesis loop
     date: 2026-07-02
