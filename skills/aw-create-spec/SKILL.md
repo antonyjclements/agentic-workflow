@@ -27,7 +27,7 @@ Create durable feature intent that stays current with the code. A spec describes
    - `status: promoted`
    - `promoted: YYYY-MM-DD`
    - `promoted_to: docs/features/<feature>/spec.md`
-8. Ask whether the user wants product/human review for the spec. If yes, invoke `aw-request-human-review spec <spec path>`.
+8. Offer product/human review for the spec only when `human_review.spec.reviewers` is configured in `docs/workflow/config.yml`, the change is high-risk, or the user asked for review; otherwise finish without asking. If review is wanted, invoke `aw-request-human-review spec <spec path>`.
 
 ## Rules
 

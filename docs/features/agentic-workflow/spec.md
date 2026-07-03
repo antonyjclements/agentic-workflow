@@ -33,6 +33,7 @@ related_decisions:
   - docs/decisions/2026-05-28-add-dedicated-prd-creation-skill.md
   - docs/decisions/2026-05-28-rename-skills-to-aw-prefix.md
   - docs/decisions/2026-05-28-use-prd-lifecycle-statuses-and-cleanup.md
+  - docs/decisions/2026-07-02-consolidate-skills-and-add-memory-loop.md
   - docs/decisions/2026-07-02-session-logs-self-describing-and-hook-independent.md
   - docs/decisions/2026-07-02-remove-brainstorm-index-and-validate-registries.md
 ---
@@ -92,7 +93,7 @@ The workflow routes:
 - Artifacts marked `status: archived` may be removed from the working tree by `aw-refresh cleanup`; git history is the archive.
 - Already-clear requirements, existing behavior, implementation-driven spec updates, or explicit spec drafts can use `aw-create-spec` directly.
 - Each step returns the artifact path or ID that becomes the next step's input; the full handoff contract is documented in the installed `docs/workflow/README.md`.
-- After spec creation, the agent asks whether to create a product sign-off PR and requests configured spec reviewers. After plan creation, the agent asks the same for engineering sign-off.
+- After spec or plan creation, the agent offers a human sign-off PR only when `human_review.*.reviewers` is configured, the change is high-risk per task triage, or the user asked for review; otherwise it proceeds without interrupting.
 - Repos generate or refresh `docs/features/index.yml` from `docs/features/<feature>/spec.md` with `aw-refresh features`.
 
 ### Plans, Tickets, and Implementation

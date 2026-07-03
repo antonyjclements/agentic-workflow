@@ -102,7 +102,7 @@ A later agent may start from only a ticket ID/URL after checking out the repo. T
 
 ### Human Review Gates
 
-After a spec is created or updated, and after a plan is produced, ask whether the user wants human review. If yes, run `aw-request-human-review spec|plan <path>`; it reads `human_review.*.reviewers` from config and keeps review PRs scoped to the artifact.
+Human review is opt-in ceremony, not a default interrupt. After a spec or plan is created or updated, offer human review only when `human_review.spec.reviewers` / `human_review.plan.reviewers` is configured, the change is high-risk per task triage, or the user asked for review; otherwise proceed without asking. When review is wanted, run `aw-request-human-review spec|plan <path>`; it requests configured reviewers and keeps review PRs scoped to the artifact.
 
 ### README Maintenance Gate
 
