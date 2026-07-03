@@ -74,15 +74,17 @@ human_review:
   plan:
     reviewers: []
 gates:
-  enabled: false
+  enabled: true
   state_file: .aw-gate-state.json
   checks:
     review:
-      max_age_hours: 24
-    capture:
-      max_age_hours: 168
+      mode: commit
+      paths:
+        - "."
+        - ":(exclude)docs"
     check_workflow_compliance:
-      max_age_hours: 24
+      mode: age
+      max_age_hours: 168
 telemetry:
   enabled: false
   path: docs/metrics/events.jsonl

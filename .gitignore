@@ -8,3 +8,6 @@
 
 # Local cache of the org-shared knowledge repo (aw-gate.js org-sync)
 .aw-org-cache/
+
+# npm dependencies (husky)
+node_modules/
