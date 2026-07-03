@@ -37,6 +37,16 @@ if ! grep -Fq ".claude/hooks/log-session.sh" "$repo_root/.claude/settings.json";
   exit 1
 fi
 
+# The self-hosted version marker must track the current workflow version. The
+# installer writes it whitespace-stripped and only when missing, so compare
+# stripped values (not a byte diff) against aw-version.txt. This marker already
+# drifted once (stale at 0.1.0) during self-install verification.
+self_host_version="$(sed -n '1p' "$repo_root/.agentic-workflow-version" | tr -d '[:space:]')"
+if [ "$self_host_version" != "$workflow_version" ]; then
+  echo "self-hosted install drift: .agentic-workflow-version ($self_host_version) does not match aw-version.txt ($workflow_version)" >&2
+  exit 1
+fi
+
 # AGENTS.md is loaded into agent context at the start of every session in every
 # installed repo. Keep it lightweight: fail if it grows past the word budget so
 # additions must cut something or consciously raise the budget in the same diff.
