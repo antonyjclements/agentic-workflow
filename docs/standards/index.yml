@@ -1,1 +1,7 @@
-standards: []
+standards:
+  - path: docs/standards/coding-approach.md
+    title: Coding Approach
+    tags:
+      - implementation
+      - simplicity
+      - code-quality

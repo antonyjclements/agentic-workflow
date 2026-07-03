@@ -1,1 +1,4 @@
 .DS_Store
+
+# Transient lock created by the Stop hook while it writes a session log
+.claude/hooks/.aw-log-session-active

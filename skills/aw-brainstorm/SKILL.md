@@ -101,7 +101,7 @@ Rules for spec output:
 
 ## Ideation Output
 
-Create `docs/brainstorms/YYYY-MM-DD-###-slug-idea.md` when the user wants exploratory notes but not a PRD or living spec. Use `aw-prd` for authored PRDs.
+Create `docs/brainstorms/YYYY-MM-DD-###-slug-idea.md` (creating `docs/brainstorms/` if missing — installs do not create it) when the user wants exploratory notes but not a PRD or living spec. Use `aw-prd` for authored PRDs.
 
 Use a right-sized structure:
 

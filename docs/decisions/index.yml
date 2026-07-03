@@ -278,6 +278,14 @@ decisions:
       - workflow
       - automation
       - knowledge-capture
+  - path: docs/decisions/2026-07-03-self-host-the-workflow-install.md
+    title: Self-host the workflow install in its own repository
+    date: 2026-07-03
+    status: active
+    tags:
+      - workflow
+      - dogfooding
+      - installer
   - path: docs/decisions/2026-07-02-make-human-review-gates-opt-in.md
     title: Make human review gates opt-in instead of ask-always
     date: 2026-07-02

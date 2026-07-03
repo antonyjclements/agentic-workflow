@@ -10,6 +10,23 @@ if ! diff -q "$repo_root/operating_model.md" "$repo_root/skills/aw-init/artifact
   exit 1
 fi
 
+# This repo self-hosts its own install for dogfooding (see
+# docs/decisions/2026-07-03-self-host-the-workflow-install.md). The committed
+# copies are derived install output; skills/aw-init/artifacts/ is the source
+# of truth, and the copies must not drift from it.
+for pair in \
+  "AGENTS.md:skills/aw-init/artifacts/AGENTS.md" \
+  "CLAUDE.md:skills/aw-init/artifacts/CLAUDE.md" \
+  "docs/workflow/README.md:skills/aw-init/artifacts/workflow-readme.md" \
+  "docs/workflow/field-guide.md:skills/aw-init/artifacts/field-guide.md"; do
+  installed="${pair%%:*}"
+  artifact="${pair##*:}"
+  if ! diff -q "$repo_root/$installed" "$repo_root/$artifact" > /dev/null 2>&1; then
+    echo "self-hosted install drift: $installed does not match $artifact" >&2
+    exit 1
+  fi
+done
+
 # AGENTS.md is loaded into agent context at the start of every session in every
 # installed repo. Keep it lightweight: fail if it grows past the word budget so
 # additions must cut something or consciously raise the budget in the same diff.
@@ -119,6 +136,17 @@ if File.exist?(features_index)
   Dir.glob(File.join(root, "docs", "features", "*", "spec.md")).each do |spec|
     rel = spec.sub(root + "/", "")
     failures << "#{features_index}: spec not indexed: #{rel}" unless indexed.include?(rel)
+  end
+end
+
+# The context wiki is derived state too: every repo path it references
+# (backticked docs/, scripts/, skills/ tokens) must exist.
+wiki = File.join(root, "docs", "context", "wiki.md")
+if File.exist?(wiki)
+  File.read(wiki, encoding: "UTF-8").scan(/`((?:docs|scripts|skills)\/[^`<>\s]+)`/).flatten.uniq.each do |ref|
+    unless File.exist?(File.join(root, ref))
+      failures << "#{wiki}: referenced path missing: #{ref}"
+    end
   end
 end
 
