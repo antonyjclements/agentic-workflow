@@ -42,6 +42,16 @@ function fail(msg) {
 // the `paths` lists used by commit-mode gates.
 function parseScalar(s) {
   s = s.trim();
+  // Inline flow array, e.g. ["src", ":(exclude)docs"]. Split on commas (pathspecs
+  // contain none) and parse each element; empty elements are dropped.
+  if (s.startsWith('[') && s.endsWith(']')) {
+    return s
+      .slice(1, -1)
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .map((item) => parseScalar(item));
+  }
   if (
     (s.startsWith('"') && s.endsWith('"')) ||
     (s.startsWith("'") && s.endsWith("'"))
@@ -290,9 +300,10 @@ function cmdOrgSync() {
   const abs = path.join(repoRoot, cacheDir);
   try {
     if (fs.existsSync(path.join(abs, '.git'))) {
+      // Reset to FETCH_HEAD (what was just fetched) so this resolves for both
+      // branches and tags; `origin/<ref>` does not exist for tag refs.
       execFileSync('git', ['-C', abs, 'fetch', '--depth', '1', 'origin', ref], { stdio: 'inherit' });
-      execFileSync('git', ['-C', abs, 'checkout', '-q', ref], { stdio: 'inherit' });
-      execFileSync('git', ['-C', abs, 'reset', '--hard', '-q', `origin/${ref}`], { stdio: 'inherit' });
+      execFileSync('git', ['-C', abs, 'reset', '--hard', '-q', 'FETCH_HEAD'], { stdio: 'inherit' });
     } else {
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       execFileSync('git', ['clone', '--depth', '1', '--branch', ref, source, abs], { stdio: 'inherit' });
