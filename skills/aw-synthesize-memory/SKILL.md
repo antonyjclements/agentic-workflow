@@ -28,6 +28,7 @@ Use this skill when:
 - Every path the wiki references must exist in the repository the wiki is generated for; `scripts/test-install.sh` fails on dangling wiki references.
 - Prefer updating existing learnings to creating near-duplicate entries.
 - Do not promote a pattern to `docs/standards/` without user confirmation.
+- Every invocation, including a no-op run with zero unprocessed sessions, stamps the `synthesize` freshness gate when `.scripts/aw-gate.js` exists.
 - When the user asks to commit synthesis output, use one batched commit — `chore(memory): synthesize N sessions` — covering learnings, the regenerated wiki, frontmatter status updates, and expired-log removals. Do not commit unless the user asks.
 
 ## Storage
@@ -181,7 +182,11 @@ Keep the wiki under 500 words. It is loaded into agent context at session start,
 
 When `org_knowledge.source` is configured in `docs/workflow/config.yml`, run `node .scripts/aw-gate.js org-sync` before extracting learnings and read the org-shared learnings tier in `<org_knowledge.cache_dir>/<paths.learnings>`. Prefer corroborating or linking to an existing org-wide lesson over re-deriving a near-duplicate locally. The org tier is governed content and read-only here: repo-local always wins, entries are advisory unless marked `authority: required`, honor `applies_to`, and treat entries past `review_by` or missing metadata as lower-confidence. Write new learnings to `docs/learnings/` (repo-specific) or `~/.agents/learnings/` (global) as before. When a pattern recurs across repos and looks org-worthy, surface it as a candidate for the human-gated promotion path in `docs/workflow/org-knowledge.md`; never write to the org base directly.
 
-After a synthesis run completes, if `.scripts/aw-gate.js` exists, record telemetry: `node .scripts/aw-gate.js record synthesize`. Then run the telemetry retention pass in the same maintenance step: `node .scripts/aw-gate.js prune-telemetry` deletes month shards older than `telemetry.retention_months` (git history is the archive; no-op when telemetry rotation or retention is not configured). Include any removed shards in the batched `chore(memory)` commit.
+## Invocation Gate and Telemetry
+
+At the end of every invocation, if `.scripts/aw-gate.js` exists, stamp the freshness gate: `node .scripts/aw-gate.js record synthesize`. Do this even when there are no unprocessed sessions, no learnings changed, or the wiki was already current, because repos may configure `gates.checks.synthesize` to require periodic memory-synthesis review. This writes the git-ignored gate state and, when telemetry is enabled, appends a no-PII telemetry event.
+
+Then run the telemetry retention pass in the same maintenance step: `node .scripts/aw-gate.js prune-telemetry` deletes month shards older than `telemetry.retention_months` (git history is the archive; no-op when telemetry rotation or retention is not configured). Include any removed shards in the batched `chore(memory)` commit.
 
 ## Final Output
 
@@ -194,3 +199,4 @@ Report:
 - patterns surfaced as standard candidates (with confirmation prompt if any)
 - `docs/context/wiki.md` regenerated (section summary)
 - sessions marked `processed` in their frontmatter
+- `synthesize` gate recorded, or why it was skipped
