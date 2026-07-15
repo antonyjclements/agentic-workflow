@@ -5,7 +5,7 @@ created: 2026-07-02
 trigger: correction
 status: tentative
 evidence-count: 1
-unconfirmed-runs: 0
+unconfirmed-runs: 1
 derived-from:
   - docs/sessions/2026-07-02-lightweight-agents-md-and-index-free-registries.md
 tags:

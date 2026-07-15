@@ -1,7 +1,7 @@
 ---
 title: Add enforcement gates, telemetry, and org-shared knowledge to the operating model
 date: 2026-07-03
-status: unprocessed
+status: processed
 tags:
   - workflow
   - enforcement

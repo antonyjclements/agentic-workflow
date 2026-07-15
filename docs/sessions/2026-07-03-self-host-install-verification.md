@@ -1,7 +1,7 @@
 ---
 title: Verify the self-install and commit the self-hosted workflow
 date: 2026-07-03
-status: unprocessed
+status: processed
 tags:
   - dogfooding
   - installer
