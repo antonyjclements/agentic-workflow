@@ -115,7 +115,7 @@ Human review is opt-in ceremony, not a default interrupt. After a spec or plan i
 
 Opt-in and disabled by default; all powered by `.scripts/aw-gate.js` (installed via `aw-init --with-gates`). Act only when `docs/workflow/config.yml` enables them; schema and wiring live in `docs/workflow/README.md`.
 
-- Gates: after a successful `aw-review`, `aw-capture`, or `aw-check-workflow-compliance` run, stamp freshness with `node .scripts/aw-gate.js record <gate>` when the script exists. Consumers wire `node .scripts/aw-gate.js check` into a pre-push hook or CI to block on stale gates; the check is deterministic and needs no agent.
+- Gates: after a successful `aw-review`, `aw-capture`, `aw-check-workflow-compliance`, or `aw-synthesize-memory` run, stamp freshness with `node .scripts/aw-gate.js record <gate>` when the script exists. `aw-synthesize-memory` records `synthesize` on every invocation, including no-op runs. Consumers wire `node .scripts/aw-gate.js check` into a pre-push hook or CI to block on stale gates; the check is deterministic and needs no agent.
 - Telemetry: the same `record` appends a no-PII event to `telemetry.path` for effectiveness reporting.
 - Org knowledge: when `org_knowledge.source` is set, run `node .scripts/aw-gate.js org-sync`, then read the org's shared learnings and standards as a second tier (after repo-local, before the global fallback). It is governed content: treat entries as advisory unless marked `authority: required`, repo-local always wins, and surface stale (past `review_by`) or conflicting `required` entries to a human rather than applying them silently. Never write to the org tier; see `docs/workflow/README.md`.
 

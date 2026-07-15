@@ -1,7 +1,7 @@
 ---
 title: Action operating-model review feedback and run the first memory synthesis
 date: 2026-07-02
-status: unprocessed
+status: processed
 tags:
   - memory-loop
   - feedback

@@ -73,7 +73,10 @@ node .scripts/aw-gate.js record review --detail "code review"
 The bundled skills call this automatically when they finish:
 `aw-review` → `review`, `aw-capture` → `capture`,
 `aw-check-workflow-compliance` → `check_workflow_compliance`,
-`aw-synthesize-memory` → `synthesize`. You can also call it by hand.
+`aw-synthesize-memory` → `synthesize`. `aw-synthesize-memory` records its gate
+on every invocation, including no-op runs with no unprocessed sessions, so an
+age-based `synthesize` gate can enforce periodic memory review. You can also call
+it by hand.
 
 ### `check`
 
@@ -109,6 +112,9 @@ gates:
     check_workflow_compliance:
       mode: age
       max_age_hours: 168
+    synthesize:
+      mode: age
+      max_age_hours: 336
 ```
 
 - `enabled` — when `false`, `check` prints "gates disabled" and exits 0. Nothing

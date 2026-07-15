@@ -630,7 +630,7 @@ post_pr:
 
 Three opt-in capabilities harden the workflow for larger teams. All are disabled by default and powered by one dependency-free helper, `.scripts/aw-gate.js`, installed with `aw-init --with-gates` (re-run the installer with that flag to add it to an existing install). None require an agent to run in CI — enforcement is fully deterministic.
 
-**Freshness gates.** The review and compliance skills are LLM-driven and cannot block a merge on their own. Instead they stamp a freshness marker after a successful run, and a deterministic checker enforces staleness windows:
+**Freshness gates.** The review, compliance, capture, and memory-synthesis skills are LLM-driven and cannot block a merge on their own. Instead they stamp a freshness marker after a successful run, and a deterministic checker enforces staleness windows:
 
 ```yaml
 gates:
@@ -642,9 +642,12 @@ gates:
       max_age_hours: 168
     check_workflow_compliance:
       max_age_hours: 24
+    synthesize:
+      mode: age
+      max_age_hours: 336
 ```
 
-After a successful run, `aw-review`, `aw-capture`, and `aw-check-workflow-compliance` call `node .scripts/aw-gate.js record <gate>`, writing the timestamp to the git-ignored `.aw-gate-state.json`. You wire the check wherever you want it to block:
+After a successful run, `aw-review`, `aw-capture`, and `aw-check-workflow-compliance` call `node .scripts/aw-gate.js record <gate>`, writing the timestamp to the git-ignored `.aw-gate-state.json`. `aw-synthesize-memory` records `synthesize` every time it is invoked, including no-op runs, so repos can enforce a periodic memory-synthesis gate. You wire the check wherever you want it to block:
 
 ```sh
 node .scripts/aw-gate.js check   # exit 1 if any configured gate is missing or stale; exit 0 when gates.enabled is false
