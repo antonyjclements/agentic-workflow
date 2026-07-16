@@ -78,14 +78,19 @@ human_review:
 | `trace.test_paths` | string list | feature/test globs | Git pathspecs for files that may carry test anchors. |
 | `trace.code_paths` | string list | `["src"]` | Git pathspecs for files that may carry behavior entry-point anchors. |
 | `trace.require_code_anchor` | boolean | `false` | When true, requirements with no code anchor fail trace. When false, they warn only. |
+| `pin.enabled` | boolean | `false` | Master switch for behavior pinning. When false, `pin run` and `pin check` exit 0. |
+| `pin.manifest_paths` | string list | `["docs/features/*/behavior-pin.yml"]` | Git pathspecs for behavior pin manifests. |
+| `pin.worktree_dir` | string | `.aw/pin` | Git-ignored worktree root used for old-tree runs. |
+| `pin.out` | string | `.aw/pin/equivalence.json` | JSON result path for `pin run`. |
+| `pin.timeout_seconds` | number | `900` | Per-command timeout for setup and harness commands. |
 | `workflow_trace.enabled` | boolean | `false` | Master switch for deterministic workflow execution breadcrumbs. |
 | `workflow_trace.path` | string | `.aw/workflow-trace.jsonl` | Git-ignored JSONL file for local process events. |
 | `workflow_trace.require_tier` | boolean | `true` | When true, `workflow-check` fails unless a tier event exists. |
 | `workflow_trace.required_gates` | string list | review/compliance | Gate events that must appear in the workflow trace when enabled. |
 
-## Enforcement Gates, Telemetry, Org Knowledge, Traceability, and Workflow Trace
+## Enforcement Gates, Telemetry, Org Knowledge, Traceability, Workflow Trace, and Behavior Pinning
 
-These five capabilities are opt-in, disabled by default, and all powered by one
+These six capabilities are opt-in, disabled by default, and all powered by one
 dependency-free helper, `.scripts/aw-gate.js`, installed with
 `aw-init --with-gates` (or by re-running the installer with that flag). None of
 them require an agent to run in CI — the enforcement path is fully deterministic.
@@ -220,6 +225,22 @@ gate name, so review/compliance/synthesis gate execution is traceable without
 extra skill-specific logic. `workflow-check` validates configured requirements
 such as a chosen tier and required gate events. When disabled, both commands are
 clean no-ops.
+
+### Behavior pinning (`pin`)
+
+`pin` runs characterization harnesses against both the old tree declared in a
+manifest and the current checkout:
+
+```sh
+node .scripts/aw-gate.js pin run [--json] [--out .aw/pin/equivalence.json]
+node .scripts/aw-gate.js pin check [--base origin/main] [--json]
+```
+
+`pin run` reports `pin-not-characterizing` when the oracle fails on old code and
+`equivalence-broken` when old passes but new fails. `pin check` fails when one
+commit changes both the judged subject and its manifest/oracle/support files,
+unless the commit has a `Pin-Override:` trailer. A green pin proves equivalence,
+not correctness.
 
 ## Workflow Step Keys
 

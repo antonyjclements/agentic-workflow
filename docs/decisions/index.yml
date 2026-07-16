@@ -1,4 +1,13 @@
 decisions:
+  - path: docs/decisions/2026-07-16-add-behavior-pinning.md
+    title: Add behavior pinning for characterization-first implementation
+    date: 2026-07-16
+    status: active
+    tags:
+      - workflow
+      - testing
+      - characterization
+      - gates
   - path: docs/decisions/2026-07-16-add-workflow-execution-trace.md
     title: Add deterministic workflow execution trace
     date: 2026-07-16

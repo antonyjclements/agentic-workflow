@@ -207,10 +207,10 @@ docs/
     README.md
     config.yml
     field-guide.md
-    gates.md         # gates/telemetry/org/trace/workflow-trace how-to
+    gates.md         # gates/telemetry/org/trace/workflow-trace/pin how-to
     org-knowledge.md # org knowledge governance guide
 .scripts/
-  aw-gate.js         # optional; installed with aw-init --with-gates; check/trace/workflow helper
+  aw-gate.js         # optional; installed with aw-init --with-gates; check/trace/workflow/pin helper
 ```
 
 `AGENTS.md` is the routing file agents read first. If a repo also uses `CLAUDE.md`, keep it aligned with `AGENTS.md`.
@@ -628,11 +628,11 @@ post_pr:
     provider: circleci
 ```
 
-### Enforcement gates, telemetry, org knowledge, traceability, and workflow trace (optional)
+### Enforcement gates, telemetry, org knowledge, traceability, workflow trace, and behavior pins (optional)
 
 > Full how-to with CLI reference, modes, hook/CI wiring, and troubleshooting: [docs/workflow/gates.md](docs/workflow/gates.md).
 
-Five opt-in capabilities harden the workflow for larger teams. All are disabled by default and powered by one dependency-free helper, `.scripts/aw-gate.js`, installed with `aw-init --with-gates` (re-run the installer with that flag to add it to an existing install). None require an agent to run in CI — enforcement is fully deterministic.
+Six opt-in capabilities harden the workflow for larger teams. All are disabled by default and powered by one dependency-free helper, `.scripts/aw-gate.js`, installed with `aw-init --with-gates` (re-run the installer with that flag to add it to an existing install). None require an agent to run in CI — enforcement is fully deterministic.
 
 **Freshness gates.** The review, compliance, capture, and memory-synthesis skills are LLM-driven and cannot block a merge on their own. Instead they stamp a freshness marker after a successful run, and a deterministic checker enforces staleness windows:
 
@@ -722,7 +722,9 @@ The org base is **governed content**: one accountable owner (a senior lead or di
 
 **Workflow trace.** With `workflow_trace.enabled: true`, skills can leave deterministic process breadcrumbs through `workflow-record`, and `record <gate>` automatically appends gate events. `workflow-check` can then verify facts such as "a tier was chosen" and "review/compliance gates ran" instead of relying on a final agent summary.
 
-Full schema for all five is in [docs/workflow/README.md](docs/workflow/README.md).
+**Behavior pins.** With `pin.enabled: true`, `node .scripts/aw-gate.js pin run` checks that a committed characterization harness passes on both the manifest's old `base` and the current checkout. `pin check` enforces that oracle/support files and the judged subject are not changed in the same commit unless a `Pin-Override:` trailer explains why. A green pin proves equivalence, not correctness.
+
+Full schema for all six is in [docs/workflow/README.md](docs/workflow/README.md).
 
 ### 11. Keep README.md current
 
@@ -809,7 +811,7 @@ skills/aw-init/scripts/install.sh --repo .                      # install into c
 skills/aw-init/scripts/install.sh --repo ~/Code/app --force     # overwrite repo-local AGENTS.md and indexes
 skills/aw-init/scripts/install.sh --skip-repo                   # install global skills only
 skills/aw-init/scripts/install.sh --skip-skill-links --repo .   # do not link Claude/Codeium/Windsurf skill dirs
-skills/aw-init/scripts/install.sh --with-gates --repo .         # also install .scripts/aw-gate.js (freshness gates, telemetry, org sync, trace, workflow trace)
+skills/aw-init/scripts/install.sh --with-gates --repo .         # also install .scripts/aw-gate.js (freshness gates, telemetry, org sync, trace, workflow trace, pin)
 skills/aw-init/scripts/install.sh --skip-skills --repo ~/Code/app
 skills/aw-init/scripts/install.sh --skills-dir ~/.codex/skills  # alternate global skill dir
 skills/aw-init/scripts/install.sh --learnings-dir ~/.agents/learnings

@@ -1,13 +1,15 @@
 {
   "name": "agentic-workflow",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "private": true,
   "description": "Repo-native agentic operating model: portable AGENTS.md, skills, and durable context.",
   "scripts": {
     "prepare": "husky",
     "gate:check": "node .scripts/aw-gate.js check",
     "trace:check": "node .scripts/aw-gate.js trace",
-    "workflow:check": "node .scripts/aw-gate.js workflow-check"
+    "workflow:check": "node .scripts/aw-gate.js workflow-check",
+    "pin:check": "node .scripts/aw-gate.js pin check",
+    "pin:run": "node .scripts/aw-gate.js pin run"
   },
   "devDependencies": {
     "husky": "^9.1.7"

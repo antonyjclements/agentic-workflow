@@ -1,0 +1,8 @@
+base: c338665
+harness: node test/pin/aw-gate-trace-disabled.pin.js
+subject:
+  - .scripts/aw-gate.js
+  - skills/aw-init/artifacts/aw-gate.js
+oracle:
+  - test/pin/aw-gate-trace-disabled.pin.js
+created: 2026-07-16

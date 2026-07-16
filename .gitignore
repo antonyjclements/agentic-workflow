@@ -15,5 +15,8 @@
 # Local workflow execution breadcrumbs
 .aw/workflow-trace.jsonl
 
+# Local behavior pin worktrees and run logs
+.aw/pin/
+
 # npm dependencies (husky)
 node_modules/

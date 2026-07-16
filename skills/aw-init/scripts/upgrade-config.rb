@@ -102,6 +102,13 @@ DEFAULT_CONFIG = {
     "code_paths" => ["src"],
     "require_code_anchor" => false
   },
+  "pin" => {
+    "enabled" => false,
+    "manifest_paths" => ["docs/features/*/behavior-pin.yml"],
+    "worktree_dir" => ".aw/pin",
+    "out" => ".aw/pin/equivalence.json",
+    "timeout_seconds" => 900
+  },
   "workflow_trace" => {
     "enabled" => false,
     "path" => ".aw/workflow-trace.jsonl",

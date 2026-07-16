@@ -404,9 +404,16 @@ install_repo_files() {
     tags:
       - specs
       - tests
-      - workflow"
+      - workflow
+  - path: docs/standards/behavior-pinning.md
+    title: Behavior Pinning
+    tags:
+      - testing
+      - workflow
+      - characterization"
   copy_prompted "$artifact_dir/coding-approach.md" "$repo_dir/docs/standards/coding-approach.md"
   copy_prompted "$artifact_dir/traceability.md" "$repo_dir/docs/standards/traceability.md"
+  copy_prompted "$artifact_dir/behavior-pinning.md" "$repo_dir/docs/standards/behavior-pinning.md"
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
   copy_prompted "$artifact_dir/workflow-readme.md" "$repo_dir/docs/workflow/README.md"
@@ -526,6 +533,13 @@ trace:
   code_paths:
     - \"src\"
   require_code_anchor: false
+pin:
+  enabled: false
+  manifest_paths:
+    - \"docs/features/*/behavior-pin.yml\"
+  worktree_dir: .aw/pin
+  out: .aw/pin/equivalence.json
+  timeout_seconds: 900
 workflow_trace:
   enabled: false
   path: .aw/workflow-trace.jsonl
@@ -551,7 +565,7 @@ install_gate_script() {
 
   # The freshness state file and org cache are per-checkout, never committed.
   local gitignore="$repo_dir/.gitignore"
-  for entry in ".aw-gate-state.json" ".aw-org-cache/" ".aw/tmp/" ".aw/workflow-trace.jsonl"; do
+  for entry in ".aw-gate-state.json" ".aw-org-cache/" ".aw/tmp/" ".aw/workflow-trace.jsonl" ".aw/pin/"; do
     if [ ! -f "$gitignore" ] || ! grep -Fqx "$entry" "$gitignore"; then
       printf '%s\n' "$entry" >> "$gitignore"
       echo "gitignore: $entry"
@@ -673,7 +687,7 @@ Next steps:
 7. Session logging is automatic for Claude Code: .claude/hooks/log-session.sh fires when each session ends.
    Run aw-synthesize-memory periodically to distill session logs into learnings and refresh docs/context/wiki.md.
    Other agents (Codex, Codeium, Windsurf) can invoke aw-capture session manually; the session log format is cross-agent.
-8. Optional enforcement, telemetry, org knowledge, traceability, and workflow trace (see docs/workflow/README.md):
-   Re-run install with --with-gates to add .scripts/aw-gate.js. Set gates.enabled/telemetry.enabled/org_knowledge.source/trace.enabled/workflow_trace.enabled
-   in docs/workflow/config.yml, then wire \`node .scripts/aw-gate.js check\` and optionally \`trace\` into a pre-push hook or CI job.
+8. Optional enforcement, telemetry, org knowledge, traceability, workflow trace, and behavior pins (see docs/workflow/README.md):
+   Re-run install with --with-gates to add .scripts/aw-gate.js. Set gates.enabled/telemetry.enabled/org_knowledge.source/trace.enabled/workflow_trace.enabled/pin.enabled
+   in docs/workflow/config.yml, then wire \`node .scripts/aw-gate.js check\` and optionally \`trace\` / \`pin\` into a pre-push hook or CI job.
 EOF

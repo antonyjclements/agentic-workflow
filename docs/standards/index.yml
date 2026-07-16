@@ -11,3 +11,9 @@ standards:
       - specs
       - tests
       - workflow
+  - path: docs/standards/behavior-pinning.md
+    title: Behavior Pinning
+    tags:
+      - testing
+      - workflow
+      - characterization

@@ -3,7 +3,7 @@
 
 // agentic-workflow deterministic helper.
 //
-// One dependency-free CLI that backs five opt-in capabilities configured in
+// One dependency-free CLI that backs six opt-in capabilities configured in
 // docs/workflow/config.yml:
 //
 //   record <event>  Stamp a freshness marker (git-ignored state file) with the
@@ -23,11 +23,14 @@
 //   trace-annotate  Deterministically insert explicit spec annotations for skills.
 //   workflow-record Deterministically append process breadcrumbs for workflow use.
 //   workflow-check  Deterministically validate required workflow breadcrumbs.
+//   pin             Run/check behavior pins: two-sided characterization harnesses
+//                   that prove a new implementation still matches the old one.
 //
 // Zero runtime dependencies. Node >= 16.
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFileSync, spawnSync } = require('child_process');
 
 // The script installs at <repo>/.scripts/aw-gate.js, so the repo root is its
@@ -177,6 +180,23 @@ function listFiles(paths) {
     return { error: (r.stderr || '').trim() || 'git ls-files failed', files: [] };
   }
   return { files: r.stdout.split('\0').filter(Boolean) };
+}
+
+function listCurrentFiles(paths) {
+  const tracked = listFiles(paths);
+  if (tracked.error) return tracked;
+  const args = ['ls-files', '-z', '--others', '--exclude-standard'];
+  if (Array.isArray(paths) && paths.length) args.push('--', ...paths);
+  const untracked = git(args);
+  if (untracked.status !== 0) {
+    return { error: (untracked.stderr || '').trim() || 'git ls-files --others failed', files: [] };
+  }
+  return {
+    files: Array.from(new Set([
+      ...tracked.files,
+      ...untracked.stdout.split('\0').filter(Boolean),
+    ])).sort(),
+  };
 }
 
 function resolveRepoPath(rel) {
@@ -1032,6 +1052,391 @@ function cmdTraceAnnotate(args) {
   process.exit(0);
 }
 
+// --- Behavior pins -------------------------------------------------------
+function pinConfig(config) {
+  const pin = config.pin || {};
+  return {
+    enabled: pin.enabled === true,
+    manifest_paths: Array.isArray(pin.manifest_paths) ? pin.manifest_paths : ['docs/features/*/behavior-pin.yml'],
+    worktree_dir: typeof pin.worktree_dir === 'string' && pin.worktree_dir.trim() !== ''
+      ? pin.worktree_dir
+      : '.aw/pin',
+    out: typeof pin.out === 'string' && pin.out.trim() !== ''
+      ? pin.out
+      : '.aw/pin/equivalence.json',
+    timeout_seconds: Number.isFinite(Number(pin.timeout_seconds)) && Number(pin.timeout_seconds) > 0
+      ? Number(pin.timeout_seconds)
+      : 900,
+  };
+}
+
+function asStringList(value) {
+  if (Array.isArray(value)) return value.filter((item) => typeof item === 'string' && item.trim() !== '');
+  if (typeof value === 'string' && value.trim() !== '') return [value];
+  return [];
+}
+
+function pinKey(manifestPath) {
+  return manifestPath.replace(/[^A-Za-z0-9_.-]+/g, '-').replace(/^-+|-+$/g, '') || 'pin';
+}
+
+function sha256(text) {
+  return crypto.createHash('sha256').update(text || '').digest('hex');
+}
+
+function excerpt(text) {
+  const s = String(text || '');
+  return s.length > 4000 ? `${s.slice(0, 4000)}\n[truncated]` : s;
+}
+
+function writeRunLog(logDir, name, stream, text) {
+  const rel = path.join(logDir, `${name}-${stream}.log`);
+  const abs = resolveRepoPath(rel);
+  if (!abs) fail(`pin log path must be repo-relative: ${rel}`);
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  fs.writeFileSync(abs, text || '');
+  return rel;
+}
+
+function runPinCommand(command, cwd, timeoutMs, logDir, name) {
+  if (!command) {
+    return {
+      command: '',
+      skipped: true,
+      status: 0,
+      signal: null,
+      timed_out: false,
+      stdout_sha256: sha256(''),
+      stderr_sha256: sha256(''),
+      stdout_excerpt: '',
+      stderr_excerpt: '',
+      stdout_log: null,
+      stderr_log: null,
+    };
+  }
+  const r = spawnSync(command, {
+    cwd,
+    shell: true,
+    timeout: timeoutMs,
+    encoding: 'utf8',
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  const stdout = r.stdout || '';
+  const stderr = r.stderr || '';
+  return {
+    command,
+    skipped: false,
+    status: r.status === null ? 1 : r.status,
+    signal: r.signal || null,
+    timed_out: Boolean(r.error && r.error.code === 'ETIMEDOUT'),
+    stdout_sha256: sha256(stdout),
+    stderr_sha256: sha256(stderr),
+    stdout_excerpt: excerpt(stdout),
+    stderr_excerpt: excerpt(stderr),
+    stdout_log: writeRunLog(logDir, name, 'stdout', stdout),
+    stderr_log: writeRunLog(logDir, name, 'stderr', stderr),
+  };
+}
+
+function loadPinManifests(pin) {
+  const listed = listCurrentFiles(pin.manifest_paths);
+  const findings = [];
+  const manifests = [];
+  if (listed.error) return { manifests, findings: [{ level: 'error', type: 'manifest-path-error', message: listed.error }] };
+  for (const file of listed.files.filter((f) => f.endsWith('behavior-pin.yml'))) {
+    const abs = resolveRepoPath(file);
+    if (!abs) continue;
+    let data;
+    try {
+      data = parseYaml(fs.readFileSync(abs, 'utf8'));
+    } catch (e) {
+      findings.push({ level: 'error', type: 'manifest-read-failed', file, message: `${file}: ${e.message}` });
+      continue;
+    }
+    const manifest = {
+      path: file,
+      key: pinKey(file),
+      base: typeof data.base === 'string' ? data.base : '',
+      harness: typeof data.harness === 'string' ? data.harness : '',
+      setup: typeof data.setup === 'string' ? data.setup : '',
+      subject: asStringList(data.subject),
+      oracle: asStringList(data.oracle),
+      support: asStringList(data.support),
+      created: data.created || '',
+    };
+    manifests.push(manifest);
+  }
+  return { manifests, findings };
+}
+
+function pathspecToRegex(spec) {
+  const escaped = spec.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+  return new RegExp(`^${escaped}(?:/.*)?$`);
+}
+
+function pathMatchesSpec(file, spec) {
+  if (typeof spec !== 'string' || spec.trim() === '') return false;
+  const clean = spec.replace(/^['"]|['"]$/g, '');
+  if (clean.includes('*')) return pathspecToRegex(clean).test(file);
+  return file === clean || file.startsWith(`${clean.replace(/\/+$/, '')}/`);
+}
+
+function pathMatchesAny(file, specs) {
+  return specs.some((spec) => pathMatchesSpec(file, spec));
+}
+
+function validatePinManifest(manifest) {
+  const findings = [];
+  if (!manifest.base) findings.push({ level: 'error', type: 'missing-base', file: manifest.path, message: `${manifest.path}: base is required` });
+  else if (!commitReachable(manifest.base)) findings.push({ level: 'error', type: 'base-ref-not-found', file: manifest.path, message: `${manifest.path}: base ref ${manifest.base} not found` });
+  if (!manifest.harness) findings.push({ level: 'error', type: 'missing-harness', file: manifest.path, message: `${manifest.path}: harness is required` });
+  if (manifest.subject.length === 0) findings.push({ level: 'error', type: 'missing-subject', file: manifest.path, message: `${manifest.path}: subject paths are required` });
+  if (manifest.oracle.length === 0) findings.push({ level: 'error', type: 'missing-oracle', file: manifest.path, message: `${manifest.path}: oracle paths are required` });
+  const judged = manifest.oracle.concat(manifest.support);
+  const subjectFiles = listCurrentFiles(manifest.subject);
+  const judgedFiles = listCurrentFiles(judged);
+  if (subjectFiles.error) findings.push({ level: 'error', type: 'subject-path-error', file: manifest.path, message: subjectFiles.error });
+  if (judgedFiles.error) findings.push({ level: 'error', type: 'oracle-path-error', file: manifest.path, message: judgedFiles.error });
+  if (!subjectFiles.error && !judgedFiles.error) {
+    const subjectSet = new Set(subjectFiles.files);
+    for (const file of judgedFiles.files) {
+      if (subjectSet.has(file)) {
+        findings.push({ level: 'error', type: 'pin-overlap', file: manifest.path, message: `${manifest.path}: ${file} is both subject and oracle/support` });
+      }
+    }
+  }
+  return findings;
+}
+
+function copyPinFilesToWorktree(files, worktree) {
+  for (const file of files) {
+    const src = resolveRepoPath(file);
+    if (!src || !fs.existsSync(src) || fs.statSync(src).isDirectory()) continue;
+    const dest = path.join(worktree, file);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(src, dest);
+  }
+}
+
+function revParse(ref) {
+  const r = git(['rev-parse', ref]);
+  return r.status === 0 ? r.stdout.trim() : null;
+}
+
+function pinVerdict(oldSetup, oldHarness, newSetup, newHarness) {
+  if ((oldSetup && oldSetup.status !== 0) || oldHarness.status !== 0) return 'pin-not-characterizing';
+  if ((newSetup && newSetup.status !== 0) || newHarness.status !== 0) return 'equivalence-broken';
+  return 'pass';
+}
+
+function runOnePin(manifest, pin) {
+  const worktreeRoot = resolveRepoPath(pin.worktree_dir);
+  if (!worktreeRoot) fail(`pin.worktree_dir must be repo-relative: ${pin.worktree_dir}`);
+  const outAbs = resolveRepoPath(pin.out);
+  if (!outAbs) fail(`pin.out must be repo-relative: ${pin.out}`);
+  const logDir = path.join(path.dirname(pin.out), 'logs');
+  const worktree = path.join(worktreeRoot, manifest.key);
+  const timeoutMs = pin.timeout_seconds * 1000;
+  const copied = listCurrentFiles(manifest.oracle.concat(manifest.support));
+  if (copied.error) {
+    return { manifest: manifest.path, verdict: 'pin-not-characterizing', findings: [{ level: 'error', type: 'copy-path-error', message: copied.error }] };
+  }
+  let oldSetup = null;
+  let oldHarness = null;
+  let newSetup = null;
+  let newHarness = null;
+  try {
+    fs.rmSync(worktree, { recursive: true, force: true });
+    fs.mkdirSync(path.dirname(worktree), { recursive: true });
+    const add = git(['worktree', 'add', '--detach', worktree, manifest.base]);
+    if (add.status !== 0) {
+      return {
+        manifest: manifest.path,
+        verdict: 'pin-not-characterizing',
+        findings: [{ level: 'error', type: 'worktree-add-failed', message: (add.stderr || '').trim() || 'git worktree add failed' }],
+      };
+    }
+    copyPinFilesToWorktree(copied.files, worktree);
+    oldSetup = runPinCommand(manifest.setup, worktree, timeoutMs, logDir, `${manifest.key}-old-setup`);
+    oldHarness = runPinCommand(manifest.harness, worktree, timeoutMs, logDir, `${manifest.key}-old-harness`);
+    newSetup = runPinCommand(manifest.setup, repoRoot, timeoutMs, logDir, `${manifest.key}-new-setup`);
+    newHarness = runPinCommand(manifest.harness, repoRoot, timeoutMs, logDir, `${manifest.key}-new-harness`);
+  } finally {
+    git(['worktree', 'remove', '--force', worktree]);
+    fs.rmSync(worktree, { recursive: true, force: true });
+  }
+  const verdict = pinVerdict(oldSetup, oldHarness, newSetup, newHarness);
+  return {
+    manifest: manifest.path,
+    key: manifest.key,
+    verdict,
+    base: manifest.base,
+    base_sha: revParse(manifest.base),
+    subject: manifest.subject,
+    oracle: manifest.oracle,
+    support: manifest.support,
+    copied_files: copied.files,
+    old: { setup: oldSetup, harness: oldHarness },
+    new: { setup: newSetup, harness: newHarness },
+  };
+}
+
+function pinSummary(results, findings, disabled) {
+  return {
+    disabled: disabled === true,
+    pins: results.length,
+    passed: results.filter((r) => r.verdict === 'pass').length,
+    failed: results.filter((r) => r.verdict && r.verdict !== 'pass').length,
+    errors: findings.filter((f) => f.level === 'error').length,
+  };
+}
+
+function writePinOutput(out, payload) {
+  const abs = resolveRepoPath(out);
+  if (!abs) fail(`pin --out must be repo-relative: ${out}`);
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  fs.writeFileSync(abs, JSON.stringify(payload, null, 2) + '\n');
+}
+
+function cmdPinRun(args) {
+  const { flags } = parseFlags(args);
+  const config = loadConfig();
+  const pin = pinConfig(config);
+  const jsonMode = flags.json === true;
+  if (typeof flags.out === 'string') pin.out = flags.out;
+  if (!pin.enabled) {
+    const output = { summary: pinSummary([], [], true), results: [], findings: [] };
+    if (typeof flags.out === 'string') writePinOutput(pin.out, output);
+    if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+    else process.stdout.write('aw-gate: pin disabled (pin.enabled is not true) — skipping\n');
+    process.exit(0);
+  }
+  const loaded = loadPinManifests(pin);
+  const findings = loaded.findings;
+  const results = [];
+  for (const manifest of loaded.manifests) {
+    findings.push(...validatePinManifest(manifest));
+  }
+  if (findings.some((f) => f.level === 'error')) {
+    const output = { summary: pinSummary(results, findings, false), results, findings };
+    writePinOutput(pin.out, output);
+    if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+    process.stderr.write('aw-gate: pin run FAILED\n');
+    for (const f of findings.filter((item) => item.level === 'error')) process.stderr.write(`  - ${f.type}: ${f.message}\n`);
+    process.exit(1);
+  }
+  for (const manifest of loaded.manifests) {
+    results.push(runOnePin(manifest, pin));
+  }
+  const output = { summary: pinSummary(results, findings, false), results, findings };
+  writePinOutput(pin.out, output);
+  if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+  const failed = results.filter((r) => r.verdict !== 'pass');
+  if (failed.length > 0) {
+    process.stderr.write('aw-gate: pin run FAILED\n');
+    for (const r of failed) process.stderr.write(`  - ${r.verdict}: ${r.manifest}\n`);
+    process.exit(1);
+  }
+  if (!jsonMode) process.stdout.write(`aw-gate: pin run clean (${results.length} pin(s))\n`);
+  process.exit(0);
+}
+
+function commitList(base) {
+  const r = git(['log', '--format=%H', `${base}..HEAD`]);
+  if (r.status !== 0) return { error: (r.stderr || '').trim() || 'git log failed', commits: [] };
+  return { commits: r.stdout.split(/\r?\n/).filter(Boolean) };
+}
+
+function commitFiles(commit) {
+  const r = git(['diff-tree', '--no-commit-id', '--name-only', '-r', commit]);
+  if (r.status !== 0) return { error: (r.stderr || '').trim() || 'git diff-tree failed', files: [] };
+  return { files: r.stdout.split(/\r?\n/).filter(Boolean) };
+}
+
+function commitHasPinOverride(commit) {
+  const r = git(['log', '-1', '--format=%B', commit]);
+  return r.status === 0 && /^Pin-Override:/m.test(r.stdout);
+}
+
+function cmdPinCheck(args) {
+  const { flags } = parseFlags(args);
+  const config = loadConfig();
+  const pin = pinConfig(config);
+  const jsonMode = flags.json === true;
+  if (!pin.enabled) {
+    const output = { summary: { disabled: true, commits: 0, manifests: 0, errors: 0 }, findings: [] };
+    if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+    else process.stdout.write('aw-gate: pin disabled (pin.enabled is not true) — skipping\n');
+    process.exit(0);
+  }
+  const base = typeof flags.base === 'string' ? flags.base : 'origin/main';
+  const findings = [];
+  if (git(['rev-parse', '--verify', base]).status !== 0) {
+    findings.push({ level: 'error', type: 'base-ref-not-found', message: `pin: base ref ${base} not found — fetch history (CI: fetch-depth: 0)` });
+  }
+  const loaded = loadPinManifests(pin);
+  findings.push(...loaded.findings);
+  const commits = findings.some((f) => f.level === 'error') ? { commits: [] } : commitList(base);
+  if (commits.error) findings.push({ level: 'error', type: 'pin-log-error', message: commits.error });
+  for (const manifest of loaded.manifests) {
+    findings.push(...validatePinManifest(manifest));
+  }
+  if (!findings.some((f) => f.level === 'error')) {
+    for (const commit of commits.commits) {
+      const files = commitFiles(commit);
+      if (files.error) {
+        findings.push({ level: 'error', type: 'pin-commit-files-error', message: files.error });
+        continue;
+      }
+      if (commitHasPinOverride(commit)) continue;
+      for (const manifest of loaded.manifests) {
+        const touchesSubject = files.files.some((file) => pathMatchesAny(file, manifest.subject));
+        const touchesOracle = files.files.some((file) => pathMatchesAny(file, [manifest.path].concat(manifest.oracle, manifest.support)));
+        if (touchesSubject && touchesOracle) {
+          findings.push({
+            level: 'error',
+            type: 'pin-coupled-change',
+            manifest: manifest.path,
+            commit,
+            message: `${short(commit)} changes subject and oracle/support for ${manifest.path}; use Pin-Override: <reason> if intentional`,
+          });
+        }
+      }
+    }
+  }
+  findings.sort((a, b) => {
+    if (a.level !== b.level) return a.level === 'error' ? -1 : 1;
+    if (a.type !== b.type) return a.type < b.type ? -1 : 1;
+    return (a.message || '').localeCompare(b.message || '');
+  });
+  const output = {
+    summary: {
+      disabled: false,
+      manifests: loaded.manifests.length,
+      commits: commits.commits ? commits.commits.length : 0,
+      errors: findings.filter((f) => f.level === 'error').length,
+    },
+    findings,
+  };
+  if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+  if (output.summary.errors > 0) {
+    process.stderr.write('aw-gate: pin check FAILED\n');
+    for (const f of findings.filter((item) => item.level === 'error')) process.stderr.write(`  - ${f.type}: ${f.message}\n`);
+    process.exit(1);
+  }
+  if (!jsonMode) process.stdout.write(`aw-gate: pin check clean (${output.summary.manifests} pin(s), ${output.summary.commits} commit(s))\n`);
+  process.exit(0);
+}
+
+function cmdPin(args) {
+  const { positional } = parseFlags(args);
+  const sub = positional[0];
+  const rest = args.slice(1);
+  if (sub === 'run') return cmdPinRun(rest);
+  if (sub === 'check') return cmdPinCheck(rest);
+  fail('pin requires a subcommand: run or check');
+}
+
 function cmdOrgSync() {
   const config = loadConfig();
   const org = config.org_knowledge || {};
@@ -1080,11 +1485,13 @@ function usage() {
       '  node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.json [--delete-batch-on-success]',
       '  node .scripts/aw-gate.js workflow-record <event> [--tier <tier>] [--step <step>] [--gate <gate>] [--status <status>] [--reason <text>]',
       '  node .scripts/aw-gate.js workflow-check [--json]',
+      '  node .scripts/aw-gate.js pin run [--json] [--out <path>]',
+      '  node .scripts/aw-gate.js pin check [--base <ref>] [--json]',
       '  node .scripts/aw-gate.js org-sync',
       '  node .scripts/aw-gate.js prune-telemetry',
       '',
-      'Config: docs/workflow/config.yml (gates, telemetry, org_knowledge, trace, workflow_trace).',
-      'All five are opt-in and disabled by default.',
+      'Config: docs/workflow/config.yml (gates, telemetry, org_knowledge, trace, workflow_trace, pin).',
+      'All six are opt-in and disabled by default.',
       '',
     ].join('\n')
   );
@@ -1105,6 +1512,8 @@ function main() {
       return cmdWorkflowRecord(rest);
     case 'workflow-check':
       return cmdWorkflowCheck(rest);
+    case 'pin':
+      return cmdPin(rest);
     case 'org-sync':
       return cmdOrgSync();
     case 'prune-telemetry':
