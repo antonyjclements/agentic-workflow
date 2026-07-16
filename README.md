@@ -71,6 +71,10 @@ The installer:
   - `docs/workflow/config.yml`
 - creates repo-local workflow config documentation if missing:
   - `docs/workflow/README.md`
+  - `docs/workflow/gates.md`
+- installs default standards if missing:
+  - `docs/standards/coding-approach.md`
+  - `docs/standards/traceability.md`
 - creates global learning storage at `~/.agents/learnings/index.yml`
 
 Existing repo files are preserved unless you pass `--force`.
@@ -98,7 +102,7 @@ Applying the migration creates a timestamped backup beside the original config a
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed between versions (new config keys, installer flags, behavior changes, and migrations). The version tracks `aw-version.txt`; `scripts/test-install.sh` fails if a version bump lacks a changelog entry.
 
-The config migrator preserves unknown fields, adds missing current defaults, and moves old skill selector fields into `workflow.steps` or `workflow.auxiliary`:
+The config migrator preserves unknown fields, adds missing current defaults such as disabled `trace.*` settings, and moves old skill selector fields into `workflow.steps` or `workflow.auxiliary`:
 
 - `ticket_creation.skill` → `workflow.steps.create_tickets.skill`
 - `git.commit.skill` → `workflow.steps.commit.skill`
@@ -203,10 +207,10 @@ docs/
     README.md
     config.yml
     field-guide.md
-    gates.md         # gates/telemetry/org how-to
+    gates.md         # gates/telemetry/org/trace how-to
     org-knowledge.md # org knowledge governance guide
 .scripts/
-  aw-gate.js         # optional; installed with aw-init --with-gates
+  aw-gate.js         # optional; installed with aw-init --with-gates; check/trace helper
 ```
 
 `AGENTS.md` is the routing file agents read first. If a repo also uses `CLAUDE.md`, keep it aligned with `AGENTS.md`.
@@ -624,11 +628,11 @@ post_pr:
     provider: circleci
 ```
 
-### Enforcement gates, telemetry, and org knowledge (optional)
+### Enforcement gates, telemetry, org knowledge, and traceability (optional)
 
 > Full how-to with CLI reference, modes, hook/CI wiring, and troubleshooting: [docs/workflow/gates.md](docs/workflow/gates.md).
 
-Three opt-in capabilities harden the workflow for larger teams. All are disabled by default and powered by one dependency-free helper, `.scripts/aw-gate.js`, installed with `aw-init --with-gates` (re-run the installer with that flag to add it to an existing install). None require an agent to run in CI — enforcement is fully deterministic.
+Four opt-in capabilities harden the workflow for larger teams. All are disabled by default and powered by one dependency-free helper, `.scripts/aw-gate.js`, installed with `aw-init --with-gates` (re-run the installer with that flag to add it to an existing install). None require an agent to run in CI — enforcement is fully deterministic.
 
 **Freshness gates.** The review, compliance, capture, and memory-synthesis skills are LLM-driven and cannot block a merge on their own. Instead they stamp a freshness marker after a successful run, and a deterministic checker enforces staleness windows:
 
@@ -714,7 +718,9 @@ org_knowledge:
 
 The org base is **governed content**: one accountable owner (a senior lead or distinguished engineer), PR-reviewed changes, self-describing entries, advisory-by-default with repo-local precedence, and a human-gated promotion path. The full governance model and templates are in [docs/workflow/org-knowledge.md](docs/workflow/org-knowledge.md).
 
-Full schema for all three is in [docs/workflow/README.md](docs/workflow/README.md).
+**Spec traceability.** With `trace.enabled: true`, `node .scripts/aw-gate.js trace` checks that `@spec` anchors in tests and code point to living spec requirements, every requirement has a test anchor, and changed anchored tests are coupled to changed specs when run with `--base`. Skills write annotations through `trace-annotate`; batch files live under `.aw/tmp/` and are cleaned when tracing is disabled or on successful enabled runs.
+
+Full schema for all four is in [docs/workflow/README.md](docs/workflow/README.md).
 
 ### 11. Keep README.md current
 

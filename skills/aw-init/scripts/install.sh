@@ -398,8 +398,15 @@ install_repo_files() {
     tags:
       - implementation
       - simplicity
-      - code-quality"
+      - code-quality
+  - path: docs/standards/traceability.md
+    title: Spec Traceability
+    tags:
+      - specs
+      - tests
+      - workflow"
   copy_prompted "$artifact_dir/coding-approach.md" "$repo_dir/docs/standards/coding-approach.md"
+  copy_prompted "$artifact_dir/traceability.md" "$repo_dir/docs/standards/traceability.md"
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
   copy_prompted "$artifact_dir/workflow-readme.md" "$repo_dir/docs/workflow/README.md"
@@ -506,7 +513,19 @@ org_knowledge:
   cache_dir: .aw-org-cache
   paths:
     learnings: learnings
-    standards: standards"
+    standards: standards
+trace:
+  enabled: false
+  spec_paths:
+    - \"docs/features/*/spec.md\"
+  test_paths:
+    - \"*.feature\"
+    - \"*.test.ts\"
+    - \"*.test.tsx\"
+    - \"*.spec.ts\"
+  code_paths:
+    - \"src\"
+  require_code_anchor: false"
 }
 
 install_gate_script() {
@@ -525,7 +544,7 @@ install_gate_script() {
 
   # The freshness state file and org cache are per-checkout, never committed.
   local gitignore="$repo_dir/.gitignore"
-  for entry in ".aw-gate-state.json" ".aw-org-cache/"; do
+  for entry in ".aw-gate-state.json" ".aw-org-cache/" ".aw/tmp/"; do
     if [ ! -f "$gitignore" ] || ! grep -Fqx "$entry" "$gitignore"; then
       printf '%s\n' "$entry" >> "$gitignore"
       echo "gitignore: $entry"
@@ -647,7 +666,7 @@ Next steps:
 7. Session logging is automatic for Claude Code: .claude/hooks/log-session.sh fires when each session ends.
    Run aw-synthesize-memory periodically to distill session logs into learnings and refresh docs/context/wiki.md.
    Other agents (Codex, Codeium, Windsurf) can invoke aw-capture session manually; the session log format is cross-agent.
-8. Optional enforcement, telemetry, and org knowledge (see docs/workflow/README.md):
-   Re-run install with --with-gates to add .scripts/aw-gate.js. Set gates.enabled/telemetry.enabled/org_knowledge.source
-   in docs/workflow/config.yml, then wire \`node .scripts/aw-gate.js check\` into a pre-push hook or CI job.
+8. Optional enforcement, telemetry, org knowledge, and traceability (see docs/workflow/README.md):
+   Re-run install with --with-gates to add .scripts/aw-gate.js. Set gates.enabled/telemetry.enabled/org_knowledge.source/trace.enabled
+   in docs/workflow/config.yml, then wire \`node .scripts/aw-gate.js check\` and optionally \`trace\` into a pre-push hook or CI job.
 EOF

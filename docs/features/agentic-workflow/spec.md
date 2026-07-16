@@ -2,7 +2,7 @@
 title: Spec-Driven Agentic Workflow
 status: active
 created: 2026-05-24
-updated: 2026-07-02
+updated: 2026-07-16
 tags:
   - workflow
   - specs
@@ -41,6 +41,7 @@ related_decisions:
   - docs/decisions/2026-07-03-shard-telemetry-with-union-merge-and-retention.md
   - docs/decisions/2026-07-03-govern-the-org-knowledge-base.md
   - docs/decisions/2026-07-03-maintain-a-version-anchored-changelog.md
+  - docs/decisions/2026-07-16-add-spec-traceability-checks.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -75,6 +76,7 @@ The workflow routes:
 - session logs to `docs/sessions/` (self-describing, no index)
 - the synthesized project wiki to `docs/context/wiki.md`
 - ticket creation, workflow step overrides, implementation test policy, PR templates, commit messages, post-PR CI monitoring, Slack research, human review, enforcement gates, telemetry, and org-shared knowledge routing to `docs/workflow/config.yml`
+- optional spec traceability routing to `docs/workflow/config.yml`
 - repo initialization only through `aw-init`; upgrades through `skills/aw-init/scripts/upgrade.sh`
 - canonical bundled skill names under the `aw-*` prefix, in `aw-<verb>-<object>` form for multi-word names, with consolidated mode-routed skills (`aw-prd`, `aw-review`, `aw-capture`, `aw-refresh`)
 - README maintenance as a required check when user-facing workflow behavior changes
@@ -86,6 +88,7 @@ The workflow routes:
 - cross-session memory through `aw-capture session` and `aw-synthesize-memory`
 - interactive skill recommendation through `aw-help`
 - ticket-first implementation handoff for agents that start from a ticket ID or URL after checkout
+- deterministic spec traceability checks and annotation proxying through `.scripts/aw-gate.js`
 
 ## Key Flows
 
@@ -132,6 +135,16 @@ The workflow routes:
 - Org-shared knowledge: setting `org_knowledge.source` to a git URL adds an org-wide learnings/standards tier alongside repo-local `docs/learnings/` and `docs/standards/`, replacing the per-machine `~/.agents/learnings/` fallback as the second tier. `node .scripts/aw-gate.js org-sync` shallow-clones or updates that repo into the git-ignored `org_knowledge.cache_dir`. `aw-capture`, `aw-synthesize-memory`, and `aw-discover-standards` consult the org tier (read-only) before writing repo-local knowledge; precedence is repo-local first, then org-shared.
 - Org knowledge is governed content, not just a synced folder: it has one accountable owner (a senior lead or distinguished engineer named in the org repo's `CODEOWNERS`), PR-reviewed changes, and self-describing entries (`authority`, `applies_to`, `owner`, `reviewed`/`review_by`, `source`). Agents treat org entries as advisory unless marked `authority: required`, always let repo-local guidance win, surface stale (past `review_by`) or conflicting `required` entries to a human, and never write to the org tier — promotion of a repo-local learning to org-wide status is a human-gated PR. The governance model and templates live in `docs/workflow/org-knowledge.md`; a summary is in the installed `docs/workflow/README.md`.
 - The config migrator (`upgrade-config.rb`) adds the `gates`, `telemetry`, and `org_knowledge` default sections to older configs while preserving existing overrides.
+
+### Spec Traceability
+
+- Spec traceability is installed everywhere but disabled by default through `trace.enabled: false`.
+- `node .scripts/aw-gate.js trace` deterministically checks that `@spec` anchors in tests and code point to requirement IDs in living specs, every requirement has at least one test anchor, and code anchors exist when `trace.require_code_anchor` is enabled.
+- With `--base <ref>`, `trace` checks changed anchored tests against changed owning specs and accepts an explicit `Spec-Override:` commit trailer for intentional test-only changes.
+- `trace` is not a freshness gate and does not use `record`; it can run directly in pre-push or CI alongside `check`.
+- Skills route annotation writes through `node .scripts/aw-gate.js trace-annotate`. The helper owns the `trace.enabled` decision, no-ops when disabled, and performs only explicit line-targeted annotation edits when enabled.
+- `aw-work` batches subagent annotation intents under `.aw/tmp/trace-intents.<token>.json`; the helper merges labels, applies edits once, and cleans safe batch files when tracing is disabled or when enabled success uses `--delete-batch-on-success`.
+- Traceability is accountability, not quality assurance: an anchor proves a link was claimed, and coupling proves a change was coordinated, but semantic correctness remains with review and human judgment.
 
 ### Knowledge Capture and Memory Synthesis
 
@@ -185,7 +198,11 @@ The workflow routes:
 - Agents treat a context wiki older than 30 days (or several unprocessed session logs behind) as stale and verify against the underlying registries.
 - Session logs and synthesis output are committed as separate `chore(session)` / `chore(memory)` commits, never inside feature commits.
 - New installs write `gates`, `telemetry`, and `org_knowledge` sections to `docs/workflow/config.yml`, all disabled by default. `aw-init --with-gates` additionally installs `.scripts/aw-gate.js`, appends `.aw-gate-state.json` and `.aw-org-cache/` to `.gitignore`, and registers `docs/metrics/events*.jsonl merge=union` in `.gitattributes`.
+- New installs write the `trace` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` gitignores `.aw/tmp/` for transient trace annotation batches.
 - With telemetry enabled, `record` appends to a month-sharded log (`events-YYYY-MM.jsonl`) by default, and `node .scripts/aw-gate.js prune-telemetry` deletes shards older than `telemetry.retention_months` (no-op when rotation or retention is unset).
 - `.scripts/aw-gate.js check` exits zero when `gates.enabled` is false, and exits non-zero when any gate under `gates.checks` fails its `mode` (`age` staleness, `commit` path changes since the recorded commit, or both); `record <gate>` stamps the git-ignored state file with the current time and commit and, when `telemetry.enabled`, appends a no-PII event to `telemetry.path`.
 - The self-hosted `.scripts/aw-gate.js` stays identical to `skills/aw-init/artifacts/aw-gate.js`, and `scripts/test-install.sh` fails on drift and exercises the gate's disabled/unrecorded/recorded behavior when `node` is available.
 - `upgrade-config.rb` injects the `gates`, `telemetry`, and `org_knowledge` default sections into older configs during migration without overwriting existing values.
+- `upgrade-config.rb` injects the disabled `trace` default section into older configs during migration without overwriting existing values.
+- With trace disabled, `trace` exits 0 and `trace-annotate` skips writes; safe `.aw/tmp/trace-intents.*.json` batch files are removed before exit.
+- With trace enabled, `trace` reports dangling anchors, untested requirements, duplicate requirement IDs, optional code-anchor gaps, and uncoupled test changes. `trace-annotate` supports direct and batch annotation, merges multi-ID code labels, applies batch edits in descending line order, and preserves failed enabled batch files for debugging.
