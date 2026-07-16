@@ -73,10 +73,15 @@ human_review:
 | `org_knowledge.cache_dir` | string | `.aw-org-cache` | Git-ignored local cache the org repo is cloned into. |
 | `org_knowledge.paths.learnings` | string | `learnings` | Learnings subdirectory within the org knowledge repo. |
 | `org_knowledge.paths.standards` | string | `standards` | Standards subdirectory within the org knowledge repo. |
+| `trace.enabled` | boolean | `false` | Master switch for spec traceability. When false, `trace` exits 0 and `trace-annotate` skips writes. |
+| `trace.spec_paths` | string list | `["docs/features/*/spec.md"]` | Git pathspecs for living spec files. Only `/spec.md` files are accepted as requirement sources. |
+| `trace.test_paths` | string list | feature/test globs | Git pathspecs for files that may carry test anchors. |
+| `trace.code_paths` | string list | `["src"]` | Git pathspecs for files that may carry behavior entry-point anchors. |
+| `trace.require_code_anchor` | boolean | `false` | When true, requirements with no code anchor fail trace. When false, they warn only. |
 
 ## Enforcement Gates, Telemetry, and Org Knowledge
 
-These three capabilities are opt-in, disabled by default, and all powered by one
+These four capabilities are opt-in, disabled by default, and all powered by one
 dependency-free helper, `.scripts/aw-gate.js`, installed with
 `aw-init --with-gates` (or by re-running the installer with that flag). None of
 them require an agent to run in CI — the enforcement path is fully deterministic.
@@ -169,6 +174,31 @@ is **governed content, not just a synced folder**:
 The full governance model, templates (`CODEOWNERS`, `GOVERNANCE.md`, entry
 frontmatter), and promotion path live in the agentic-workflow project at
 `docs/workflow/org-knowledge.md`.
+
+### Spec traceability (`trace`)
+
+`trace` links living spec requirements to tests and optional behavior entry
+points without running an agent in CI:
+
+```sh
+node .scripts/aw-gate.js trace [--base origin/main] [--json] [--out docs/trace.json]
+```
+
+The command resolves every `@spec` anchor, fails when a requirement has no test
+anchor, warns by default when no code anchor exists, and with `--base` fails when
+a changed anchored test is not paired with a changed owning spec or a
+`Spec-Override:` commit trailer. It is deterministic and is **not** a freshness
+gate, so do not add it under `gates.checks`.
+
+Skills write annotations through the deterministic proxy:
+
+```sh
+node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.json --delete-batch-on-success
+```
+
+When `trace.enabled` is false, `trace-annotate` skips target writes and cleans
+safe `.aw/tmp/trace-intents.*.json` batch files. When enabled, it validates IDs,
+merges batch labels, and inserts only explicit line-targeted annotations.
 
 ## Workflow Step Keys
 

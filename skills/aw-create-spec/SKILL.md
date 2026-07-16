@@ -21,6 +21,9 @@ Create durable feature intent that stays current with the code. A spec describes
 2. Gather source context: clarified requirements, brainstorm/ideation docs, imported PRDs, existing code, tests, product docs, standards, and recent decisions.
 3. Define the feature boundary, users, current behavior, non-goals, acceptance criteria, and open questions.
 4. Create or update the smallest relevant feature spec file at `docs/features/<feature>/spec.md`.
+   - For each feature-bearing requirement heading you create or update, call
+     `node .scripts/aw-gate.js trace-annotate spec --file <spec> --line <heading-line> --id <ID>`.
+     The helper owns whether trace is enabled and will no-op when disabled.
 5. Link source PRDs, brainstorm/ideation artifacts, and related decision records when they exist.
 6. Update `docs/features/index.yml` without disrupting its existing schema.
 7. If one or more source PRDs under `docs/product/prds/` informed the spec, update only their frontmatter and `docs/product/prds/index.yml` lifecycle metadata:

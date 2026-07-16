@@ -1,4 +1,12 @@
 decisions:
+  - path: docs/decisions/2026-07-16-add-spec-traceability-checks.md
+    title: Add deterministic spec traceability checks
+    date: 2026-07-16
+    status: active
+    tags:
+      - workflow
+      - enforcement
+      - specs
   - path: docs/decisions/2026-07-03-maintain-a-version-anchored-changelog.md
     title: Maintain a version-anchored CHANGELOG enforced by test-install
     date: 2026-07-03

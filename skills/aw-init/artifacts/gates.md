@@ -5,7 +5,7 @@ the workflow's advisory review/capture/compliance steps into a deterministic,
 enforceable contract, records lightweight telemetry, and syncs an org-shared
 knowledge tier.
 
-All three capabilities are **opt-in and disabled by default**. This guide covers
+All four capabilities are **opt-in and disabled by default**. This guide covers
 what they are, how to configure them, and how to wire enforcement into a Git hook
 or CI. For the terse schema, see [README.md](README.md); this file is the how-to.
 
@@ -56,6 +56,9 @@ The script requires **Node ≥ 16** at the enforcement point (local hook or CI).
 ```sh
 node .scripts/aw-gate.js record <event> [--detail "text"]
 node .scripts/aw-gate.js check [--against head|worktree]
+node .scripts/aw-gate.js trace [--base <ref>] [--json] [--out <path>]
+node .scripts/aw-gate.js trace-annotate <spec|test|code> --file <path> --line <n> --id <ID>[,<ID>]
+node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.json [--delete-batch-on-success]
 node .scripts/aw-gate.js org-sync
 ```
 
@@ -91,6 +94,44 @@ put in a hook or CI job.
 
 Shallow-clones or updates the configured org knowledge repo into the git-ignored
 cache. No-op when `org_knowledge.source` is blank.
+
+### `trace`
+
+Checks opt-in spec traceability without an agent:
+
+- every `@spec` reference in test/code points to a living spec requirement
+- every requirement has at least one test anchor
+- missing code anchors warn by default, or fail when `trace.require_code_anchor`
+  is true
+- with `--base <ref>`, changed anchored tests must be paired with a changed
+  owning spec or a `Spec-Override:` commit trailer
+
+Exit 0 means clean, warnings-only, or disabled. Exit 1 means at least one error
+finding. `--json` prints a stable `{ summary, matrix, findings }` object, and
+`--out <path>` writes the same object for CI artifacts.
+
+### `trace-annotate`
+
+Skills use this as the deterministic policy boundary for writing annotations.
+When `trace.enabled` is false it skips writes; when a safe batch file under
+`.aw/tmp/trace-intents.*.json` is supplied, it deletes that transient file before
+exiting. When enabled it validates IDs and line targets before writing.
+
+`aw-work` should prefer batch mode so subagents return annotation intents to the
+parent, the parent writes one `.aw/tmp/trace-intents.<token>.json`, and the helper
+merges labels and applies edits once:
+
+```json
+{
+  "intents": [
+    { "kind": "test", "file": "src/auth.test.ts", "line": 34, "ids": ["AUTH-001"] },
+    { "kind": "code", "file": "src/auth.ts", "line": 8, "ids": ["AUTH-001", "AUTH-002"] }
+  ]
+}
+```
+
+Use `--delete-batch-on-success` for normal enabled runs. Failed enabled batches
+are preserved for debugging unless the caller removes them in its cleanup step.
 
 ---
 
@@ -201,6 +242,7 @@ contains:
 
 ```sh
 node .scripts/aw-gate.js check
+node .scripts/aw-gate.js trace
 ```
 
 `npm install` re-installs the hooks (via the `prepare` script), so every clone is
@@ -235,9 +277,12 @@ node .scripts/aw-gate.js check --against worktree
   with:
     node-version: 20
 - run: node .scripts/aw-gate.js check
+- run: node .scripts/aw-gate.js trace --base origin/${{ github.base_ref }}
 ```
 
 Make it a **required** status check on the branch so a red gate blocks merge.
+Only add the trace line after setting `trace.enabled: true`; disabled trace is a
+no-op, but a CI trace job is useful only for opted-in repos.
 
 > **Shallow clones:** commit mode resolves the recorded commit with git. In CI,
 > fetch full history (`fetch-depth: 0`); otherwise the recorded commit may be
@@ -245,7 +290,59 @@ Make it a **required** status check on the branch so a red gate blocks merge.
 
 ---
 
-## 6. The everyday loop
+## 6. Spec traceability conventions
+
+Traceability is opt-in and disabled by default:
+
+```yaml
+trace:
+  enabled: false
+  spec_paths:
+    - "docs/features/*/spec.md"
+  test_paths:
+    - "*.feature"
+    - "*.test.ts"
+    - "*.test.tsx"
+    - "*.spec.ts"
+  code_paths:
+    - "src"
+  require_code_anchor: false
+```
+
+Requirement IDs are markdown headings in living specs:
+
+```markdown
+### AUTH-001 — Session expires after inactivity
+```
+
+Tests anchor to requirements on or immediately above the test/scenario:
+
+```ts
+// @spec:AUTH-001
+test('session ends after 30 idle minutes', () => {})
+```
+
+Code anchors belong only at behavior entry points:
+
+```ts
+// @spec AUTH-001, AUTH-002
+export function createSession() {}
+```
+
+When a test legitimately changes without its owning spec, include a commit
+trailer:
+
+```text
+Spec-Override: AUTH-001 — test asserted the wrong boundary
+```
+
+An anchor proves a link was claimed, not that the code conforms. Coupling proves
+a change was coordinated, not that it was correct. Traceability is workflow
+accountability, not quality assurance.
+
+---
+
+## 7. The everyday loop
 
 1. You do work and run a skill — e.g. `aw-review`. On completion it runs
    `node .scripts/aw-gate.js record review`, stamping the current commit/time.
@@ -259,7 +356,7 @@ via the hook.
 
 ---
 
-## 7. First-push bootstrap
+## 8. First-push bootstrap
 
 A gate cannot validate the commit that *installs* it: enabling gates and adding
 the hook are themselves non-doc changes, so the review gate is stale for that
@@ -280,7 +377,7 @@ After the bootstrap, the normal loop enforces every subsequent push.
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 | Message from `check` | Meaning | Fix |
 | --- | --- | --- |
@@ -290,6 +387,10 @@ After the bootstrap, the normal loop enforces every subsequent push.
 | `<gate>: code changed in <paths> … since it last ran` | commit-mode: relevant paths changed | re-run the review/skill, then re-record |
 | `<gate>: recorded commit <sha> not found (rebased or shallow clone)` | the recorded commit is gone | re-run the skill; in CI use `fetch-depth: 0` |
 | `<gate>: invalid or missing max_age_hours` | age/`commit-and-age` gate lacks a window | add `max_age_hours` |
+| `trace disabled … skipping` | `trace.enabled` is not `true` | set `trace.enabled: true` after adopting IDs and anchors |
+| `dangling-test-ref` / `dangling-code-ref` | an anchor points at a missing requirement ID | fix the ID or add the living spec requirement |
+| `untested-requirement` | a requirement has no test anchor | add or annotate coverage, or remove stale requirement text |
+| `uncoupled-test-change` | an anchored test changed without its owning spec | update the spec or add a `Spec-Override:` trailer |
 
 The state file is **local and git-ignored**, so a fresh clone or CI checkout
 starts with every gate "never recorded". That is intended — enforcement is about
@@ -298,7 +399,7 @@ gate to what CI can verify.
 
 ---
 
-## 9. Telemetry
+## 10. Telemetry
 
 With `telemetry.enabled: true`, each `record` call also appends one JSON line to
 `telemetry.path` (default `docs/metrics/events.jsonl`):
@@ -343,7 +444,7 @@ detail lives in [../metrics/README.md](../metrics/README.md).
 
 ---
 
-## 10. Org-shared knowledge
+## 11. Org-shared knowledge
 
 Point `org_knowledge.source` at a git repo of shared learnings and standards to
 add an org-wide tier alongside the repo-local `docs/learnings/` and
@@ -374,7 +475,7 @@ The full model and templates are in [org-knowledge.md](org-knowledge.md).
 
 ---
 
-## 11. This repo's configuration (worked example)
+## 12. This repo's configuration (worked example)
 
 For reference, `docs/workflow/config.yml` in this repository enforces:
 
@@ -386,5 +487,6 @@ For reference, `docs/workflow/config.yml` in this repository enforces:
 - **No `capture` gate.** `aw-capture` still records its marker, but blocking a
   *push* on capture staleness is noise, so it is omitted from `gates.checks`.
 
-Enforcement is a husky `pre-push` hook running `node .scripts/aw-gate.js check`.
-Telemetry and org knowledge are left disabled.
+Enforcement is a husky `pre-push` hook running `node .scripts/aw-gate.js check`
+then `node .scripts/aw-gate.js trace`. Trace, telemetry, and org knowledge are
+left disabled by default.

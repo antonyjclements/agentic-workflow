@@ -97,3 +97,15 @@ org_knowledge:
   paths:
     learnings: learnings
     standards: standards
+trace:
+  enabled: false
+  spec_paths:
+    - "docs/features/*/spec.md"
+  test_paths:
+    - "*.feature"
+    - "*.test.ts"
+    - "*.test.tsx"
+    - "*.spec.ts"
+  code_paths:
+    - "src"
+  require_code_anchor: false

@@ -85,6 +85,14 @@ Work unit by unit:
 - resolve implementation-time unknowns locally when possible; ask only for product/scope decisions
 - keep changes scoped; defer tangential cleanup
 - update task status as work completes
+- Preserve spec traceability through the deterministic helper. Subagents return
+  annotation intents to the parent; they do not call `trace-annotate` directly.
+  The parent writes one `.aw/tmp/trace-intents.<token>.json` batch and runs
+  `node .scripts/aw-gate.js trace-annotate --batch <path> --delete-batch-on-success`.
+  For simple non-parallel work, direct `trace-annotate <spec|test|code>` is
+  acceptable. Do not read `trace.enabled` in the skill to decide whether to
+  annotate; the helper owns that policy and no-ops when disabled.
+  Before modifying already annotated code, read the referenced spec section.
 
 For frontend work, run/inspect the app when practical. For iOS work, prefer XcodeBuildMCP workflows when available.
 

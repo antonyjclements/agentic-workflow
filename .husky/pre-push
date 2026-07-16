@@ -1,1 +1,2 @@
 node .scripts/aw-gate.js check
+node .scripts/aw-gate.js trace

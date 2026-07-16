@@ -19,6 +19,7 @@ for pair in \
   "docs/metrics/README.md:skills/aw-init/artifacts/metrics-readme.md" \
   "docs/product/prds/template.md:skills/aw-init/artifacts/prd-template.md" \
   "docs/standards/coding-approach.md:skills/aw-init/artifacts/coding-approach.md" \
+  "docs/standards/traceability.md:skills/aw-init/artifacts/traceability.md" \
   ".scripts/aw-gate.js:skills/aw-init/artifacts/aw-gate.js" \
   ".claude/hooks/log-session.sh:skills/aw-init/hooks/log-session.sh"; do
   installed="${pair%%:*}"
@@ -207,6 +208,7 @@ assert_repo_install() {
   assert_file "$target_repo/docs/product/prds/template.md"
   assert_file "$target_repo/docs/features/index.yml"
   assert_file "$target_repo/docs/standards/index.yml"
+  assert_file "$target_repo/docs/standards/traceability.md"
   assert_file "$target_repo/docs/decisions/index.yml"
   assert_file "$target_repo/docs/learnings/index.yml"
   assert_file "$target_repo/docs/workflow/README.md"
@@ -235,6 +237,9 @@ assert_repo_install() {
   assert_contains "$target_repo/docs/workflow/config.yml" "rotation: monthly"
   assert_contains "$target_repo/docs/workflow/config.yml" "retention_months: 12"
   assert_contains "$target_repo/docs/workflow/config.yml" "org_knowledge:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "trace:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "spec_paths:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "require_code_anchor: false"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "monitor_circleci:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "import_prd:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "log_decision:"
@@ -287,6 +292,7 @@ gates_learnings="$tmp_root/gates-learnings"
 assert_file "$gates_target/.scripts/aw-gate.js"
 assert_contains "$gates_target/.gitignore" ".aw-gate-state.json"
 assert_contains "$gates_target/.gitignore" ".aw-org-cache/"
+assert_contains "$gates_target/.gitignore" ".aw/tmp/"
 assert_contains "$gates_target/.gitattributes" "docs/metrics/events*.jsonl merge=union"
 
 if command -v node >/dev/null 2>&1; then
@@ -310,6 +316,112 @@ if command -v node >/dev/null 2>&1; then
   echo "gate functional test passed"
 else
   echo "gate functional test skipped: node not available"
+fi
+
+# Spec traceability: disabled no-op/cleanup, annotation insertion, resolve/cover,
+# stable JSON output, and base-coupling override behavior.
+if command -v node >/dev/null 2>&1 && command -v git >/dev/null 2>&1; then
+  trace_target="$tmp_root/trace-target"
+  mkdir -p "$trace_target/docs/workflow" "$trace_target/.scripts" "$trace_target/.aw/tmp" \
+    "$trace_target/docs/features/auth" "$trace_target/src"
+  cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$trace_target/.scripts/aw-gate.js"
+  cat > "$trace_target/docs/workflow/config.yml" <<'YAML'
+trace:
+  enabled: false
+  spec_paths:
+    - "docs/features/*/spec.md"
+  test_paths:
+    - "*.test.ts"
+  code_paths:
+    - "src"
+  require_code_anchor: false
+YAML
+  printf 'original\n' > "$trace_target/src/auth.test.ts"
+  printf '{"intents":[{"kind":"test","file":"src/auth.test.ts","line":1,"ids":["AUTH-001"]}]}\n' \
+    > "$trace_target/.aw/tmp/trace-intents.disabled.json"
+  node "$trace_target/.scripts/aw-gate.js" trace >/dev/null
+  node "$trace_target/.scripts/aw-gate.js" trace --json > "$trace_target/trace-disabled.json"
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "disabled summary missing" unless data.dig("summary", "disabled") == true' \
+    "$trace_target/trace-disabled.json"
+  node "$trace_target/.scripts/aw-gate.js" trace-annotate --batch .aw/tmp/trace-intents.disabled.json >/dev/null
+  if [ -e "$trace_target/.aw/tmp/trace-intents.disabled.json" ]; then
+    echo "disabled trace-annotate should delete safe batch files" >&2
+    exit 1
+  fi
+  if [ "$(cat "$trace_target/src/auth.test.ts")" != "original" ]; then
+    echo "disabled trace-annotate should not edit target files" >&2
+    exit 1
+  fi
+
+  ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: false", "enabled: true"); File.write(ARGV[0], t)' \
+    "$trace_target/docs/workflow/config.yml"
+  cat > "$trace_target/docs/features/auth/spec.md" <<'MD'
+### Session expires
+When idle, the system shall expire sessions.
+
+### Refresh token rotates
+When refreshing, the system shall rotate tokens.
+MD
+  cat > "$trace_target/src/auth.test.ts" <<'TS'
+test('session expires', () => {})
+test('refresh token rotates', () => {})
+TS
+  cat > "$trace_target/src/auth.ts" <<'TS'
+export function authFlow() {}
+TS
+  git init -q "$trace_target"
+  git -C "$trace_target" config user.email test@example.com
+  git -C "$trace_target" config user.name test
+  git -C "$trace_target" add -A
+  node "$trace_target/.scripts/aw-gate.js" trace-annotate spec --file docs/features/auth/spec.md --line 1 --id AUTH-001 >/dev/null
+  node "$trace_target/.scripts/aw-gate.js" trace-annotate spec --file docs/features/auth/spec.md --line 4 --id AUTH-002 >/dev/null
+  cat > "$trace_target/.aw/tmp/trace-intents.enabled.json" <<'JSON'
+{
+  "intents": [
+    { "kind": "test", "file": "src/auth.test.ts", "line": 1, "ids": ["AUTH-001"] },
+    { "kind": "test", "file": "src/auth.test.ts", "line": 2, "ids": ["AUTH-002"] },
+    { "kind": "code", "file": "src/auth.ts", "line": 1, "ids": ["AUTH-001"] },
+    { "kind": "code", "file": "src/auth.ts", "line": 1, "ids": ["AUTH-002"] }
+  ]
+}
+JSON
+  node "$trace_target/.scripts/aw-gate.js" trace-annotate --batch .aw/tmp/trace-intents.enabled.json --delete-batch-on-success >/dev/null
+  if [ -e "$trace_target/.aw/tmp/trace-intents.enabled.json" ]; then
+    echo "enabled trace-annotate should delete safe batch files on success when requested" >&2
+    exit 1
+  fi
+  assert_contains "$trace_target/docs/features/auth/spec.md" "### AUTH-001 — Session expires"
+  assert_contains "$trace_target/src/auth.test.ts" "// @spec:AUTH-001"
+  assert_contains "$trace_target/src/auth.ts" "// @spec AUTH-001, AUTH-002"
+  node "$trace_target/.scripts/aw-gate.js" trace --out trace-one.json >/dev/null
+  node "$trace_target/.scripts/aw-gate.js" trace --out trace-two.json >/dev/null
+  cmp "$trace_target/trace-one.json" "$trace_target/trace-two.json" >/dev/null
+  node "$trace_target/.scripts/aw-gate.js" trace --json > "$trace_target/trace-stdout.json"
+  ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' "$trace_target/trace-stdout.json"
+
+  printf '// @spec:AUTH-999\ntest("bad", () => {})\n' > "$trace_target/src/bad.test.ts"
+  git -C "$trace_target" add src/bad.test.ts
+  if node "$trace_target/.scripts/aw-gate.js" trace >/dev/null 2>&1; then
+    echo "trace should fail on dangling test refs" >&2
+    exit 1
+  fi
+  rm "$trace_target/src/bad.test.ts"
+
+  git -C "$trace_target" add -A
+  git -C "$trace_target" commit -qm initial
+  base="$(git -C "$trace_target" rev-parse HEAD)"
+  printf '\n// changed assertion\n' >> "$trace_target/src/auth.test.ts"
+  git -C "$trace_target" add -A
+  git -C "$trace_target" commit -qm test-only-change
+  if node "$trace_target/.scripts/aw-gate.js" trace --base "$base" >/dev/null 2>&1; then
+    echo "trace --base should fail when anchored tests change without specs" >&2
+    exit 1
+  fi
+  git -C "$trace_target" commit --allow-empty -qm $'override\n\nSpec-Override: AUTH-001 — test asserted the wrong boundary\nSpec-Override: AUTH-002 — test asserted the wrong boundary'
+  node "$trace_target/.scripts/aw-gate.js" trace --base "$base" >/dev/null
+  echo "trace functional test passed"
+else
+  echo "trace functional test skipped: node or git not available"
 fi
 
 # Telemetry: record must write a month-sharded file, and prune-telemetry must
@@ -510,6 +622,9 @@ assert_contains "$migration_target/docs/workflow/config.yml" "telemetry:"
 assert_contains "$migration_target/docs/workflow/config.yml" "rotation: monthly"
 assert_contains "$migration_target/docs/workflow/config.yml" "retention_months: 12"
 assert_contains "$migration_target/docs/workflow/config.yml" "org_knowledge:"
+assert_contains "$migration_target/docs/workflow/config.yml" "trace:"
+assert_contains "$migration_target/docs/workflow/config.yml" "spec_paths:"
+assert_contains "$migration_target/docs/workflow/config.yml" "require_code_anchor: false"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "monitor_circleci:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "ticket_creation:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "research:"

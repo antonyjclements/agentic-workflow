@@ -12,6 +12,26 @@ version has no entry here.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-16
+
+Spec traceability for living requirements, tests, and behavior entry points. The
+feature is installed everywhere but **disabled by default**, preserving existing
+repos until they opt in with `trace.enabled: true`.
+
+### Added
+
+- `aw-gate.js trace`, a deterministic checker that resolves `@spec` anchors,
+  reports untested requirements, warns on missing code anchors by default, and
+  can enforce test/spec change coupling with `--base`.
+- `aw-gate.js trace-annotate`, a deterministic annotation proxy for skills. It
+  no-ops when trace is disabled, supports direct and batch annotation requests,
+  merges batch labels, and cleans safe `.aw/tmp/trace-intents.*.json` files.
+- New disabled-by-default `trace.*` config keys, a `trace:check` npm script, and
+  pre-push trace wiring after the existing gate check.
+- Traceability documentation and standards covering requirement ID headings,
+  test/code anchors, override trailers, batch intent cleanup, and the
+  accountability-not-QA boundary.
+
 ## [0.6.0] - 2026-07-03
 
 Enforcement, effectiveness telemetry, and org-shared knowledge — the three
