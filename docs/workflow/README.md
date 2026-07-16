@@ -88,7 +88,7 @@ them require an agent to run in CI — the enforcement path is fully determinist
 
 ### Freshness gates (`gates`)
 
-The LLM-driven review and compliance skills cannot run as a blocking CI check on
+The LLM-driven review, compliance, and memory-synthesis skills cannot run as a blocking CI check on
 their own. Instead, this workflow converts them into a **freshness contract**:
 
 1. After a successful run, the skill stamps a marker:
@@ -100,8 +100,9 @@ their own. Instead, this workflow converts them into a **freshness contract**:
 
 Wire `check` wherever you want it to block: a Git `pre-commit`/`pre-push` hook, or
 a required CI job. The workflow ships the script and the contract; the consumer
-chooses the enforcement point. The default gates map to `review`, `capture`, and
-`check_workflow_compliance`.
+chooses the enforcement point. The bundled event names are `review`, `capture`,
+`check_workflow_compliance`, and `synthesize`; configure any subset under
+`gates.checks`.
 
 Each gate picks a **mode**:
 

@@ -312,6 +312,7 @@ if command -v node >/dev/null 2>&1; then
   node "$gates_target/.scripts/aw-gate.js" record review >/dev/null
   node "$gates_target/.scripts/aw-gate.js" record capture >/dev/null
   node "$gates_target/.scripts/aw-gate.js" record check_workflow_compliance >/dev/null
+  node "$gates_target/.scripts/aw-gate.js" record synthesize >/dev/null
   node "$gates_target/.scripts/aw-gate.js" check >/dev/null
   echo "gate functional test passed"
 else

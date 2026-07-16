@@ -85,6 +85,9 @@ gates:
     check_workflow_compliance:
       mode: age
       max_age_hours: 168
+    synthesize:
+      mode: age
+      max_age_hours: 336
 telemetry:
   enabled: false
   path: docs/metrics/events.jsonl

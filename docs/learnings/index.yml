@@ -18,3 +18,17 @@ learnings:
     tags:
       - tooling
       - shell
+  - path: docs/learnings/2026-07-14-use-explicit-utf8-for-ruby-doc-processing.md
+    title: Use explicit UTF-8 for Ruby doc processing
+    scope: repo
+    tags:
+      - tooling
+      - ruby
+      - documentation
+  - path: docs/learnings/2026-07-14-record-every-configured-gate.md
+    title: Record every configured gate before checking freshness
+    scope: repo
+    tags:
+      - workflow
+      - enforcement
+      - testing
