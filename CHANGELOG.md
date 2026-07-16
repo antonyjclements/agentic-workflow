@@ -12,6 +12,22 @@ version has no entry here.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-07-16
+
+Focused follow-up to spec traceability: deterministic workflow execution trace.
+
+### Added
+
+- `aw-gate.js workflow-record`, an opt-in process breadcrumb writer for facts
+  such as selected workflow tier, step execution, skipped steps, and artifacts.
+- `aw-gate.js workflow-check`, a deterministic checker for configured workflow
+  breadcrumbs such as required tier selection and gate events.
+- Automatic workflow-trace gate events from `aw-gate.js record <gate>` when
+  `workflow_trace.enabled: true`, so review/compliance/synthesis execution can
+  be checked without skill-specific extra logic.
+- Disabled-by-default `workflow_trace.*` config defaults, installer migration
+  support, docs, and an `npm run workflow:check` script.
+
 ## [0.7.0] - 2026-07-16
 
 Spec traceability for living requirements, tests, and behavior entry points. The

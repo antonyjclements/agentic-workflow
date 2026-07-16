@@ -78,10 +78,14 @@ human_review:
 | `trace.test_paths` | string list | feature/test globs | Git pathspecs for files that may carry test anchors. |
 | `trace.code_paths` | string list | `["src"]` | Git pathspecs for files that may carry behavior entry-point anchors. |
 | `trace.require_code_anchor` | boolean | `false` | When true, requirements with no code anchor fail trace. When false, they warn only. |
+| `workflow_trace.enabled` | boolean | `false` | Master switch for deterministic workflow execution breadcrumbs. |
+| `workflow_trace.path` | string | `.aw/workflow-trace.jsonl` | Git-ignored JSONL file for local process events. |
+| `workflow_trace.require_tier` | boolean | `true` | When true, `workflow-check` fails unless a tier event exists. |
+| `workflow_trace.required_gates` | string list | review/compliance | Gate events that must appear in the workflow trace when enabled. |
 
-## Enforcement Gates, Telemetry, and Org Knowledge
+## Enforcement Gates, Telemetry, Org Knowledge, Traceability, and Workflow Trace
 
-These four capabilities are opt-in, disabled by default, and all powered by one
+These five capabilities are opt-in, disabled by default, and all powered by one
 dependency-free helper, `.scripts/aw-gate.js`, installed with
 `aw-init --with-gates` (or by re-running the installer with that flag). None of
 them require an agent to run in CI — the enforcement path is fully deterministic.
@@ -200,6 +204,22 @@ node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.js
 When `trace.enabled` is false, `trace-annotate` skips target writes and cleans
 safe `.aw/tmp/trace-intents.*.json` batch files. When enabled, it validates IDs,
 merges batch labels, and inserts only explicit line-targeted annotations.
+
+### Workflow execution trace (`workflow_trace`)
+
+`workflow_trace` records process breadcrumbs so later checks can answer whether
+the selected workflow path was actually followed:
+
+```sh
+node .scripts/aw-gate.js workflow-record tier --tier feature --reason "workflow behavior changed"
+node .scripts/aw-gate.js workflow-check
+```
+
+When enabled, `record <gate>` automatically appends a `gate` event for the same
+gate name, so review/compliance/synthesis gate execution is traceable without
+extra skill-specific logic. `workflow-check` validates configured requirements
+such as a chosen tier and required gate events. When disabled, both commands are
+clean no-ops.
 
 ## Workflow Step Keys
 

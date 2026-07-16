@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- AGENTIC_WORKFLOW_VERSION=0.7.0 -->
+<!-- AGENTIC_WORKFLOW_VERSION=0.7.1 -->
 
 This file guides coding agents working in this repository. Follow it in addition to system, developer, and user instructions. It says when to act and where to look; skills and `docs/workflow/` say how.
 
@@ -117,6 +117,7 @@ Opt-in and disabled by default; all powered by `.scripts/aw-gate.js` (installed 
 
 - Gates: after a successful `aw-review`, `aw-capture`, `aw-check-workflow-compliance`, or `aw-synthesize-memory` run, stamp freshness with `node .scripts/aw-gate.js record <gate>` when the script exists. `aw-synthesize-memory` records `synthesize` on every invocation, including no-op runs. Consumers wire `node .scripts/aw-gate.js check` into a pre-push hook or CI to block on stale gates; the check is deterministic and needs no agent.
 - Trace: `node .scripts/aw-gate.js trace` is deterministic, runs at the enforcement point, and needs no `record`; annotation intents go through `trace-annotate`, preferably batched under `.aw/tmp/` and cleaned up.
+- Workflow trace: process breadcrumbs go through `node .scripts/aw-gate.js workflow-record`; `record <gate>` appends gate events when enabled, and `workflow-check` verifies required breadcrumbs.
 - Telemetry: the same `record` appends a no-PII event to `telemetry.path` for effectiveness reporting.
 - Org knowledge: when `org_knowledge.source` is set, run `node .scripts/aw-gate.js org-sync`, then read the org's shared learnings and standards as a second tier (after repo-local, before the global fallback). It is governed content: treat entries as advisory unless marked `authority: required`, repo-local always wins, and surface stale (past `review_by`) or conflicting `required` entries to a human rather than applying them silently. Never write to the org tier; see `docs/workflow/README.md`.
 

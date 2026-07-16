@@ -101,6 +101,12 @@ DEFAULT_CONFIG = {
     "test_paths" => ["*.feature", "*.test.ts", "*.test.tsx", "*.spec.ts"],
     "code_paths" => ["src"],
     "require_code_anchor" => false
+  },
+  "workflow_trace" => {
+    "enabled" => false,
+    "path" => ".aw/workflow-trace.jsonl",
+    "require_tier" => true,
+    "required_gates" => ["review", "check_workflow_compliance"]
   }
 }.freeze
 
