@@ -12,6 +12,34 @@ version has no entry here.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-16
+
+Behavior pinning: an opt-in equivalence oracle for characterization-first work.
+Pins run the same harness against an old tree and the current checkout so agents
+can prove a rewrite preserved behavior before claiming success.
+
+### Added
+
+- `node .scripts/aw-gate.js pin run`, which reads
+  `docs/features/*/behavior-pin.yml`, creates temporary old-tree worktrees, copies
+  current oracle/support files into them, runs old and new harnesses, and writes
+  `.aw/pin/equivalence.json` with distinct `pin-not-characterizing` and
+  `equivalence-broken` verdicts.
+- `node .scripts/aw-gate.js pin check`, which fails when one commit changes both
+  a pin's subject and oracle/support files unless a `Pin-Override:` trailer is
+  present.
+- `pin.*` config defaults, `.aw/pin/` gitignore wiring, npm scripts
+  `pin:check`/`pin:run`, a `Behavior Pinning` standard, and the
+  `aw-pin-behavior` authoring skill.
+- A self-hosted behavior pin for `.scripts/aw-gate.js` disabled-trace behavior,
+  with `pin.enabled: true` in this repo.
+
+### Changed
+
+- `aw-work` now treats `characterization-first` as requiring a behavior pin before
+  implementation and `pin run` during verification.
+- The pre-push hook runs `pin check` alongside freshness and trace checks.
+
 ## [0.7.1] - 2026-07-16
 
 Focused follow-up to spec traceability: deterministic workflow execution trace.

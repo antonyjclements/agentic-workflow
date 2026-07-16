@@ -20,6 +20,7 @@ for pair in \
   "docs/product/prds/template.md:skills/aw-init/artifacts/prd-template.md" \
   "docs/standards/coding-approach.md:skills/aw-init/artifacts/coding-approach.md" \
   "docs/standards/traceability.md:skills/aw-init/artifacts/traceability.md" \
+  "docs/standards/behavior-pinning.md:skills/aw-init/artifacts/behavior-pinning.md" \
   ".scripts/aw-gate.js:skills/aw-init/artifacts/aw-gate.js" \
   ".claude/hooks/log-session.sh:skills/aw-init/hooks/log-session.sh"; do
   installed="${pair%%:*}"
@@ -209,6 +210,7 @@ assert_repo_install() {
   assert_file "$target_repo/docs/features/index.yml"
   assert_file "$target_repo/docs/standards/index.yml"
   assert_file "$target_repo/docs/standards/traceability.md"
+  assert_file "$target_repo/docs/standards/behavior-pinning.md"
   assert_file "$target_repo/docs/decisions/index.yml"
   assert_file "$target_repo/docs/learnings/index.yml"
   assert_file "$target_repo/docs/workflow/README.md"
@@ -243,6 +245,9 @@ assert_repo_install() {
   assert_contains "$target_repo/docs/workflow/config.yml" "workflow_trace:"
   assert_contains "$target_repo/docs/workflow/config.yml" "path: .aw/workflow-trace.jsonl"
   assert_contains "$target_repo/docs/workflow/config.yml" "required_gates:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "pin:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "manifest_paths:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "timeout_seconds: 900"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "monitor_circleci:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "import_prd:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "log_decision:"
@@ -276,6 +281,7 @@ assert_file "$aw_init_skills/aw-init/scripts/upgrade-config.rb"
 assert_file "$aw_init_skills/aw-check-workflow-compliance/SKILL.md"
 assert_file "$aw_init_skills/aw-capture/SKILL.md"
 assert_file "$aw_init_skills/aw-refresh/SKILL.md"
+assert_file "$aw_init_skills/aw-pin-behavior/SKILL.md"
 assert_file "$aw_init_learnings/index.yml"
 assert_symlink "$HOME/.claude/skills"
 assert_symlink "$HOME/.codeium/skills"
@@ -297,6 +303,7 @@ assert_contains "$gates_target/.gitignore" ".aw-gate-state.json"
 assert_contains "$gates_target/.gitignore" ".aw-org-cache/"
 assert_contains "$gates_target/.gitignore" ".aw/tmp/"
 assert_contains "$gates_target/.gitignore" ".aw/workflow-trace.jsonl"
+assert_contains "$gates_target/.gitignore" ".aw/pin/"
 assert_contains "$gates_target/.gitattributes" "docs/metrics/events*.jsonl merge=union"
 
 if command -v node >/dev/null 2>&1; then
@@ -472,6 +479,126 @@ JSON
   echo "trace functional test passed"
 else
   echo "trace functional test skipped: node or git not available"
+fi
+
+# Behavior pins: disabled no-op, old/new equivalence, distinct failure classes,
+# support-file copying into old worktrees, and coupled commit detection.
+if command -v node >/dev/null 2>&1 && command -v git >/dev/null 2>&1; then
+  make_pin_repo() {
+    local target="$1"
+    local expected="$2"
+    mkdir -p "$target/docs/workflow" "$target/.scripts" "$target/docs/features/demo" "$target/src" "$target/test/pin"
+    cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$target/.scripts/aw-gate.js"
+    cat > "$target/docs/workflow/config.yml" <<'YAML'
+pin:
+  enabled: false
+  manifest_paths:
+    - "docs/features/*/behavior-pin.yml"
+  worktree_dir: .aw/pin
+  out: .aw/pin/equivalence.json
+  timeout_seconds: 30
+YAML
+    printf '%s\n' "$expected" > "$target/src/value.txt"
+    git init -q "$target"
+    git -C "$target" config user.email test@example.com
+    git -C "$target" config user.name test
+    git -C "$target" add -A
+    git -C "$target" commit -qm old
+    local old
+    old="$(git -C "$target" rev-parse HEAD)"
+    cat > "$target/test/pin/helper.js" <<'JS'
+exports.read = () => require('fs').readFileSync('src/value.txt', 'utf8').trim();
+JS
+    cat > "$target/test/pin/value.pin.js" <<JS
+const assert = require('assert');
+const helper = require('./helper');
+assert.strictEqual(helper.read(), '$expected');
+JS
+    cat > "$target/docs/features/demo/behavior-pin.yml" <<YAML
+base: $old
+harness: node test/pin/value.pin.js
+subject:
+  - src/value.txt
+oracle:
+  - test/pin/value.pin.js
+support:
+  - test/pin/helper.js
+created: 2026-07-16
+YAML
+  }
+
+  pin_pass="$tmp_root/pin-pass"
+  make_pin_repo "$pin_pass" old
+  node "$pin_pass/.scripts/aw-gate.js" pin run >/dev/null
+  ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: false", "enabled: true"); File.write(ARGV[0], t)' \
+    "$pin_pass/docs/workflow/config.yml"
+  node "$pin_pass/.scripts/aw-gate.js" pin run --json > "$pin_pass/pin-pass.json"
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "pin should pass" unless data.dig("summary", "passed") == 1 && data.dig("results", 0, "verdict") == "pass"; abort "support not copied" unless data.dig("results", 0, "copied_files").include?("test/pin/helper.js")' \
+    "$pin_pass/pin-pass.json"
+  if find "$pin_pass/.aw/pin" -maxdepth 1 -type d -name 'docs-*' | grep -q .; then
+    echo "pin run should not leak worktrees" >&2
+    exit 1
+  fi
+
+  pin_equiv="$tmp_root/pin-equivalence-broken"
+  make_pin_repo "$pin_equiv" old
+  ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: false", "enabled: true"); File.write(ARGV[0], t)' \
+    "$pin_equiv/docs/workflow/config.yml"
+  printf 'new\n' > "$pin_equiv/src/value.txt"
+  if node "$pin_equiv/.scripts/aw-gate.js" pin run --json > "$pin_equiv/pin-fail.json" 2>/dev/null; then
+    echo "pin run should fail when new behavior differs" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected equivalence-broken" unless data.dig("results", 0, "verdict") == "equivalence-broken"' \
+    "$pin_equiv/pin-fail.json"
+
+  pin_bad="$tmp_root/pin-not-characterizing"
+  make_pin_repo "$pin_bad" not-old
+  ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: false", "enabled: true"); File.write(ARGV[0], t)' \
+    "$pin_bad/docs/workflow/config.yml"
+  ruby -e 't=File.read(ARGV[0]); t.sub!("not-old", "different-old"); File.write(ARGV[0], t)' \
+    "$pin_bad/test/pin/value.pin.js"
+  if node "$pin_bad/.scripts/aw-gate.js" pin run --json > "$pin_bad/pin-bad.json" 2>/dev/null; then
+    echo "pin run should fail when oracle does not characterize old behavior" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected pin-not-characterizing" unless data.dig("results", 0, "verdict") == "pin-not-characterizing"' \
+    "$pin_bad/pin-bad.json"
+
+  pin_check="$tmp_root/pin-check"
+  make_pin_repo "$pin_check" old
+  ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: false", "enabled: true"); File.write(ARGV[0], t)' \
+    "$pin_check/docs/workflow/config.yml"
+  git -C "$pin_check" add -A
+  git -C "$pin_check" commit -qm pin
+  check_base="$(git -C "$pin_check" rev-parse HEAD)"
+  printf 'new\n' > "$pin_check/src/value.txt"
+  printf '\n// coupled\n' >> "$pin_check/test/pin/value.pin.js"
+  git -C "$pin_check" add -A
+  git -C "$pin_check" commit -qm coupled
+  if node "$pin_check/.scripts/aw-gate.js" pin check --base "$check_base" >/dev/null 2>&1; then
+    echo "pin check should fail when one commit changes subject and oracle" >&2
+    exit 1
+  fi
+  git -C "$pin_check" reset --hard -q "$check_base"
+  printf 'new\n' > "$pin_check/src/value.txt"
+  ruby -e 't=File.read(ARGV[0]); t.sub!("created: 2026-07-16", "created: 2026-07-17"); File.write(ARGV[0], t)' \
+    "$pin_check/docs/features/demo/behavior-pin.yml"
+  git -C "$pin_check" add -A
+  git -C "$pin_check" commit -qm subject-and-manifest
+  if node "$pin_check/.scripts/aw-gate.js" pin check --base "$check_base" >/dev/null 2>&1; then
+    echo "pin check should fail when one commit changes subject and manifest" >&2
+    exit 1
+  fi
+  git -C "$pin_check" reset --hard -q "$check_base"
+  printf 'new\n' > "$pin_check/src/value.txt"
+  printf '\n// coupled\n' >> "$pin_check/test/pin/value.pin.js"
+  git -C "$pin_check" add -A
+  git -C "$pin_check" commit -qm $'coupled with override\n\nPin-Override: test fixture override'
+  node "$pin_check/.scripts/aw-gate.js" pin check --base "$check_base" >/dev/null
+  echo "pin functional test passed"
+else
+  echo "pin functional test skipped: node or git not available"
 fi
 
 # Telemetry: record must write a month-sharded file, and prune-telemetry must
@@ -678,6 +805,9 @@ assert_contains "$migration_target/docs/workflow/config.yml" "require_code_ancho
 assert_contains "$migration_target/docs/workflow/config.yml" "workflow_trace:"
 assert_contains "$migration_target/docs/workflow/config.yml" ".aw/workflow-trace.jsonl"
 assert_contains "$migration_target/docs/workflow/config.yml" "required_gates:"
+assert_contains "$migration_target/docs/workflow/config.yml" "pin:"
+assert_contains "$migration_target/docs/workflow/config.yml" "behavior-pin.yml"
+assert_contains "$migration_target/docs/workflow/config.yml" "timeout_seconds: 900"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "monitor_circleci:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "ticket_creation:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "research:"
@@ -788,5 +918,6 @@ assert_file "$remote_skills/aw-capture/SKILL.md"
 assert_file "$remote_skills/aw-refresh/SKILL.md"
 assert_file "$remote_skills/aw-check-workflow-compliance/SKILL.md"
 assert_file "$remote_skills/aw-init/scripts/upgrade-config.rb"
+assert_file "$remote_skills/aw-pin-behavior/SKILL.md"
 
 echo "installer smoke test passed"

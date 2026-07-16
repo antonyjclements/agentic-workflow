@@ -1,2 +1,3 @@
 node .scripts/aw-gate.js check
 node .scripts/aw-gate.js trace
+node .scripts/aw-gate.js pin check

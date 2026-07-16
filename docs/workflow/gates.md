@@ -1,11 +1,11 @@
-# Enforcement Gates, Telemetry, Org Knowledge, Traceability, and Workflow Trace
+# Enforcement Gates, Telemetry, Org Knowledge, Traceability, Workflow Trace, and Behavior Pins
 
 A practical guide to `.scripts/aw-gate.js` — the dependency-free helper that turns
 the workflow's advisory review/capture/compliance steps into a deterministic,
 enforceable contract, records lightweight telemetry, and syncs an org-shared
 knowledge tier.
 
-All five capabilities are **opt-in and disabled by default**. This guide covers
+All six capabilities are **opt-in and disabled by default**. This guide covers
 what they are, how to configure them, and how to wire enforcement into a Git hook
 or CI. For the terse schema, see [README.md](README.md); this file is the how-to.
 
@@ -40,9 +40,9 @@ skills/aw-init/scripts/install.sh --with-gates --repo /path/to/repo
 ```
 
 This adds `<repo>/.scripts/aw-gate.js`, appends `.aw-gate-state.json`,
-`.aw-org-cache/`, `.aw/tmp/`, and `.aw/workflow-trace.jsonl` to `.gitignore`, and
-writes the `gates` / `telemetry` / `org_knowledge` / `trace` /
-`workflow_trace` sections to `docs/workflow/config.yml` (those config sections
+`.aw-org-cache/`, `.aw/tmp/`, `.aw/workflow-trace.jsonl`, and `.aw/pin/` to
+`.gitignore`, and writes the `gates` / `telemetry` / `org_knowledge` / `trace` /
+`workflow_trace` / `pin` sections to `docs/workflow/config.yml` (those config sections
 are written on every install; the script itself is gated behind `--with-gates`).
 
 Existing installs: re-run the installer with `--with-gates`, or
@@ -62,6 +62,8 @@ node .scripts/aw-gate.js trace-annotate <spec|test|code> --file <path> --line <n
 node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.json [--delete-batch-on-success]
 node .scripts/aw-gate.js workflow-record <event> [--tier <tier>] [--step <step>] [--gate <gate>] [--status <status>] [--reason <text>]
 node .scripts/aw-gate.js workflow-check [--json]
+node .scripts/aw-gate.js pin run [--json] [--out <path>]
+node .scripts/aw-gate.js pin check [--base <ref>] [--json]
 node .scripts/aw-gate.js org-sync
 ```
 
@@ -159,6 +161,26 @@ Reads `workflow_trace.path` and exits non-zero when required breadcrumbs are
 missing. The initial checks are deliberately small: a tier event when
 `workflow_trace.require_tier` is true, and gate events named in
 `workflow_trace.required_gates`.
+
+### `pin run`
+
+Runs each `docs/features/*/behavior-pin.yml` manifest against the manifest's old
+`base` and the current checkout. It copies current oracle/support files into a
+temporary worktree so both sides run the same harness. Results are written to
+`pin.out` with verdicts:
+
+- `pass`: old and new both pass
+- `pin-not-characterizing`: old failed, so the oracle does not describe reality
+- `equivalence-broken`: old passed and new failed
+
+Harness commands run with `shell: true`. This is quality assurance, not a
+sandbox; review manifest command changes like code.
+
+### `pin check`
+
+Checks commit history from `--base` (default `origin/main`) to `HEAD` and fails
+when one commit changes both a pin's subject and its oracle/support files. Use a
+`Pin-Override: <reason>` trailer only when coupling those edits is intentional.
 
 ---
 
@@ -273,6 +295,7 @@ contains:
 ```sh
 node .scripts/aw-gate.js check
 node .scripts/aw-gate.js trace
+node .scripts/aw-gate.js pin check
 ```
 
 `npm install` re-installs the hooks (via the `prepare` script), so every clone is
@@ -308,11 +331,13 @@ node .scripts/aw-gate.js check --against worktree
     node-version: 20
 - run: node .scripts/aw-gate.js check
 - run: node .scripts/aw-gate.js trace --base origin/${{ github.base_ref }}
+- run: node .scripts/aw-gate.js pin check --base origin/${{ github.base_ref }}
+- run: node .scripts/aw-gate.js pin run
 ```
 
 Make it a **required** status check on the branch so a red gate blocks merge.
-Only add the trace line after setting `trace.enabled: true`; disabled trace is a
-no-op, but a CI trace job is useful only for opted-in repos.
+Only add trace or pin lines after enabling their config. Disabled commands are
+no-ops, but CI jobs are useful only for opted-in repos.
 
 > **Shallow clones:** commit mode resolves the recorded commit with git. In CI,
 > fetch full history (`fetch-depth: 0`); otherwise the recorded commit may be
@@ -543,6 +568,7 @@ For reference, `docs/workflow/config.yml` in this repository enforces:
 - **No `capture` gate.** `aw-capture` still records its marker, but blocking a
   *push* on capture staleness is noise, so it is omitted from `gates.checks`.
 
-Enforcement is a husky `pre-push` hook running `node .scripts/aw-gate.js check`
-then `node .scripts/aw-gate.js trace`. Trace, telemetry, and org knowledge are
-left disabled by default.
+Enforcement is a husky `pre-push` hook running `node .scripts/aw-gate.js check`,
+`node .scripts/aw-gate.js trace`, and `node .scripts/aw-gate.js pin check`.
+Trace, telemetry, and org knowledge are left disabled by default; pinning is
+enabled in this repo because it carries a real self-pin.

@@ -76,6 +76,12 @@ Set up branch/worktree:
 
 Create/update task tracker from units, preserving unit IDs when present.
 
+If the effective policy is `characterization-first`, run `aw-pin-behavior` for
+the subject before Phase 2 edits. The skill returns a
+`docs/features/<feature>/behavior-pin.yml` manifest. Confirm `pin.enabled: true`
+and at least one matching manifest before implementation; otherwise stop because
+the policy would not be enforced.
+
 ## Phase 2: Implement
 
 Work unit by unit:
@@ -104,6 +110,9 @@ For frontend work, run/inspect the app when practical. For iOS work, prefer Xcod
 Run the narrowest meaningful verification first, then broader checks as risk warrants:
 
 - unit/integration tests for changed behavior
+- for `characterization-first`, `node .scripts/aw-gate.js pin run`; fix
+  `equivalence-broken` by changing implementation, and stop on
+  `pin-not-characterizing` because the oracle is invalid
 - lint/typecheck/build if affected
 - migrations/schema checks when relevant
 - browser/simulator/manual checks for UI flows

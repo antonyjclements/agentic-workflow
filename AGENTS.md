@@ -89,7 +89,7 @@ Read `docs/workflow/config.yml` before invoking a configurable workflow step. Us
 
 ### Implementation Test Policy
 
-Read `workflow.implementation.test_policy` before implementation; blank or missing defaults to `acceptance-first`. Valid values and their meanings are documented in `docs/workflow/README.md`. Work skills must report the effective policy, tests added/updated/run, manual checks, acceptance coverage, and justified exceptions.
+Read `workflow.implementation.test_policy` before implementation; blank or missing defaults to `acceptance-first`. Valid values and their meanings are documented in `docs/workflow/README.md`. For `characterization-first`, run `aw-pin-behavior` before implementation and verify with `node .scripts/aw-gate.js pin run`.
 
 ### Ticket-First Sessions
 
@@ -118,6 +118,7 @@ Opt-in and disabled by default; all powered by `.scripts/aw-gate.js` (installed 
 - Gates: after a successful `aw-review`, `aw-capture`, `aw-check-workflow-compliance`, or `aw-synthesize-memory` run, stamp freshness with `node .scripts/aw-gate.js record <gate>` when the script exists. `aw-synthesize-memory` records `synthesize` on every invocation, including no-op runs. Consumers wire `node .scripts/aw-gate.js check` into a pre-push hook or CI to block on stale gates; the check is deterministic and needs no agent.
 - Trace: `node .scripts/aw-gate.js trace` is deterministic, runs at the enforcement point, and needs no `record`; annotation intents go through `trace-annotate`, preferably batched under `.aw/tmp/` and cleaned up.
 - Workflow trace: process breadcrumbs go through `node .scripts/aw-gate.js workflow-record`; `record <gate>` appends gate events when enabled, and `workflow-check` verifies required breadcrumbs.
+- Pin: `node .scripts/aw-gate.js pin run` proves old/new equivalence for committed behavior-pin manifests; `pin check` enforces oracle/subject commit separation.
 - Telemetry: the same `record` appends a no-PII event to `telemetry.path` for effectiveness reporting.
 - Org knowledge: when `org_knowledge.source` is set, run `node .scripts/aw-gate.js org-sync`, then read the org's shared learnings and standards as a second tier (after repo-local, before the global fallback). It is governed content: treat entries as advisory unless marked `authority: required`, repo-local always wins, and surface stale (past `review_by`) or conflicting `required` entries to a human rather than applying them silently. Never write to the org tier; see `docs/workflow/README.md`.
 
@@ -145,24 +146,25 @@ Auto-run capture when the user explicitly asks to remember, record, log, or docu
 
 | Skill | Use when |
 | --- | --- |
-| `aw-init` | installing this workflow into a repository |
-| `aw-prd` | a PRD should be imported or authored (routes internally) |
-| `aw-brainstorm` | default intake for PRDs and raw ideas — clarifies ambiguity and creates/updates the living spec in the same run |
-| `aw-create-spec` | requirements or existing behavior are already clear and need a spec without discovery |
-| `aw-plan` | multi-step or risky implementation needs structure; run `aw-review plan` on the result |
-| `aw-request-human-review` | product sign-off on a spec or engineering sign-off on a plan |
-| `aw-create-tickets` | a plan should become Linear/Jira/configured tickets |
-| `aw-work` | executing a plan, spec, ticket, or concrete implementation request |
-| `aw-debug` | bugs, failing tests, stack traces, regressions, unclear broken behavior |
-| `aw-review` | before PRs and after non-trivial changes — routes by target: code diff → code review; spec → drift; doc/plan → document review; `simplify` → simplification pass |
-| `aw-check-workflow-compliance` | after push, before PR creation, for non-trivial changes |
-| `aw-commit` / `aw-commit-push-pr` | the user asks to commit / to push, ship, or open a PR |
-| `aw-capture` | `decision` / `learning` / `solution` / `session` — see Capture Checkpoints |
-| `aw-synthesize-memory` | distilling session logs into learnings and regenerating the wiki |
-| `aw-refresh` | `features` / `decisions` / `solutions` / `cleanup` — regenerate indexes, audit registries, remove archived artifacts |
-| `aw-discover-standards` | extracting repeated conventions into `docs/standards/` |
-| `aw-create-worktree` | isolated worktree for parallel work or review |
-| `aw-resolve-pr-feedback` | addressing PR review comments |
+| `aw-init` | install workflow files |
+| `aw-prd` | import or author a PRD |
+| `aw-brainstorm` | clarify raw ideas into spec intent |
+| `aw-create-spec` | write clear requirements into a spec |
+| `aw-plan` | structure multi-step or risky work |
+| `aw-request-human-review` | request spec/plan sign-off |
+| `aw-create-tickets` | turn a plan into tickets |
+| `aw-work` | execute plan/spec/ticket work |
+| `aw-pin-behavior` | create characterization pins |
+| `aw-debug` | investigate bugs or failures |
+| `aw-review` | review code, specs, docs, or plans |
+| `aw-check-workflow-compliance` | verify workflow evidence |
+| `aw-commit` / `aw-commit-push-pr` | commit or publish |
+| `aw-capture` | record decisions/learnings/session context |
+| `aw-synthesize-memory` | distill session logs |
+| `aw-refresh` | regenerate/audit registries |
+| `aw-discover-standards` | extract repeated conventions |
+| `aw-create-worktree` | isolate parallel work |
+| `aw-resolve-pr-feedback` | address PR comments |
 
 ## Execution Flows
 
