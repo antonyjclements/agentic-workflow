@@ -1,11 +1,11 @@
-# Enforcement Gates, Telemetry, and Org Knowledge
+# Enforcement Gates, Telemetry, Org Knowledge, Traceability, and Workflow Trace
 
 A practical guide to `.scripts/aw-gate.js` — the dependency-free helper that turns
 the workflow's advisory review/capture/compliance steps into a deterministic,
 enforceable contract, records lightweight telemetry, and syncs an org-shared
 knowledge tier.
 
-All four capabilities are **opt-in and disabled by default**. This guide covers
+All five capabilities are **opt-in and disabled by default**. This guide covers
 what they are, how to configure them, and how to wire enforcement into a Git hook
 or CI. For the terse schema, see [README.md](README.md); this file is the how-to.
 
@@ -39,10 +39,11 @@ The helper is installed by `aw-init` behind a flag:
 skills/aw-init/scripts/install.sh --with-gates --repo /path/to/repo
 ```
 
-This adds `<repo>/.scripts/aw-gate.js`, appends `.aw-gate-state.json` and
-`.aw-org-cache/` to `.gitignore`, and writes the `gates` / `telemetry` /
-`org_knowledge` sections to `docs/workflow/config.yml` (those config sections are
-written on every install; the script itself is gated behind `--with-gates`).
+This adds `<repo>/.scripts/aw-gate.js`, appends `.aw-gate-state.json`,
+`.aw-org-cache/`, `.aw/tmp/`, and `.aw/workflow-trace.jsonl` to `.gitignore`, and
+writes the `gates` / `telemetry` / `org_knowledge` / `trace` /
+`workflow_trace` sections to `docs/workflow/config.yml` (those config sections
+are written on every install; the script itself is gated behind `--with-gates`).
 
 Existing installs: re-run the installer with `--with-gates`, or
 `skills/aw-init/scripts/upgrade.sh` to add the config sections.
@@ -59,6 +60,8 @@ node .scripts/aw-gate.js check [--against head|worktree]
 node .scripts/aw-gate.js trace [--base <ref>] [--json] [--out <path>]
 node .scripts/aw-gate.js trace-annotate <spec|test|code> --file <path> --line <n> --id <ID>[,<ID>]
 node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.json [--delete-batch-on-success]
+node .scripts/aw-gate.js workflow-record <event> [--tier <tier>] [--step <step>] [--gate <gate>] [--status <status>] [--reason <text>]
+node .scripts/aw-gate.js workflow-check [--json]
 node .scripts/aw-gate.js org-sync
 ```
 
@@ -135,6 +138,27 @@ merges labels and applies edits once:
 
 Use `--delete-batch-on-success` for normal enabled runs. Failed enabled batches
 are preserved for debugging unless the caller removes them in its cleanup step.
+
+### `workflow-record`
+
+Appends one process breadcrumb to `workflow_trace.path` when
+`workflow_trace.enabled` is true:
+
+```sh
+node .scripts/aw-gate.js workflow-record tier --tier feature --reason "workflow behavior changed"
+node .scripts/aw-gate.js workflow-record step --step aw-work --status ran --artifact docs/features/foo/spec.md
+```
+
+When disabled, it exits 0 without writing. Separately, `record <gate>`
+automatically appends a `gate` event when workflow trace is enabled, so freshness
+gate execution can be checked as process evidence.
+
+### `workflow-check`
+
+Reads `workflow_trace.path` and exits non-zero when required breadcrumbs are
+missing. The initial checks are deliberately small: a tier event when
+`workflow_trace.require_tier` is true, and gate events named in
+`workflow_trace.required_gates`.
 
 ---
 
@@ -348,7 +372,33 @@ accountability, not quality assurance.
 
 ---
 
-## 7. The everyday loop
+## 7. Workflow execution trace
+
+Workflow trace is opt-in and disabled by default:
+
+```yaml
+workflow_trace:
+  enabled: false
+  path: .aw/workflow-trace.jsonl
+  require_tier: true
+  required_gates:
+    - review
+    - check_workflow_compliance
+```
+
+The file is git-ignored local process evidence. Use `workflow-record` for
+explicit process facts and `workflow-check` to validate configured breadcrumbs:
+
+```sh
+node .scripts/aw-gate.js workflow-record tier --tier feature --reason "workflow behavior changed"
+node .scripts/aw-gate.js workflow-check
+```
+
+When enabled, every `record <gate>` call also writes a `gate` event to this file.
+
+---
+
+## 8. The everyday loop
 
 1. You do work and run a skill — e.g. `aw-review`. On completion it runs
    `node .scripts/aw-gate.js record review`, stamping the current commit/time.
@@ -362,7 +412,7 @@ via the hook.
 
 ---
 
-## 8. First-push bootstrap
+## 9. First-push bootstrap
 
 A gate cannot validate the commit that *installs* it: enabling gates and adding
 the hook are themselves non-doc changes, so the review gate is stale for that
@@ -383,7 +433,7 @@ After the bootstrap, the normal loop enforces every subsequent push.
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Message from `check` | Meaning | Fix |
 | --- | --- | --- |
@@ -405,7 +455,7 @@ gate to what CI can verify.
 
 ---
 
-## 10. Telemetry
+## 11. Telemetry
 
 With `telemetry.enabled: true`, each `record` call also appends one JSON line to
 `telemetry.path` (default `docs/metrics/events.jsonl`):
@@ -450,7 +500,7 @@ detail lives in [../metrics/README.md](../metrics/README.md).
 
 ---
 
-## 11. Org-shared knowledge
+## 12. Org-shared knowledge
 
 Point `org_knowledge.source` at a git repo of shared learnings and standards to
 add an org-wide tier alongside the repo-local `docs/learnings/` and
@@ -481,7 +531,7 @@ The full model and templates are in [org-knowledge.md](org-knowledge.md).
 
 ---
 
-## 12. This repo's configuration (worked example)
+## 13. This repo's configuration (worked example)
 
 For reference, `docs/workflow/config.yml` in this repository enforces:
 

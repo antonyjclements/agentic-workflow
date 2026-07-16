@@ -12,5 +12,8 @@
 # Temporary trace annotation intent batches
 .aw/tmp/
 
+# Local workflow execution breadcrumbs
+.aw/workflow-trace.jsonl
+
 # npm dependencies (husky)
 node_modules/

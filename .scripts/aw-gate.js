@@ -3,7 +3,7 @@
 
 // agentic-workflow deterministic helper.
 //
-// One dependency-free CLI that backs four opt-in capabilities configured in
+// One dependency-free CLI that backs five opt-in capabilities configured in
 // docs/workflow/config.yml:
 //
 //   record <event>  Stamp a freshness marker (git-ignored state file) with the
@@ -21,6 +21,8 @@
 //                   telemetry.retention_months (git history is the archive).
 //   trace           Deterministically check spec/test/code traceability.
 //   trace-annotate  Deterministically insert explicit spec annotations for skills.
+//   workflow-record Deterministically append process breadcrumbs for workflow use.
+//   workflow-check  Deterministically validate required workflow breadcrumbs.
 //
 // Zero runtime dependencies. Node >= 16.
 
@@ -219,6 +221,143 @@ function parseFlags(args) {
   return { positional, flags };
 }
 
+// --- Workflow execution trace -------------------------------------------
+function workflowTraceConfig(config) {
+  const workflowTrace = config.workflow_trace || {};
+  return {
+    enabled: workflowTrace.enabled === true,
+    path: typeof workflowTrace.path === 'string' && workflowTrace.path.trim() !== ''
+      ? workflowTrace.path
+      : '.aw/workflow-trace.jsonl',
+    require_tier: workflowTrace.require_tier === true,
+    required_gates: Array.isArray(workflowTrace.required_gates) ? workflowTrace.required_gates : [],
+  };
+}
+
+function appendWorkflowEvent(config, event) {
+  const workflowTrace = workflowTraceConfig(config);
+  if (!workflowTrace.enabled) return false;
+  const abs = resolveRepoPath(workflowTrace.path);
+  if (!abs) fail(`workflow_trace.path must be repo-relative: ${workflowTrace.path}`);
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  const clean = {};
+  for (const [key, value] of Object.entries(event)) {
+    if (value !== null && value !== undefined && value !== '') clean[key] = value;
+  }
+  fs.appendFileSync(abs, JSON.stringify({
+    ts: new Date().toISOString(),
+    commit: currentCommit(),
+    source: 'aw-gate',
+    ...clean,
+  }) + '\n');
+  return workflowTrace.path;
+}
+
+function readWorkflowEvents(workflowTrace) {
+  const abs = resolveRepoPath(workflowTrace.path);
+  if (!abs) return { events: [], findings: [{ level: 'error', type: 'invalid-path', message: `workflow_trace.path must be repo-relative: ${workflowTrace.path}` }] };
+  let text = '';
+  try {
+    text = fs.readFileSync(abs, 'utf8');
+  } catch (_) {
+    return { events: [], findings: [] };
+  }
+  const events = [];
+  const findings = [];
+  text.split(/\r?\n/).forEach((line, index) => {
+    if (!line.trim()) return;
+    try {
+      const parsed = JSON.parse(line);
+      if (parsed && typeof parsed === 'object') events.push(parsed);
+      else findings.push({ level: 'error', type: 'invalid-event', message: `${workflowTrace.path}:${index + 1} is not an object` });
+    } catch (e) {
+      findings.push({ level: 'error', type: 'invalid-json', message: `${workflowTrace.path}:${index + 1}: ${e.message}` });
+    }
+  });
+  return { events, findings };
+}
+
+function cmdWorkflowRecord(args) {
+  const { positional, flags } = parseFlags(args);
+  const event = positional[0];
+  if (!event || !/^[a-z][a-z0-9_-]*$/.test(event)) {
+    fail('workflow-record requires an event name like `tier`, `step`, `gate`, or `skip`');
+  }
+  const config = loadConfig();
+  const workflowTrace = workflowTraceConfig(config);
+  if (!workflowTrace.enabled) {
+    process.stdout.write('aw-gate: workflow trace disabled (workflow_trace.enabled is not true) — skipping\n');
+    process.exit(0);
+  }
+  const rel = appendWorkflowEvent(config, {
+    event,
+    tier: flags.tier,
+    step: flags.step,
+    gate: flags.gate,
+    artifact: flags.artifact,
+    status: flags.status || 'recorded',
+    reason: flags.reason,
+    detail: flags.detail,
+  });
+  process.stdout.write(`aw-gate: workflow event recorded (${event} -> ${rel})\n`);
+  process.exit(0);
+}
+
+function workflowSummary(events, findings, workflowTrace) {
+  return {
+    events: events.length,
+    tier: (events.find((event) => event.event === 'tier' && event.tier) || {}).tier || null,
+    gates: Array.from(new Set(events
+      .filter((event) => event.event === 'gate' && event.gate)
+      .map((event) => event.gate))).sort(),
+    required_gates: workflowTrace.required_gates,
+    errors: findings.filter((f) => f.level === 'error').length,
+  };
+}
+
+function cmdWorkflowCheck(args) {
+  const { flags } = parseFlags(args);
+  const jsonMode = flags.json === true;
+  const config = loadConfig();
+  const workflowTrace = workflowTraceConfig(config);
+  if (!workflowTrace.enabled) {
+    const output = { summary: { disabled: true, events: 0, errors: 0 }, findings: [] };
+    if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+    else process.stdout.write('aw-gate: workflow trace disabled (workflow_trace.enabled is not true) — skipping\n');
+    process.exit(0);
+  }
+
+  const { events, findings } = readWorkflowEvents(workflowTrace);
+  if (workflowTrace.require_tier && !events.some((event) => event.event === 'tier' && event.tier)) {
+    findings.push({ level: 'error', type: 'missing-tier', message: 'workflow trace has no tier event' });
+  }
+  for (const gate of workflowTrace.required_gates) {
+    if (!events.some((event) => event.event === 'gate' && event.gate === gate)) {
+      findings.push({ level: 'error', type: 'missing-gate', message: `workflow trace has no ${gate} gate event` });
+    }
+  }
+
+  findings.sort((a, b) => {
+    if (a.level !== b.level) return a.level === 'error' ? -1 : 1;
+    if (a.type !== b.type) return a.type < b.type ? -1 : 1;
+    return (a.message || '').localeCompare(b.message || '');
+  });
+
+  const output = { summary: workflowSummary(events, findings, workflowTrace), findings };
+  if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+  if (output.summary.errors > 0) {
+    process.stderr.write('aw-gate: workflow trace FAILED\n');
+    for (const f of findings.filter((item) => item.level === 'error')) {
+      process.stderr.write(`  - ${f.type}: ${f.message}\n`);
+    }
+    process.exit(1);
+  }
+  if (!jsonMode) {
+    process.stdout.write(`aw-gate: workflow trace clean (${output.summary.events} event(s))\n`);
+  }
+  process.exit(0);
+}
+
 // --- Telemetry (git-tracked event log, optionally month-sharded) ---------
 function monthStamp(date) {
   const y = date.getUTCFullYear();
@@ -301,6 +440,7 @@ function cmdRecord(args) {
   const state = loadState(config);
   state[event] = { lastRun: now, commit, detail };
   writeState(config, state);
+  appendWorkflowEvent(config, { event: 'gate', gate: event, status: 'ran', detail });
 
   const telemetry = config.telemetry || {};
   if (telemetry.enabled === true) {
@@ -938,11 +1078,13 @@ function usage() {
       '  node .scripts/aw-gate.js trace [--base <ref>] [--json] [--out <path>]',
       '  node .scripts/aw-gate.js trace-annotate <spec|test|code> --file <path> --line <n> --id <ID>[,<ID>]',
       '  node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.json [--delete-batch-on-success]',
+      '  node .scripts/aw-gate.js workflow-record <event> [--tier <tier>] [--step <step>] [--gate <gate>] [--status <status>] [--reason <text>]',
+      '  node .scripts/aw-gate.js workflow-check [--json]',
       '  node .scripts/aw-gate.js org-sync',
       '  node .scripts/aw-gate.js prune-telemetry',
       '',
-      'Config: docs/workflow/config.yml (gates, telemetry, org_knowledge, trace).',
-      'All four are opt-in and disabled by default.',
+      'Config: docs/workflow/config.yml (gates, telemetry, org_knowledge, trace, workflow_trace).',
+      'All five are opt-in and disabled by default.',
       '',
     ].join('\n')
   );
@@ -959,6 +1101,10 @@ function main() {
       return cmdTrace(rest);
     case 'trace-annotate':
       return cmdTraceAnnotate(rest);
+    case 'workflow-record':
+      return cmdWorkflowRecord(rest);
+    case 'workflow-check':
+      return cmdWorkflowCheck(rest);
     case 'org-sync':
       return cmdOrgSync();
     case 'prune-telemetry':

@@ -42,6 +42,7 @@ related_decisions:
   - docs/decisions/2026-07-03-govern-the-org-knowledge-base.md
   - docs/decisions/2026-07-03-maintain-a-version-anchored-changelog.md
   - docs/decisions/2026-07-16-add-spec-traceability-checks.md
+  - docs/decisions/2026-07-16-add-workflow-execution-trace.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -77,6 +78,7 @@ The workflow routes:
 - the synthesized project wiki to `docs/context/wiki.md`
 - ticket creation, workflow step overrides, implementation test policy, PR templates, commit messages, post-PR CI monitoring, Slack research, human review, enforcement gates, telemetry, and org-shared knowledge routing to `docs/workflow/config.yml`
 - optional spec traceability routing to `docs/workflow/config.yml`
+- optional workflow execution trace routing to `docs/workflow/config.yml`
 - repo initialization only through `aw-init`; upgrades through `skills/aw-init/scripts/upgrade.sh`
 - canonical bundled skill names under the `aw-*` prefix, in `aw-<verb>-<object>` form for multi-word names, with consolidated mode-routed skills (`aw-prd`, `aw-review`, `aw-capture`, `aw-refresh`)
 - README maintenance as a required check when user-facing workflow behavior changes
@@ -89,6 +91,7 @@ The workflow routes:
 - interactive skill recommendation through `aw-help`
 - ticket-first implementation handoff for agents that start from a ticket ID or URL after checkout
 - deterministic spec traceability checks and annotation proxying through `.scripts/aw-gate.js`
+- deterministic workflow execution breadcrumbs and checks through `.scripts/aw-gate.js`
 
 ## Key Flows
 
@@ -127,9 +130,9 @@ The workflow routes:
 - There is no bundled pipeline monitor skill. After PR creation, `workflow.steps.monitor_pipeline.skill` is invoked with the PR URL when configured; when it is blank or `post_pr.ci_monitor.provider` is `manual` or missing, post-PR monitoring is skipped cleanly. Retry limits and polling cadence are owned by the configured monitor skill.
 - Workflow exhaust is committed separately from feature work: session logs as `chore(session): log <slug>` commits and synthesis output as one batched `chore(memory): synthesize N sessions` commit. `docs/sessions/` files are never staged into feature or fix commits.
 
-### Enforcement Gates, Telemetry, and Org Knowledge
+### Enforcement Gates, Telemetry, Org Knowledge, Traceability, and Workflow Trace
 
-- Three opt-in capabilities, disabled by default, are backed by one dependency-free helper installed at `<repo>/.scripts/aw-gate.js` via `aw-init --with-gates`. The self-hosting agentic-workflow repo installs its own copy; `.scripts/aw-gate.js` must stay identical to `skills/aw-init/artifacts/aw-gate.js`, enforced by `scripts/test-install.sh`.
+- Five opt-in capabilities, disabled by default, are backed by one dependency-free helper installed at `<repo>/.scripts/aw-gate.js` via `aw-init --with-gates`. The self-hosting agentic-workflow repo installs its own copy; `.scripts/aw-gate.js` must stay identical to `skills/aw-init/artifacts/aw-gate.js`, enforced by `scripts/test-install.sh`.
 - Freshness gates convert LLM-driven review, compliance, capture, and memory synthesis into a deterministic, agent-free CI/pre-push check. After a successful run, `aw-review`, `aw-capture`, and `aw-check-workflow-compliance` stamp a git-ignored `gates.state_file` (recording the current time and commit) via `node .scripts/aw-gate.js record <gate>`. `aw-synthesize-memory` records `synthesize` every time it is invoked, including no-op runs. Each gate under `gates.checks` picks a `mode`: `age` (fresh within `max_age_hours`), `commit` (fresh while the gate's `paths` are unchanged since the recorded commit, compared against `HEAD` or, with `--against worktree`, the working tree), or `commit-and-age` (both). `age` is the default. `node .scripts/aw-gate.js check` exits non-zero when any gate fails its mode, and exits zero when `gates.enabled` is false. The workflow ships the script and the freshness contract; the consumer wires `check` into a pre-commit/pre-push hook or CI job.
 - Telemetry: when `telemetry.enabled` is true, the same `record` call appends a no-PII event (`ts`, `event`, `detail`, `source`) to the git-tracked JSONL log (schema in `docs/metrics/README.md`) so effectiveness reporting can aggregate the flywheel directly from version control. The log is month-sharded by default (`telemetry.rotation: monthly` → `events-YYYY-MM.jsonl`) to bound growth and reduce merge contention, `aw-init --with-gates` registers `docs/metrics/events*.jsonl merge=union` in `.gitattributes` so concurrent appends merge without conflict, and `node .scripts/aw-gate.js prune-telemetry` (run by `aw-synthesize-memory`) deletes shards older than `telemetry.retention_months` with git history as the archive.
 - Org-shared knowledge: setting `org_knowledge.source` to a git URL adds an org-wide learnings/standards tier alongside repo-local `docs/learnings/` and `docs/standards/`, replacing the per-machine `~/.agents/learnings/` fallback as the second tier. `node .scripts/aw-gate.js org-sync` shallow-clones or updates that repo into the git-ignored `org_knowledge.cache_dir`. `aw-capture`, `aw-synthesize-memory`, and `aw-discover-standards` consult the org tier (read-only) before writing repo-local knowledge; precedence is repo-local first, then org-shared.
@@ -145,6 +148,14 @@ The workflow routes:
 - Skills route annotation writes through `node .scripts/aw-gate.js trace-annotate`. The helper owns the `trace.enabled` decision, no-ops when disabled, and performs only explicit line-targeted annotation edits when enabled.
 - `aw-work` batches subagent annotation intents under `.aw/tmp/trace-intents.<token>.json`; the helper merges labels, applies edits once, and cleans safe batch files when tracing is disabled or when enabled success uses `--delete-batch-on-success`.
 - Traceability is accountability, not quality assurance: an anchor proves a link was claimed, and coupling proves a change was coordinated, but semantic correctness remains with review and human judgment.
+
+### Workflow Execution Trace
+
+- Workflow execution trace is installed everywhere but disabled by default through `workflow_trace.enabled: false`.
+- `node .scripts/aw-gate.js workflow-record` writes structured process breadcrumbs such as selected task tier, step execution, skipped steps, reasons, and artifact paths to `workflow_trace.path`.
+- `node .scripts/aw-gate.js record <gate>` automatically appends a workflow-trace gate event when workflow trace is enabled, so freshness gate execution can be checked as process evidence.
+- `node .scripts/aw-gate.js workflow-check` deterministically validates configured process requirements such as a tier event and required gate events.
+- Workflow trace is accountability, not proof of quality: it proves the process claimed a path and recorded configured checkpoints, but review quality and implementation correctness remain separate concerns.
 
 ### Knowledge Capture and Memory Synthesis
 
@@ -199,10 +210,14 @@ The workflow routes:
 - Session logs and synthesis output are committed as separate `chore(session)` / `chore(memory)` commits, never inside feature commits.
 - New installs write `gates`, `telemetry`, and `org_knowledge` sections to `docs/workflow/config.yml`, all disabled by default. `aw-init --with-gates` additionally installs `.scripts/aw-gate.js`, appends `.aw-gate-state.json` and `.aw-org-cache/` to `.gitignore`, and registers `docs/metrics/events*.jsonl merge=union` in `.gitattributes`.
 - New installs write the `trace` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` gitignores `.aw/tmp/` for transient trace annotation batches.
+- New installs write the `workflow_trace` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` gitignores `.aw/workflow-trace.jsonl` for local workflow breadcrumbs.
 - With telemetry enabled, `record` appends to a month-sharded log (`events-YYYY-MM.jsonl`) by default, and `node .scripts/aw-gate.js prune-telemetry` deletes shards older than `telemetry.retention_months` (no-op when rotation or retention is unset).
 - `.scripts/aw-gate.js check` exits zero when `gates.enabled` is false, and exits non-zero when any gate under `gates.checks` fails its `mode` (`age` staleness, `commit` path changes since the recorded commit, or both); `record <gate>` stamps the git-ignored state file with the current time and commit and, when `telemetry.enabled`, appends a no-PII event to `telemetry.path`.
 - The self-hosted `.scripts/aw-gate.js` stays identical to `skills/aw-init/artifacts/aw-gate.js`, and `scripts/test-install.sh` fails on drift and exercises the gate's disabled/unrecorded/recorded behavior when `node` is available.
 - `upgrade-config.rb` injects the `gates`, `telemetry`, and `org_knowledge` default sections into older configs during migration without overwriting existing values.
 - `upgrade-config.rb` injects the disabled `trace` default section into older configs during migration without overwriting existing values.
+- `upgrade-config.rb` injects the disabled `workflow_trace` default section into older configs during migration without overwriting existing values.
 - With trace disabled, `trace` exits 0 and `trace-annotate` skips writes; safe `.aw/tmp/trace-intents.*.json` batch files are removed before exit.
 - With trace enabled, `trace` reports dangling anchors, untested requirements, duplicate requirement IDs, optional code-anchor gaps, and uncoupled test changes. `trace-annotate` supports direct and batch annotation, merges multi-ID code labels, applies batch edits in descending line order, and preserves failed enabled batch files for debugging.
+- With workflow trace disabled, `workflow-record` and `workflow-check` exit 0 without requiring process artifacts.
+- With workflow trace enabled, `workflow-record` appends JSONL events and `workflow-check` fails when configured requirements such as tier selection or required gate events are missing.

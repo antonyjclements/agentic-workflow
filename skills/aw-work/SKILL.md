@@ -52,6 +52,9 @@ If bare prompt:
    - trivial: 1-2 files, no behavior change -> implement directly; discover tests if behavior-bearing
    - small/medium: clear scope under ~10 files -> create task list
    - large/risky: cross-cutting, auth/payments/migrations/architecture, 10+ files -> recommend `aw-brainstorm` or `aw-plan`; honor user choice
+4. Record the selected tier through the deterministic helper:
+   `node .scripts/aw-gate.js workflow-record tier --tier <trivial|small_fix|feature|high_risk> --reason "<short reason>"`.
+   The helper owns whether workflow trace is enabled and will no-op when disabled.
 
 ## Phase 1: Understand and Set Up
 

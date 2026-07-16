@@ -240,6 +240,9 @@ assert_repo_install() {
   assert_contains "$target_repo/docs/workflow/config.yml" "trace:"
   assert_contains "$target_repo/docs/workflow/config.yml" "spec_paths:"
   assert_contains "$target_repo/docs/workflow/config.yml" "require_code_anchor: false"
+  assert_contains "$target_repo/docs/workflow/config.yml" "workflow_trace:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "path: .aw/workflow-trace.jsonl"
+  assert_contains "$target_repo/docs/workflow/config.yml" "required_gates:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "monitor_circleci:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "import_prd:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "log_decision:"
@@ -293,6 +296,7 @@ assert_file "$gates_target/.scripts/aw-gate.js"
 assert_contains "$gates_target/.gitignore" ".aw-gate-state.json"
 assert_contains "$gates_target/.gitignore" ".aw-org-cache/"
 assert_contains "$gates_target/.gitignore" ".aw/tmp/"
+assert_contains "$gates_target/.gitignore" ".aw/workflow-trace.jsonl"
 assert_contains "$gates_target/.gitattributes" "docs/metrics/events*.jsonl merge=union"
 
 if command -v node >/dev/null 2>&1; then
@@ -317,6 +321,51 @@ if command -v node >/dev/null 2>&1; then
   echo "gate functional test passed"
 else
   echo "gate functional test skipped: node not available"
+fi
+
+# Workflow trace: disabled no-op, enabled missing breadcrumb failures, automatic
+# gate event recording from `record`, and stable JSON output.
+if command -v node >/dev/null 2>&1; then
+  workflow_trace_target="$tmp_root/workflow-trace-target"
+  mkdir -p "$workflow_trace_target/docs/workflow" "$workflow_trace_target/.scripts"
+  cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$workflow_trace_target/.scripts/aw-gate.js"
+  cat > "$workflow_trace_target/docs/workflow/config.yml" <<'YAML'
+workflow_trace:
+  enabled: false
+  path: .aw/workflow-trace.jsonl
+  require_tier: true
+  required_gates:
+    - review
+YAML
+  node "$workflow_trace_target/.scripts/aw-gate.js" workflow-record tier --tier feature >/dev/null
+  node "$workflow_trace_target/.scripts/aw-gate.js" workflow-check --json > "$workflow_trace_target/workflow-disabled.json"
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "disabled workflow summary missing" unless data.dig("summary", "disabled") == true' \
+    "$workflow_trace_target/workflow-disabled.json"
+  if [ -e "$workflow_trace_target/.aw/workflow-trace.jsonl" ]; then
+    echo "disabled workflow-record should not write trace files" >&2
+    exit 1
+  fi
+
+  ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: false", "enabled: true"); File.write(ARGV[0], t)' \
+    "$workflow_trace_target/docs/workflow/config.yml"
+  if node "$workflow_trace_target/.scripts/aw-gate.js" workflow-check >/dev/null 2>&1; then
+    echo "workflow-check should fail when required breadcrumbs are missing" >&2
+    exit 1
+  fi
+  node "$workflow_trace_target/.scripts/aw-gate.js" workflow-record tier --tier feature --reason "workflow behavior changed" >/dev/null
+  if node "$workflow_trace_target/.scripts/aw-gate.js" workflow-check >/dev/null 2>&1; then
+    echo "workflow-check should fail until required gate events are recorded" >&2
+    exit 1
+  fi
+  node "$workflow_trace_target/.scripts/aw-gate.js" record review >/dev/null
+  node "$workflow_trace_target/.scripts/aw-gate.js" workflow-check --json > "$workflow_trace_target/workflow-enabled.json"
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "tier missing" unless data.dig("summary", "tier") == "feature"; abort "gate missing" unless data.dig("summary", "gates").include?("review")' \
+    "$workflow_trace_target/workflow-enabled.json"
+  assert_contains "$workflow_trace_target/.aw/workflow-trace.jsonl" "\"event\":\"tier\""
+  assert_contains "$workflow_trace_target/.aw/workflow-trace.jsonl" "\"gate\":\"review\""
+  echo "workflow trace functional test passed"
+else
+  echo "workflow trace functional test skipped: node not available"
 fi
 
 # Spec traceability: disabled no-op/cleanup, annotation insertion, resolve/cover,
@@ -626,6 +675,9 @@ assert_contains "$migration_target/docs/workflow/config.yml" "org_knowledge:"
 assert_contains "$migration_target/docs/workflow/config.yml" "trace:"
 assert_contains "$migration_target/docs/workflow/config.yml" "spec_paths:"
 assert_contains "$migration_target/docs/workflow/config.yml" "require_code_anchor: false"
+assert_contains "$migration_target/docs/workflow/config.yml" "workflow_trace:"
+assert_contains "$migration_target/docs/workflow/config.yml" ".aw/workflow-trace.jsonl"
+assert_contains "$migration_target/docs/workflow/config.yml" "required_gates:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "monitor_circleci:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "ticket_creation:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "research:"
