@@ -462,6 +462,8 @@ install_repo_files() {
       skill: \"\"
     research_slack:
       skill: \"\"
+    pin_behavior:
+      skill: \"\"
     resolve_pr_feedback:
       skill: \"\"
     synthesize_memory:
@@ -543,6 +545,8 @@ pin:
 workflow_trace:
   enabled: false
   path: .aw/workflow-trace.jsonl
+  max_events: 10000
+  max_bytes: 5242880
   require_tier: true
   required_gates:
     - review

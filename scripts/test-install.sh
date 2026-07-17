@@ -234,6 +234,7 @@ assert_repo_install() {
   assert_contains "$target_repo/docs/workflow/config.yml" "capture:"
   assert_contains "$target_repo/docs/workflow/config.yml" "refresh:"
   assert_contains "$target_repo/docs/workflow/config.yml" "research_slack:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "pin_behavior:"
   assert_contains "$target_repo/docs/workflow/config.yml" "gates:"
   assert_contains "$target_repo/docs/workflow/config.yml" "telemetry:"
   assert_contains "$target_repo/docs/workflow/config.yml" "rotation: monthly"
@@ -244,6 +245,8 @@ assert_repo_install() {
   assert_contains "$target_repo/docs/workflow/config.yml" "require_code_anchor: false"
   assert_contains "$target_repo/docs/workflow/config.yml" "workflow_trace:"
   assert_contains "$target_repo/docs/workflow/config.yml" "path: .aw/workflow-trace.jsonl"
+  assert_contains "$target_repo/docs/workflow/config.yml" "max_events: 10000"
+  assert_contains "$target_repo/docs/workflow/config.yml" "max_bytes: 5242880"
   assert_contains "$target_repo/docs/workflow/config.yml" "required_gates:"
   assert_contains "$target_repo/docs/workflow/config.yml" "pin:"
   assert_contains "$target_repo/docs/workflow/config.yml" "manifest_paths:"
@@ -325,6 +328,23 @@ if command -v node >/dev/null 2>&1; then
   node "$gates_target/.scripts/aw-gate.js" record check_workflow_compliance >/dev/null
   node "$gates_target/.scripts/aw-gate.js" record synthesize >/dev/null
   node "$gates_target/.scripts/aw-gate.js" check >/dev/null
+
+  # Inline comments on scalar values must not turn booleans into strings.
+  ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: true", "enabled: true # inline comment"); File.write(ARGV[0], t)' \
+    "$gates_target/docs/workflow/config.yml"
+  node "$gates_target/.scripts/aw-gate.js" check >/dev/null
+
+  # State files must stay under the repo.
+  ruby -e 't=File.read(ARGV[0]); t.sub!("state_file: .aw-gate-state.json", "state_file: ../outside-state.json"); File.write(ARGV[0], t)' \
+    "$gates_target/docs/workflow/config.yml"
+  if node "$gates_target/.scripts/aw-gate.js" record review >/dev/null 2>&1; then
+    echo "record should reject gates.state_file outside the repo" >&2
+    exit 1
+  fi
+  if [ -e "$tmp_root/outside-state.json" ]; then
+    echo "record should not write state outside the repo" >&2
+    exit 1
+  fi
   echo "gate functional test passed"
 else
   echo "gate functional test skipped: node not available"
@@ -370,6 +390,59 @@ YAML
     "$workflow_trace_target/workflow-enabled.json"
   assert_contains "$workflow_trace_target/.aw/workflow-trace.jsonl" "\"event\":\"tier\""
   assert_contains "$workflow_trace_target/.aw/workflow-trace.jsonl" "\"gate\":\"review\""
+
+  workflow_trace_base="$tmp_root/workflow-trace-base"
+  mkdir -p "$workflow_trace_base/docs/workflow" "$workflow_trace_base/.scripts"
+  cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$workflow_trace_base/.scripts/aw-gate.js"
+  cat > "$workflow_trace_base/docs/workflow/config.yml" <<'YAML'
+workflow_trace:
+  enabled: true
+  path: .aw/workflow-trace.jsonl
+  require_tier: true
+  required_gates:
+    - review
+YAML
+  git init -q "$workflow_trace_base"
+  git -C "$workflow_trace_base" config user.email test@example.com
+  git -C "$workflow_trace_base" config user.name test
+  echo base > "$workflow_trace_base/file.txt"
+  git -C "$workflow_trace_base" add -A
+  git -C "$workflow_trace_base" commit -qm base
+  base_commit="$(git -C "$workflow_trace_base" rev-parse HEAD)"
+  node "$workflow_trace_base/.scripts/aw-gate.js" workflow-record tier --tier feature >/dev/null
+  node "$workflow_trace_base/.scripts/aw-gate.js" record review >/dev/null
+  echo head >> "$workflow_trace_base/file.txt"
+  git -C "$workflow_trace_base" add file.txt
+  git -C "$workflow_trace_base" commit -qm head
+  if node "$workflow_trace_base/.scripts/aw-gate.js" workflow-check --base "$base_commit" >/dev/null 2>&1; then
+    echo "workflow-check --base should ignore events recorded at the base commit" >&2
+    exit 1
+  fi
+  node "$workflow_trace_base/.scripts/aw-gate.js" workflow-record tier --tier feature >/dev/null
+  node "$workflow_trace_base/.scripts/aw-gate.js" record review >/dev/null
+  node "$workflow_trace_base/.scripts/aw-gate.js" workflow-check --base "$base_commit" >/dev/null
+
+  workflow_trace_rotate="$tmp_root/workflow-trace-rotate"
+  mkdir -p "$workflow_trace_rotate/docs/workflow" "$workflow_trace_rotate/.scripts"
+  cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$workflow_trace_rotate/.scripts/aw-gate.js"
+  cat > "$workflow_trace_rotate/docs/workflow/config.yml" <<'YAML'
+workflow_trace:
+  enabled: true
+  path: .aw/workflow-trace.jsonl
+  max_events: 2
+  max_bytes: 100000
+  require_tier: false
+  required_gates: []
+YAML
+  node "$workflow_trace_rotate/.scripts/aw-gate.js" workflow-record step --step one >/dev/null
+  node "$workflow_trace_rotate/.scripts/aw-gate.js" workflow-record step --step two >/dev/null
+  node "$workflow_trace_rotate/.scripts/aw-gate.js" workflow-record step --step three >/dev/null
+  if [ "$(wc -l < "$workflow_trace_rotate/.aw/workflow-trace.jsonl" | tr -d '[:space:]')" != "2" ]; then
+    echo "workflow trace rotation should retain only max_events entries" >&2
+    exit 1
+  fi
+  assert_not_contains "$workflow_trace_rotate/.aw/workflow-trace.jsonl" "\"step\":\"one\""
+  assert_contains "$workflow_trace_rotate/.aw/workflow-trace.jsonl" "\"step\":\"three\""
   echo "workflow trace functional test passed"
 else
   echo "workflow trace functional test skipped: node not available"
@@ -474,7 +547,10 @@ JSON
     echo "trace --base should fail when anchored tests change without specs" >&2
     exit 1
   fi
-  git -C "$trace_target" commit --allow-empty -qm $'override\n\nSpec-Override: AUTH-001 — test asserted the wrong boundary\nSpec-Override: AUTH-002 — test asserted the wrong boundary'
+  git -C "$trace_target" reset --hard -q "$base"
+  printf '\n// changed assertion\n' >> "$trace_target/src/auth.test.ts"
+  git -C "$trace_target" add -A
+  git -C "$trace_target" commit -qm $'test-only-change with override\n\nSpec-Override: AUTH-001 — test asserted the wrong boundary\nSpec-Override: AUTH-002 — test asserted the wrong boundary'
   node "$trace_target/.scripts/aw-gate.js" trace --base "$base" >/dev/null
   echo "trace functional test passed"
 else
@@ -532,11 +608,47 @@ YAML
   node "$pin_pass/.scripts/aw-gate.js" pin run >/dev/null
   ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: false", "enabled: true"); File.write(ARGV[0], t)' \
     "$pin_pass/docs/workflow/config.yml"
-  node "$pin_pass/.scripts/aw-gate.js" pin run --json > "$pin_pass/pin-pass.json"
+  node "$pin_pass/.scripts/aw-gate.js" pin --json run > "$pin_pass/pin-pass.json"
+  node "$pin_pass/.scripts/aw-gate.js" pin --out run run >/dev/null
   ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "pin should pass" unless data.dig("summary", "passed") == 1 && data.dig("results", 0, "verdict") == "pass"; abort "support not copied" unless data.dig("results", 0, "copied_files").include?("test/pin/helper.js")' \
     "$pin_pass/pin-pass.json"
   if find "$pin_pass/.aw/pin" -maxdepth 1 -type d -name 'docs-*' | grep -q .; then
     echo "pin run should not leak worktrees" >&2
+    exit 1
+  fi
+
+  pin_unsafe="$tmp_root/pin-unsafe-command"
+  make_pin_repo "$pin_unsafe" old
+  ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: false", "enabled: true"); File.write(ARGV[0], t)' \
+    "$pin_unsafe/docs/workflow/config.yml"
+  ruby -e 't=File.read(ARGV[0]); t.sub!("node test/pin/value.pin.js", "node test/pin/value.pin.js; touch owned"); File.write(ARGV[0], t)' \
+    "$pin_unsafe/docs/features/demo/behavior-pin.yml"
+  if node "$pin_unsafe/.scripts/aw-gate.js" pin run --json > "$pin_unsafe/pin-unsafe.json" 2>/dev/null; then
+    echo "pin run should reject shell-like manifest commands" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected unsafe-pin-command" unless data.fetch("findings").any? { |f| f["type"] == "unsafe-pin-command" }' \
+    "$pin_unsafe/pin-unsafe.json"
+  if [ -e "$pin_unsafe/owned" ]; then
+    echo "pin run must not execute rejected shell fragments" >&2
+    exit 1
+  fi
+
+  pin_implicit="$tmp_root/pin-implicit-harness"
+  make_pin_repo "$pin_implicit" old
+  ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: false", "enabled: true"); File.write(ARGV[0], t)' \
+    "$pin_implicit/docs/workflow/config.yml"
+  ruby -e 't=File.read(ARGV[0]); t.sub!(/oracle:\n  - test\/pin\/value\.pin\.js\n/, "oracle:\n  - test/pin/helper.js\n"); File.write(ARGV[0], t)' \
+    "$pin_implicit/docs/features/demo/behavior-pin.yml"
+  git -C "$pin_implicit" add -A
+  git -C "$pin_implicit" commit -qm pin
+  implicit_base="$(git -C "$pin_implicit" rev-parse HEAD)"
+  printf 'new\n' > "$pin_implicit/src/value.txt"
+  printf '\n// coupled harness change\n' >> "$pin_implicit/test/pin/value.pin.js"
+  git -C "$pin_implicit" add -A
+  git -C "$pin_implicit" commit -qm implicit-harness-coupled
+  if node "$pin_implicit/.scripts/aw-gate.js" pin check --base "$implicit_base" >/dev/null 2>&1; then
+    echo "pin check should treat the harness command script as judged even when omitted from oracle/support" >&2
     exit 1
   fi
 
@@ -594,7 +706,7 @@ YAML
   printf 'new\n' > "$pin_check/src/value.txt"
   printf '\n// coupled\n' >> "$pin_check/test/pin/value.pin.js"
   git -C "$pin_check" add -A
-  git -C "$pin_check" commit -qm $'coupled with override\n\nPin-Override: test fixture override'
+  git -C "$pin_check" commit -qm $'coupled with override\n\nPin-Override: docs/features/demo/behavior-pin.yml — test fixture override'
   node "$pin_check/.scripts/aw-gate.js" pin check --base "$check_base" >/dev/null
   echo "pin functional test passed"
 else
@@ -709,29 +821,41 @@ else
   echo "commit-mode gate functional test skipped: node or git not available"
 fi
 
-# org-sync must resync a tag ref, not just a branch: the update path resets to
-# FETCH_HEAD, since origin/<ref> does not exist for tags.
-if command -v node >/dev/null 2>&1 && command -v git >/dev/null 2>&1; then
-  org_src="$tmp_root/org-knowledge-src"
+# org-sync validates its configured trust boundary before running git.
+if command -v node >/dev/null 2>&1; then
   org_consumer="$tmp_root/org-consumer"
-  mkdir -p "$org_src/learnings" "$org_consumer/docs/workflow" "$org_consumer/.scripts"
-  git init -q "$org_src"
-  git -C "$org_src" config user.email test@example.com
-  git -C "$org_src" config user.name test
-  echo lesson > "$org_src/learnings/l1.md"
-  git -C "$org_src" add -A
-  git -C "$org_src" commit -qm init
-  git -C "$org_src" tag v1
+  mkdir -p "$org_consumer/docs/workflow" "$org_consumer/.scripts"
   cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$org_consumer/.scripts/aw-gate.js"
-  cat > "$org_consumer/docs/workflow/config.yml" <<YAML
+  cat > "$org_consumer/docs/workflow/config.yml" <<'YAML'
 org_knowledge:
-  source: "$org_src"
-  ref: v1
+  source: file:///tmp/org-knowledge-src
+  ref: main
   cache_dir: .aw-org-cache
 YAML
-  node "$org_consumer/.scripts/aw-gate.js" org-sync >/dev/null   # first: clone the tag
-  node "$org_consumer/.scripts/aw-gate.js" org-sync >/dev/null   # second: update the tag (must not fail)
-  assert_file "$org_consumer/.aw-org-cache/learnings/l1.md"
+  if node "$org_consumer/.scripts/aw-gate.js" org-sync >/dev/null 2>&1; then
+    echo "org-sync should reject non-https sources" >&2
+    exit 1
+  fi
+  cat > "$org_consumer/docs/workflow/config.yml" <<'YAML'
+org_knowledge:
+  source: https://example.com/org-knowledge.git
+  ref: ../main
+  cache_dir: .aw-org-cache
+YAML
+  if node "$org_consumer/.scripts/aw-gate.js" org-sync >/dev/null 2>&1; then
+    echo "org-sync should reject unsafe refs" >&2
+    exit 1
+  fi
+  cat > "$org_consumer/docs/workflow/config.yml" <<'YAML'
+org_knowledge:
+  source: https://example.com/org-knowledge.git
+  ref: main
+  cache_dir: ../org-cache
+YAML
+  if node "$org_consumer/.scripts/aw-gate.js" org-sync >/dev/null 2>&1; then
+    echo "org-sync should reject cache_dir outside the repo" >&2
+    exit 1
+  fi
 
   # A bare `source:` parses as an empty mapping ({}), not "". org-sync must treat
   # it as unset and skip, not try to clone "[object Object]".
@@ -744,9 +868,9 @@ YAML
     echo "org-sync should skip a bare (empty-mapping) source, not create a cache" >&2
     exit 1
   fi
-  echo "org-sync tag-ref functional test passed"
+  echo "org-sync validation functional test passed"
 else
-  echo "org-sync tag-ref functional test skipped: node or git not available"
+  echo "org-sync validation functional test skipped: node not available"
 fi
 
 migration_target="$tmp_root/migration-target"
@@ -790,6 +914,7 @@ assert_contains "$migration_target/docs/workflow/config.yml" "skill: aw-create-l
 assert_contains "$migration_target/docs/workflow/config.yml" "auxiliary:"
 assert_contains "$migration_target/docs/workflow/config.yml" "research_slack:"
 assert_contains "$migration_target/docs/workflow/config.yml" "skill: enterprise-slack-research"
+assert_contains "$migration_target/docs/workflow/config.yml" "pin_behavior:"
 assert_contains "$migration_target/docs/workflow/config.yml" "commit:"
 assert_contains "$migration_target/docs/workflow/config.yml" "skill: enterprise-commit"
 assert_contains "$migration_target/docs/workflow/config.yml" "provider: circleci"
@@ -804,6 +929,8 @@ assert_contains "$migration_target/docs/workflow/config.yml" "spec_paths:"
 assert_contains "$migration_target/docs/workflow/config.yml" "require_code_anchor: false"
 assert_contains "$migration_target/docs/workflow/config.yml" "workflow_trace:"
 assert_contains "$migration_target/docs/workflow/config.yml" ".aw/workflow-trace.jsonl"
+assert_contains "$migration_target/docs/workflow/config.yml" "max_events: 10000"
+assert_contains "$migration_target/docs/workflow/config.yml" "max_bytes: 5242880"
 assert_contains "$migration_target/docs/workflow/config.yml" "required_gates:"
 assert_contains "$migration_target/docs/workflow/config.yml" "pin:"
 assert_contains "$migration_target/docs/workflow/config.yml" "behavior-pin.yml"

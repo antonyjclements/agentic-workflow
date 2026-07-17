@@ -12,7 +12,13 @@ const result = spawnSync(process.execPath, ['.scripts/aw-gate.js', 'trace', '--j
 assert.strictEqual(result.status, 0, result.stderr || result.stdout);
 
 const parsed = JSON.parse(result.stdout);
-assert.strictEqual(parsed.summary.disabled, true);
-assert.strictEqual(parsed.summary.errors, 0);
+assert.deepStrictEqual(parsed.summary, {
+  disabled: true,
+  requirements: 0,
+  test_anchors: 0,
+  code_anchors: 0,
+  errors: 0,
+  warnings: 0,
+});
 assert.deepStrictEqual(parsed.matrix, {});
 assert.deepStrictEqual(parsed.findings, []);

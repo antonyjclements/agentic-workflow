@@ -85,8 +85,10 @@ human_review:
 | `pin.timeout_seconds` | number | `900` | Per-command timeout for setup and harness commands. |
 | `workflow_trace.enabled` | boolean | `false` | Master switch for deterministic workflow execution breadcrumbs. |
 | `workflow_trace.path` | string | `.aw/workflow-trace.jsonl` | Git-ignored JSONL file for local process events. |
-| `workflow_trace.require_tier` | boolean | `true` | When true, `workflow-check` fails unless a tier event exists. |
-| `workflow_trace.required_gates` | string list | review/compliance | Gate events that must appear in the workflow trace when enabled. |
+| `workflow_trace.max_events` | number | `10000` | Maximum events retained after each append. Older events are dropped first. |
+| `workflow_trace.max_bytes` | number | `5242880` | Approximate maximum trace-file size retained after each append. Older events are dropped first. |
+| `workflow_trace.require_tier` | boolean | `false` | When true, `workflow-check` fails unless a tier event exists. The installer writes `true` in its sample config. |
+| `workflow_trace.required_gates` | string list | `[]` | Gate events that must appear in the workflow trace when enabled. The installer writes review/compliance defaults in its sample config. |
 
 ## Enforcement Gates, Telemetry, Org Knowledge, Traceability, Workflow Trace, and Behavior Pinning
 
@@ -217,14 +219,17 @@ the selected workflow path was actually followed:
 
 ```sh
 node .scripts/aw-gate.js workflow-record tier --tier feature --reason "workflow behavior changed"
-node .scripts/aw-gate.js workflow-check
+node .scripts/aw-gate.js workflow-check [--base origin/main]
 ```
 
 When enabled, `record <gate>` automatically appends a `gate` event for the same
 gate name, so review/compliance/synthesis gate execution is traceable without
 extra skill-specific logic. `workflow-check` validates configured requirements
-such as a chosen tier and required gate events. When disabled, both commands are
-clean no-ops.
+such as a chosen tier and required gate events. Pass `--base` or
+`--since-commit` to scope checks to events recorded by commits in that range.
+After each append, the helper retains only the newest `max_events` and trims
+oldest lines until the file is under `max_bytes`. When disabled, both commands
+are clean no-ops.
 
 ### Behavior pinning (`pin`)
 
@@ -236,11 +241,14 @@ node .scripts/aw-gate.js pin run [--json] [--out .aw/pin/equivalence.json]
 node .scripts/aw-gate.js pin check [--base origin/main] [--json]
 ```
 
-`pin run` reports `pin-not-characterizing` when the oracle fails on old code and
+`pin run` accepts only empty commands or `node <repo-relative .js path>` for
+manifest `setup` and `harness` entries; it does not execute shell strings.
+It reports `pin-not-characterizing` when the oracle fails on old code and
 `equivalence-broken` when old passes but new fails. `pin check` fails when one
 commit changes both the judged subject and its manifest/oracle/support files,
-unless the commit has a `Pin-Override:` trailer. A green pin proves equivalence,
-not correctness.
+unless the commit has a manifest-scoped `Pin-Override:
+docs/features/<feature>/behavior-pin.yml — <reason>` trailer. A green pin proves
+equivalence, not correctness.
 
 ## Workflow Step Keys
 
@@ -268,6 +276,7 @@ create_worktree -> aw-create-worktree
 capture -> aw-capture
 discover_standards -> aw-discover-standards
 research_slack -> (no bundled skill; set workflow.auxiliary.research_slack.skill for enterprise routing)
+pin_behavior -> aw-pin-behavior
 resolve_pr_feedback -> aw-resolve-pr-feedback
 synthesize_memory -> aw-synthesize-memory
 ```
