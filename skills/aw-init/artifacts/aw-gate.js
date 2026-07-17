@@ -49,9 +49,8 @@ function fail(msg) {
 // --- Minimal YAML reader -------------------------------------------------
 // A deliberately partial YAML parser — just enough to read this workflow's
 // config.yml without a dependency. Keep config.yml within the supported subset:
-// anything outside it MISPARSES SILENTLY (e.g. a trailing comment turns a value
-// into a string, which can quietly disable a gate). If the config grammar ever
-// needs more than this, switch to a real YAML library rather than extending it.
+// anything outside it may misparse silently. If the config grammar ever needs
+// more than this, switch to a real YAML library rather than extending it.
 //
 // Supported:
 //   - nested block mappings by indentation (`key:` then indented children)
@@ -59,17 +58,35 @@ function fail(msg) {
 //     (true/false), null (`~` or `null`), integers, floats
 //   - block scalar lists:          paths:\n  - a\n  - b
 //   - inline flow scalar arrays:   paths: ["a", "b"]   (no commas inside items)
-//   - full-line comments (`# ...`) and blank lines
+//   - full-line comments (`# ...`), trailing comments outside quotes, and blank lines
 //
 // NOT supported — avoid in config.yml; these misparse WITHOUT erroring:
-//   - trailing/inline comments on a value line (`key: val # note` keeps "# note")
 //   - inline flow maps (`{a: b}`) and block lists of maps (`- key: value`)
 //   - multi-line/folded scalars (`|`, `>`), anchors/aliases (`&`, `*`), tags (`!!type`)
 //   - commas inside a quoted item of an inline array
 //   - a bare `key:` with no value: this parser opens a child MAPPING ({}), not
 //     null or "". For a blank string value write `key: ""` (e.g. source: "").
+function stripYamlInlineComment(s) {
+  let quote = null;
+  for (let i = 0; i < s.length; i += 1) {
+    const ch = s[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === '#' && (i === 0 || /\s/.test(s[i - 1]))) {
+      return s.slice(0, i).trimEnd();
+    }
+  }
+  return s;
+}
+
 function parseScalar(s) {
-  s = s.trim();
+  s = stripYamlInlineComment(s).trim();
   // Inline flow array, e.g. ["src", ":(exclude)docs"]. Split on commas (pathspecs
   // contain none) and parse each element; empty elements are dropped.
   if (s.startsWith('[') && s.endsWith(']')) {
@@ -150,8 +167,13 @@ function currentCommit() {
   return r.status === 0 ? r.stdout.trim() : null;
 }
 
+function revParse(ref) {
+  const r = git(['rev-parse', '--verify', `${ref}^{commit}`]);
+  return r.status === 0 ? r.stdout.trim() : null;
+}
+
 function commitReachable(sha) {
-  return git(['cat-file', '-e', `${sha}^{commit}`]).status === 0;
+  return revParse(sha) !== null;
 }
 
 // Returns { changed: bool } or { error: string }. `to` null compares against the
@@ -210,7 +232,12 @@ function resolveRepoPath(rel) {
 // --- State (git-ignored freshness markers) -------------------------------
 function stateFilePath(config) {
   const gates = config.gates || {};
-  return path.join(repoRoot, gates.state_file || '.aw-gate-state.json');
+  const rel = typeof gates.state_file === 'string' && gates.state_file.trim() !== ''
+    ? gates.state_file
+    : '.aw-gate-state.json';
+  const abs = resolveRepoPath(rel);
+  if (!abs) fail(`gates.state_file must be repo-relative: ${rel}`);
+  return abs;
 }
 
 function loadState(config) {
@@ -251,7 +278,32 @@ function workflowTraceConfig(config) {
       : '.aw/workflow-trace.jsonl',
     require_tier: workflowTrace.require_tier === true,
     required_gates: Array.isArray(workflowTrace.required_gates) ? workflowTrace.required_gates : [],
+    max_events: Number.isFinite(Number(workflowTrace.max_events)) && Number(workflowTrace.max_events) > 0
+      ? Number(workflowTrace.max_events)
+      : 10000,
+    max_bytes: Number.isFinite(Number(workflowTrace.max_bytes)) && Number(workflowTrace.max_bytes) > 0
+      ? Number(workflowTrace.max_bytes)
+      : 5 * 1024 * 1024,
   };
+}
+
+function compactWorkflowTrace(abs, workflowTrace) {
+  let text = '';
+  try {
+    text = fs.readFileSync(abs, 'utf8');
+  } catch (_) {
+    return;
+  }
+  let lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+  if (lines.length > workflowTrace.max_events) {
+    lines = lines.slice(-workflowTrace.max_events);
+  }
+  let next = lines.length ? `${lines.join('\n')}\n` : '';
+  while (lines.length > 0 && Buffer.byteLength(next, 'utf8') > workflowTrace.max_bytes) {
+    lines.shift();
+    next = lines.length ? `${lines.join('\n')}\n` : '';
+  }
+  if (next !== text) fs.writeFileSync(abs, next);
 }
 
 function appendWorkflowEvent(config, event) {
@@ -270,6 +322,7 @@ function appendWorkflowEvent(config, event) {
     source: 'aw-gate',
     ...clean,
   }) + '\n');
+  compactWorkflowTrace(abs, workflowTrace);
   return workflowTrace.path;
 }
 
@@ -335,19 +388,56 @@ function workflowSummary(events, findings, workflowTrace) {
   };
 }
 
+function sortFindings(findings) {
+  return findings.sort((a, b) => {
+    if (a.level !== b.level) return a.level === 'error' ? -1 : 1;
+    if (a.type !== b.type) return a.type < b.type ? -1 : 1;
+    return (a.message || '').localeCompare(b.message || '');
+  });
+}
+
+function filterWorkflowEventsByBase(events, base, findings) {
+  if (typeof base !== 'string') return events;
+  if (git(['rev-parse', '--verify', base]).status !== 0) {
+    findings.push({
+      level: 'error',
+      type: 'base-ref-not-found',
+      message: `workflow-check: base ref ${base} not found — fetch history (CI: fetch-depth: 0)`,
+    });
+    return [];
+  }
+  const commits = commitList(base);
+  if (commits.error) {
+    findings.push({ level: 'error', type: 'workflow-log-error', message: commits.error });
+    return [];
+  }
+  const commitSet = new Set(commits.commits);
+  return events.filter((event) => event.commit && commitSet.has(event.commit));
+}
+
 function cmdWorkflowCheck(args) {
   const { flags } = parseFlags(args);
   const jsonMode = flags.json === true;
   const config = loadConfig();
   const workflowTrace = workflowTraceConfig(config);
   if (!workflowTrace.enabled) {
-    const output = { summary: { disabled: true, events: 0, errors: 0 }, findings: [] };
+    const output = {
+      summary: { disabled: true, ...workflowSummary([], [], workflowTrace) },
+      findings: [],
+    };
     if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
     else process.stdout.write('aw-gate: workflow trace disabled (workflow_trace.enabled is not true) — skipping\n');
     process.exit(0);
   }
 
-  const { events, findings } = readWorkflowEvents(workflowTrace);
+  const loaded = readWorkflowEvents(workflowTrace);
+  const findings = loaded.findings;
+  const base = typeof flags.base === 'string'
+    ? flags.base
+    : typeof flags['since-commit'] === 'string'
+      ? flags['since-commit']
+      : null;
+  const events = filterWorkflowEventsByBase(loaded.events, base, findings);
   if (workflowTrace.require_tier && !events.some((event) => event.event === 'tier' && event.tier)) {
     findings.push({ level: 'error', type: 'missing-tier', message: 'workflow trace has no tier event' });
   }
@@ -357,11 +447,7 @@ function cmdWorkflowCheck(args) {
     }
   }
 
-  findings.sort((a, b) => {
-    if (a.level !== b.level) return a.level === 'error' ? -1 : 1;
-    if (a.type !== b.type) return a.type < b.type ? -1 : 1;
-    return (a.message || '').localeCompare(b.message || '');
-  });
+  sortFindings(findings);
 
   const output = { summary: workflowSummary(events, findings, workflowTrace), findings };
   if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
@@ -417,7 +503,9 @@ function cmdPruneTelemetry() {
   }
   const ext = path.extname(base);
   const stem = path.basename(base, ext);
-  const dir = path.join(repoRoot, path.dirname(base));
+  const baseAbs = resolveRepoPath(base);
+  if (!baseAbs) fail(`telemetry.path must be repo-relative: ${base}`);
+  const dir = path.dirname(baseAbs);
   const now = new Date();
   // Keep the current month plus (retention - 1) prior months; drop anything older.
   const cutoff = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (retention - 1), 1);
@@ -459,13 +547,14 @@ function cmdRecord(args) {
 
   const state = loadState(config);
   state[event] = { lastRun: now, commit, detail };
-  writeState(config, state);
   appendWorkflowEvent(config, { event: 'gate', gate: event, status: 'ran', detail });
+  writeState(config, state);
 
   const telemetry = config.telemetry || {};
   if (telemetry.enabled === true) {
     const rel = telemetryShardPath(telemetry, new Date());
-    const abs = path.join(repoRoot, rel);
+    const abs = resolveRepoPath(rel);
+    if (!abs) fail(`telemetry.path must be repo-relative: ${telemetry.path || 'docs/metrics/events.jsonl'}`);
     fs.mkdirSync(path.dirname(abs), { recursive: true });
     const line = JSON.stringify({ ts: now, event, detail, source: 'aw-gate' });
     fs.appendFileSync(abs, line + '\n');
@@ -560,7 +649,11 @@ function cmdCheck(args) {
 
 // --- Traceability --------------------------------------------------------
 const SPEC_ID_RE = /^[A-Z][A-Z0-9]{1,7}-\d{3,}$/;
-const ANCHOR_RE = /@spec:?\s*([A-Z][A-Z0-9]{1,7}-\d{3,}(?:\s*,\s*[A-Z][A-Z0-9]{1,7}-\d{3,})*)/g;
+const ANCHOR_PATTERN = '@spec:?\\s*([A-Z][A-Z0-9]{1,7}-\\d{3,}(?:\\s*,\\s*[A-Z][A-Z0-9]{1,7}-\\d{3,})*)';
+
+function anchorRe() {
+  return new RegExp(ANCHOR_PATTERN, 'g');
+}
 
 function traceConfig(config) {
   const trace = config.trace || {};
@@ -642,9 +735,9 @@ function scanAnchors(paths, type) {
       continue;
     }
     for (let i = 0; i < lines.length; i += 1) {
-      ANCHOR_RE.lastIndex = 0;
+      const re = anchorRe();
       let m;
-      while ((m = ANCHOR_RE.exec(lines[i])) !== null) {
+      while ((m = re.exec(lines[i])) !== null) {
         for (const id of splitIds(m[1])) {
           anchors.push({ id, file, line: i + 1 });
         }
@@ -685,8 +778,8 @@ function changedFiles(base, paths) {
   return { files: r.stdout.split(/\r?\n/).filter(Boolean) };
 }
 
-function overrideIds(base) {
-  const r = git(['log', '--format=%(trailers:key=Spec-Override,valueonly)', `${base}..HEAD`]);
+function commitSpecOverrideIds(commit) {
+  const r = git(['log', '-1', '--format=%(trailers:key=Spec-Override,valueonly)', commit]);
   if (r.status !== 0) return new Set();
   const ids = new Set();
   for (const line of r.stdout.split(/\r?\n/)) {
@@ -782,16 +875,27 @@ function cmdTrace(args) {
       if (changedSpecs.error) findings.push({ level: 'error', type: 'changed-specs-error', message: changedSpecs.error });
       const changedSpecSet = new Set(changedSpecs.files || []);
       const changedTestSet = new Set(changedTests.files || []);
-      const overrides = overrideIds(flags.base);
-      for (const anchor of testScan.anchors.filter((a) => changedTestSet.has(a.file))) {
-        const spec = specs.get(anchor.id);
-        if (spec && !changedSpecSet.has(spec.file) && !overrides.has(anchor.id)) {
-          findings.push({
-            level: 'error',
-            type: 'uncoupled-test-change',
-            id: anchor.id,
-            message: `${anchor.id} changed in ${anchor.file} but owning spec ${spec.file} did not change; use Spec-Override: ${anchor.id} — <reason> if intentional`,
-          });
+      const commits = commitList(flags.base);
+      if (commits.error) findings.push({ level: 'error', type: 'changed-commits-error', message: commits.error });
+      for (const commit of commits.commits || []) {
+        const files = commitFiles(commit);
+        if (files.error) {
+          findings.push({ level: 'error', type: 'changed-commit-files-error', message: files.error });
+          continue;
+        }
+        const fileSet = new Set(files.files);
+        const changedSpecsInCommit = new Set((changedSpecs.files || []).filter((file) => fileSet.has(file)));
+        const overrides = commitSpecOverrideIds(commit);
+        for (const anchor of testScan.anchors.filter((a) => fileSet.has(a.file))) {
+          const spec = specs.get(anchor.id);
+          if (spec && !changedSpecsInCommit.has(spec.file) && !overrides.has(anchor.id)) {
+            findings.push({
+              level: 'error',
+              type: 'uncoupled-test-change',
+              id: anchor.id,
+              message: `${anchor.id} changed in ${anchor.file} at ${short(commit)} but owning spec ${spec.file} did not change in that commit; use Spec-Override: ${anchor.id} — <reason> if intentional`,
+            });
+          }
         }
       }
       for (const [id, spec] of specs.entries()) {
@@ -807,11 +911,7 @@ function cmdTrace(args) {
     }
   }
 
-  findings.sort((a, b) => {
-    if (a.level !== b.level) return a.level === 'error' ? -1 : 1;
-    if (a.type !== b.type) return a.type < b.type ? -1 : 1;
-    return (a.message || '').localeCompare(b.message || '');
-  });
+  sortFindings(findings);
 
   const matrix = buildMatrix(specs, testScan.anchors, codeScan.anchors);
   const summary = traceSummary(specs, testScan.anchors, codeScan.anchors, findings);
@@ -864,6 +964,9 @@ function normalizeIntent(intent) {
 
 function parseAnnotateIntents(positional, flags) {
   if (typeof flags.batch === 'string') {
+    if (!isSafeTraceBatch(flags.batch)) {
+      return { error: `trace-annotate batch path must be .aw/tmp/trace-intents.<token>.json: ${flags.batch}` };
+    }
     const batchPath = resolveRepoPath(flags.batch);
     if (!batchPath) return { error: `unsafe batch path: ${flags.batch}` };
     let parsed;
@@ -881,16 +984,15 @@ function parseAnnotateIntents(positional, flags) {
       file: flags.file,
       line: Number(flags.line),
       ids: splitIds(flags.id),
-      direct: true,
     }],
   };
 }
 
 function lineIds(line) {
   const ids = [];
-  ANCHOR_RE.lastIndex = 0;
+  const re = anchorRe();
   let m;
-  while ((m = ANCHOR_RE.exec(line || '')) !== null) ids.push(...splitIds(m[1]));
+  while ((m = re.exec(line || '')) !== null) ids.push(...splitIds(m[1]));
   return ids;
 }
 
@@ -917,7 +1019,19 @@ function annotationEdits(intents, trace) {
   const findings = [...specScan.findings];
   const specs = specScan.specs;
   const editsByFile = new Map();
+  const fileTexts = new Map();
   const merged = new Map();
+
+  function readFileForEdit(file, abs) {
+    if (fileTexts.has(file)) return fileTexts.get(file);
+    const text = fs.readFileSync(abs, 'utf8');
+    const newline = text.endsWith('\n') ? '\n' : '';
+    const lines = text.split(/\r?\n/);
+    if (newline) lines.pop();
+    const data = { lines, newline };
+    fileTexts.set(file, data);
+    return data;
+  }
 
   for (const raw of intents) {
     const intent = normalizeIntent(raw);
@@ -963,13 +1077,14 @@ function annotationEdits(intents, trace) {
         findings.push({ level: 'error', type: 'duplicate-id', message: `${intent.ids[0]} already belongs to ${owner.file}:${owner.line}` });
       }
     }
-    let lines;
+    let data;
     try {
-      lines = fs.readFileSync(abs, 'utf8').split(/\r?\n/);
+      data = readFileForEdit(intent.file, abs);
     } catch (e) {
       findings.push({ level: 'error', type: 'annotation-read-failed', message: `${intent.file}: ${e.message}` });
       continue;
     }
+    const lines = data.lines;
     const index = intent.line - 1;
     if (index >= lines.length) {
       findings.push({ level: 'error', type: 'invalid-annotation-line', message: `${intent.file}: line ${intent.line} does not exist` });
@@ -1003,16 +1118,15 @@ function annotationEdits(intents, trace) {
     editsByFile.get(intent.file).push({ line: intent.line, insert: comment });
   }
 
-  return { findings, editsByFile };
+  return { findings, editsByFile, fileTexts };
 }
 
-function applyAnnotationEdits(editsByFile) {
+function applyAnnotationEdits(editsByFile, fileTexts) {
   for (const [file, edits] of editsByFile.entries()) {
     const abs = resolveRepoPath(file);
-    const text = fs.readFileSync(abs, 'utf8');
-    const newline = text.endsWith('\n') ? '\n' : '';
-    const lines = text.split(/\r?\n/);
-    if (newline) lines.pop();
+    const data = fileTexts.get(file);
+    const lines = data.lines.slice();
+    const newline = data.newline;
     const ordered = edits.slice().sort((a, b) => b.line - a.line);
     for (const edit of ordered) {
       const index = edit.line - 1;
@@ -1038,14 +1152,14 @@ function cmdTraceAnnotate(args) {
   }
   const parsed = parseAnnotateIntents(positional, flags);
   if (parsed.error) fail(parsed.error);
-  const { findings, editsByFile } = annotationEdits(parsed.intents, trace);
+  const { findings, editsByFile, fileTexts } = annotationEdits(parsed.intents, trace);
   const errors = findings.filter((f) => f.level === 'error');
   if (errors.length > 0) {
     process.stderr.write('aw-gate: trace-annotate FAILED\n');
     for (const f of errors) process.stderr.write(`  - ${f.type}: ${f.message}\n`);
     process.exit(1);
   }
-  applyAnnotationEdits(editsByFile);
+  applyAnnotationEdits(editsByFile, fileTexts);
   if (flags['delete-batch-on-success'] === true && batch) safeDeleteBatch(batch);
   const editCount = Array.from(editsByFile.values()).reduce((sum, edits) => sum + edits.length, 0);
   process.stdout.write(`aw-gate: trace annotation applied (${editCount} edit(s))\n`);
@@ -1098,8 +1212,32 @@ function writeRunLog(logDir, name, stream, text) {
   return rel;
 }
 
+function parsePinCommand(command) {
+  const raw = String(command || '').trim();
+  if (!raw) return { raw, skipped: true };
+  const parts = raw.split(/\s+/);
+  if (parts.length !== 2 || parts[0] !== 'node') {
+    return { raw, error: 'pin commands must be empty or `node <repo-relative .js path>`' };
+  }
+  const script = parts[1];
+  if (!/^[A-Za-z0-9_./-]+\.js$/.test(script) || path.isAbsolute(script)) {
+    return { raw, error: `pin command path must be a repo-relative .js file: ${script}` };
+  }
+  const abs = resolveRepoPath(script);
+  if (!abs) return { raw, error: `pin command path must stay under the repo: ${script}` };
+  return { raw, script };
+}
+
+function pinCommandScripts(manifest) {
+  return [manifest.setup, manifest.harness]
+    .map((command) => parsePinCommand(command))
+    .filter((parsed) => parsed.script)
+    .map((parsed) => parsed.script);
+}
+
 function runPinCommand(command, cwd, timeoutMs, logDir, name) {
-  if (!command) {
+  const parsed = parsePinCommand(command);
+  if (parsed.skipped) {
     return {
       command: '',
       skipped: true,
@@ -1114,9 +1252,24 @@ function runPinCommand(command, cwd, timeoutMs, logDir, name) {
       stderr_log: null,
     };
   }
-  const r = spawnSync(command, {
+  if (parsed.error) {
+    return {
+      command: parsed.raw,
+      skipped: false,
+      status: 1,
+      signal: null,
+      timed_out: false,
+      stdout_sha256: sha256(''),
+      stderr_sha256: sha256(parsed.error),
+      stdout_excerpt: '',
+      stderr_excerpt: parsed.error,
+      stdout_log: writeRunLog(logDir, name, 'stdout', ''),
+      stderr_log: writeRunLog(logDir, name, 'stderr', parsed.error),
+    };
+  }
+  const r = spawnSync(process.execPath, [parsed.script], {
     cwd,
-    shell: true,
+    shell: false,
     timeout: timeoutMs,
     encoding: 'utf8',
     maxBuffer: 10 * 1024 * 1024,
@@ -1124,7 +1277,7 @@ function runPinCommand(command, cwd, timeoutMs, logDir, name) {
   const stdout = r.stdout || '';
   const stderr = r.stderr || '';
   return {
-    command,
+    command: parsed.raw,
     skipped: false,
     status: r.status === null ? 1 : r.status,
     signal: r.signal || null,
@@ -1170,8 +1323,26 @@ function loadPinManifests(pin) {
 }
 
 function pathspecToRegex(spec) {
-  const escaped = spec.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
-  return new RegExp(`^${escaped}(?:/.*)?$`);
+  let out = '';
+  for (let i = 0; i < spec.length; i += 1) {
+    const ch = spec[i];
+    if (ch === '*') {
+      if (spec[i + 1] === '*') {
+        if (spec[i + 2] === '/') {
+          out += '(?:.*/)?';
+          i += 2;
+        } else {
+          out += '.*';
+          i += 1;
+        }
+      } else {
+        out += '[^/]*';
+      }
+      continue;
+    }
+    out += /[.+^${}()|[\]\\]/.test(ch) ? `\\${ch}` : ch;
+  }
+  return new RegExp(`^${out}$`);
 }
 
 function pathMatchesSpec(file, spec) {
@@ -1190,9 +1361,20 @@ function validatePinManifest(manifest) {
   if (!manifest.base) findings.push({ level: 'error', type: 'missing-base', file: manifest.path, message: `${manifest.path}: base is required` });
   else if (!commitReachable(manifest.base)) findings.push({ level: 'error', type: 'base-ref-not-found', file: manifest.path, message: `${manifest.path}: base ref ${manifest.base} not found` });
   if (!manifest.harness) findings.push({ level: 'error', type: 'missing-harness', file: manifest.path, message: `${manifest.path}: harness is required` });
+  for (const [field, command] of [['setup', manifest.setup], ['harness', manifest.harness]]) {
+    const parsed = parsePinCommand(command);
+    if (parsed.error) {
+      findings.push({ level: 'error', type: 'unsafe-pin-command', file: manifest.path, message: `${manifest.path}: ${field} ${parsed.error}` });
+    } else if (!parsed.skipped) {
+      const abs = resolveRepoPath(parsed.script);
+      if (!abs || !fs.existsSync(abs)) {
+        findings.push({ level: 'error', type: 'missing-pin-command-file', file: manifest.path, message: `${manifest.path}: ${field} script not found: ${parsed.script}` });
+      }
+    }
+  }
   if (manifest.subject.length === 0) findings.push({ level: 'error', type: 'missing-subject', file: manifest.path, message: `${manifest.path}: subject paths are required` });
   if (manifest.oracle.length === 0) findings.push({ level: 'error', type: 'missing-oracle', file: manifest.path, message: `${manifest.path}: oracle paths are required` });
-  const judged = manifest.oracle.concat(manifest.support);
+  const judged = Array.from(new Set(manifest.oracle.concat(manifest.support, pinCommandScripts(manifest))));
   const subjectFiles = listCurrentFiles(manifest.subject);
   const judgedFiles = listCurrentFiles(judged);
   if (subjectFiles.error) findings.push({ level: 'error', type: 'subject-path-error', file: manifest.path, message: subjectFiles.error });
@@ -1218,11 +1400,6 @@ function copyPinFilesToWorktree(files, worktree) {
   }
 }
 
-function revParse(ref) {
-  const r = git(['rev-parse', ref]);
-  return r.status === 0 ? r.stdout.trim() : null;
-}
-
 function pinVerdict(oldSetup, oldHarness, newSetup, newHarness) {
   if ((oldSetup && oldSetup.status !== 0) || oldHarness.status !== 0) return 'pin-not-characterizing';
   if ((newSetup && newSetup.status !== 0) || newHarness.status !== 0) return 'equivalence-broken';
@@ -1232,12 +1409,11 @@ function pinVerdict(oldSetup, oldHarness, newSetup, newHarness) {
 function runOnePin(manifest, pin) {
   const worktreeRoot = resolveRepoPath(pin.worktree_dir);
   if (!worktreeRoot) fail(`pin.worktree_dir must be repo-relative: ${pin.worktree_dir}`);
-  const outAbs = resolveRepoPath(pin.out);
-  if (!outAbs) fail(`pin.out must be repo-relative: ${pin.out}`);
   const logDir = path.join(path.dirname(pin.out), 'logs');
-  const worktree = path.join(worktreeRoot, manifest.key);
+  const worktreeName = `${manifest.key}-${process.pid}-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
+  const worktree = path.join(worktreeRoot, worktreeName);
   const timeoutMs = pin.timeout_seconds * 1000;
-  const copied = listCurrentFiles(manifest.oracle.concat(manifest.support));
+  const copied = listCurrentFiles(Array.from(new Set(manifest.oracle.concat(manifest.support, pinCommandScripts(manifest)))));
   if (copied.error) {
     return { manifest: manifest.path, verdict: 'pin-not-characterizing', findings: [{ level: 'error', type: 'copy-path-error', message: copied.error }] };
   }
@@ -1282,12 +1458,15 @@ function runOnePin(manifest, pin) {
 }
 
 function pinSummary(results, findings, disabled) {
+  const resultFindings = results.flatMap((r) => Array.isArray(r.findings) ? r.findings : []);
+  const allFindings = findings.concat(resultFindings);
   return {
     disabled: disabled === true,
     pins: results.length,
     passed: results.filter((r) => r.verdict === 'pass').length,
     failed: results.filter((r) => r.verdict && r.verdict !== 'pass').length,
-    errors: findings.filter((f) => f.level === 'error').length,
+    errors: allFindings.filter((f) => f.level === 'error').length,
+    warnings: allFindings.filter((f) => f.level === 'warning').length,
   };
 }
 
@@ -1342,6 +1521,7 @@ function cmdPinRun(args) {
 }
 
 function commitList(base) {
+  if (!currentCommit()) return { commits: [] };
   const r = git(['log', '--format=%H', `${base}..HEAD`]);
   if (r.status !== 0) return { error: (r.stderr || '').trim() || 'git log failed', commits: [] };
   return { commits: r.stdout.split(/\r?\n/).filter(Boolean) };
@@ -1353,9 +1533,11 @@ function commitFiles(commit) {
   return { files: r.stdout.split(/\r?\n/).filter(Boolean) };
 }
 
-function commitHasPinOverride(commit) {
-  const r = git(['log', '-1', '--format=%B', commit]);
-  return r.status === 0 && /^Pin-Override:/m.test(r.stdout);
+function commitHasPinOverride(commit, manifestPath) {
+  const r = git(['log', '-1', '--format=%(trailers:key=Pin-Override,valueonly)', commit]);
+  if (r.status !== 0) return false;
+  const prefix = manifestPath.toLowerCase();
+  return r.stdout.split(/\r?\n/).some((line) => line.trim().toLowerCase().startsWith(prefix));
 }
 
 function cmdPinCheck(args) {
@@ -1388,27 +1570,23 @@ function cmdPinCheck(args) {
         findings.push({ level: 'error', type: 'pin-commit-files-error', message: files.error });
         continue;
       }
-      if (commitHasPinOverride(commit)) continue;
       for (const manifest of loaded.manifests) {
         const touchesSubject = files.files.some((file) => pathMatchesAny(file, manifest.subject));
-        const touchesOracle = files.files.some((file) => pathMatchesAny(file, [manifest.path].concat(manifest.oracle, manifest.support)));
+        const touchesOracle = files.files.some((file) => pathMatchesAny(file, [manifest.path].concat(manifest.oracle, manifest.support, pinCommandScripts(manifest))));
+        if (touchesSubject && touchesOracle && commitHasPinOverride(commit, manifest.path)) continue;
         if (touchesSubject && touchesOracle) {
           findings.push({
             level: 'error',
             type: 'pin-coupled-change',
             manifest: manifest.path,
             commit,
-            message: `${short(commit)} changes subject and oracle/support for ${manifest.path}; use Pin-Override: <reason> if intentional`,
+            message: `${short(commit)} changes subject and oracle/support for ${manifest.path}; use Pin-Override: ${manifest.path} — <reason> if intentional`,
           });
         }
       }
     }
   }
-  findings.sort((a, b) => {
-    if (a.level !== b.level) return a.level === 'error' ? -1 : 1;
-    if (a.type !== b.type) return a.type < b.type ? -1 : 1;
-    return (a.message || '').localeCompare(b.message || '');
-  });
+  sortFindings(findings);
   const output = {
     summary: {
       disabled: false,
@@ -1429,12 +1607,33 @@ function cmdPinCheck(args) {
 }
 
 function cmdPin(args) {
-  const { positional } = parseFlags(args);
-  const sub = positional[0];
-  const rest = args.slice(1);
+  let subIndex = -1;
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === 'run' || arg === 'check') {
+      subIndex = i;
+      break;
+    }
+    if ((arg === '--out' || arg === '--base') && args[i + 1] && !args[i + 1].startsWith('--')) {
+      i += 1;
+    }
+  }
+  const sub = subIndex >= 0 ? args[subIndex] : null;
+  const rest = subIndex >= 0 ? args.slice(0, subIndex).concat(args.slice(subIndex + 1)) : [];
   if (sub === 'run') return cmdPinRun(rest);
   if (sub === 'check') return cmdPinCheck(rest);
   fail('pin requires a subcommand: run or check');
+}
+
+function isSafeGitRef(ref) {
+  return typeof ref === 'string' &&
+    /^[A-Za-z0-9._/-]+$/.test(ref) &&
+    !ref.startsWith('-') &&
+    !ref.includes('..') &&
+    !ref.includes('@{') &&
+    !ref.includes('\\') &&
+    !ref.endsWith('/') &&
+    !ref.endsWith('.lock');
 }
 
 function cmdOrgSync() {
@@ -1443,14 +1642,23 @@ function cmdOrgSync() {
   // Require a non-empty string. A bare `source:` parses as an empty mapping ({})
   // under this reader, not "" — guard against it so we skip rather than trying to
   // clone "[object Object]".
-  const source = org.source;
-  if (typeof source !== 'string' || source.trim() === '') {
+  const source = typeof org.source === 'string' ? org.source.trim() : org.source;
+  if (typeof source !== 'string' || source === '') {
     process.stdout.write('aw-gate: org_knowledge.source not configured — skipping\n');
     process.exit(0);
   }
-  const ref = org.ref || 'main';
-  const cacheDir = org.cache_dir || '.aw-org-cache';
-  const abs = path.join(repoRoot, cacheDir);
+  if (!source.startsWith('https://')) {
+    fail('org_knowledge.source must be an https:// Git URL');
+  }
+  const ref = typeof org.ref === 'string' && org.ref.trim() !== '' ? org.ref : 'main';
+  if (!isSafeGitRef(ref)) {
+    fail(`org_knowledge.ref must be a safe branch or tag name: ${ref}`);
+  }
+  const cacheDir = typeof org.cache_dir === 'string' && org.cache_dir.trim() !== ''
+    ? org.cache_dir
+    : '.aw-org-cache';
+  const abs = resolveRepoPath(cacheDir);
+  if (!abs) fail(`org_knowledge.cache_dir must be repo-relative: ${cacheDir}`);
   try {
     if (fs.existsSync(path.join(abs, '.git'))) {
       // Reset to FETCH_HEAD (what was just fetched) so this resolves for both
@@ -1484,7 +1692,7 @@ function usage() {
       '  node .scripts/aw-gate.js trace-annotate <spec|test|code> --file <path> --line <n> --id <ID>[,<ID>]',
       '  node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.json [--delete-batch-on-success]',
       '  node .scripts/aw-gate.js workflow-record <event> [--tier <tier>] [--step <step>] [--gate <gate>] [--status <status>] [--reason <text>]',
-      '  node .scripts/aw-gate.js workflow-check [--json]',
+      '  node .scripts/aw-gate.js workflow-check [--base <ref>] [--since-commit <ref>] [--json]',
       '  node .scripts/aw-gate.js pin run [--json] [--out <path>]',
       '  node .scripts/aw-gate.js pin check [--base <ref>] [--json]',
       '  node .scripts/aw-gate.js org-sync',

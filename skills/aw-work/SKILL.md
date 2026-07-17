@@ -76,8 +76,9 @@ Set up branch/worktree:
 
 Create/update task tracker from units, preserving unit IDs when present.
 
-If the effective policy is `characterization-first`, run `aw-pin-behavior` for
-the subject before Phase 2 edits. The skill returns a
+If the effective policy is `characterization-first`, run
+`workflow.auxiliary.pin_behavior.skill` when configured, otherwise run
+`aw-pin-behavior` for the subject before Phase 2 edits. The skill returns a
 `docs/features/<feature>/behavior-pin.yml` manifest. Confirm `pin.enabled: true`
 and at least one matching manifest before implementation; otherwise stop because
 the policy would not be enforced.

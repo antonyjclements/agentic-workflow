@@ -28,6 +28,7 @@ DEFAULT_AUXILIARY = %w[
   capture
   discover_standards
   research_slack
+  pin_behavior
   resolve_pr_feedback
   synthesize_memory
 ].freeze
@@ -112,6 +113,8 @@ DEFAULT_CONFIG = {
   "workflow_trace" => {
     "enabled" => false,
     "path" => ".aw/workflow-trace.jsonl",
+    "max_events" => 10000,
+    "max_bytes" => 5_242_880,
     "require_tier" => true,
     "required_gates" => ["review", "check_workflow_compliance"]
   }

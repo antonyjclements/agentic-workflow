@@ -61,7 +61,7 @@ node .scripts/aw-gate.js trace [--base <ref>] [--json] [--out <path>]
 node .scripts/aw-gate.js trace-annotate <spec|test|code> --file <path> --line <n> --id <ID>[,<ID>]
 node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.json [--delete-batch-on-success]
 node .scripts/aw-gate.js workflow-record <event> [--tier <tier>] [--step <step>] [--gate <gate>] [--status <status>] [--reason <text>]
-node .scripts/aw-gate.js workflow-check [--json]
+node .scripts/aw-gate.js workflow-check [--base <ref>] [--since-commit <ref>] [--json]
 node .scripts/aw-gate.js pin run [--json] [--out <path>]
 node .scripts/aw-gate.js pin check [--base <ref>] [--json]
 node .scripts/aw-gate.js org-sync
@@ -160,7 +160,10 @@ gate execution can be checked as process evidence.
 Reads `workflow_trace.path` and exits non-zero when required breadcrumbs are
 missing. The initial checks are deliberately small: a tier event when
 `workflow_trace.require_tier` is true, and gate events named in
-`workflow_trace.required_gates`.
+`workflow_trace.required_gates`. Use `--base` or `--since-commit` to consider
+only events recorded by commits in that range. Appends retain the newest
+`workflow_trace.max_events` entries and trim oldest lines until the file is under
+`workflow_trace.max_bytes`.
 
 ### `pin run`
 
@@ -173,14 +176,15 @@ temporary worktree so both sides run the same harness. Results are written to
 - `pin-not-characterizing`: old failed, so the oracle does not describe reality
 - `equivalence-broken`: old passed and new failed
 
-Harness commands run with `shell: true`. This is quality assurance, not a
-sandbox; review manifest command changes like code.
+Manifest `setup` and `harness` commands must be empty or
+`node <repo-relative .js path>`. `pin run` does not execute shell strings.
 
 ### `pin check`
 
 Checks commit history from `--base` (default `origin/main`) to `HEAD` and fails
 when one commit changes both a pin's subject and its oracle/support files. Use a
-`Pin-Override: <reason>` trailer only when coupling those edits is intentional.
+manifest-scoped `Pin-Override: docs/features/<feature>/behavior-pin.yml — <reason>`
+trailer only when coupling those edits is intentional.
 
 ---
 

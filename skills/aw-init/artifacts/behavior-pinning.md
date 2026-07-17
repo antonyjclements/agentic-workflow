@@ -44,7 +44,7 @@ Supported keys stay within the workflow YAML subset:
 ```yaml
 base: c338665
 harness: node test/pin/example.pin.js
-setup: npm ci
+setup: ""
 subject:
   - .scripts/aw-gate.js
 oracle:
@@ -64,7 +64,7 @@ same commit. `node .scripts/aw-gate.js pin check` enforces this by checking each
 commit in the range. If a coupled change is intentional, add a commit trailer:
 
 ```text
-Pin-Override: <reason>
+Pin-Override: docs/features/<feature>/behavior-pin.yml — <reason>
 ```
 
 Use overrides sparingly. A pin loses value when the implementation and its
@@ -72,6 +72,7 @@ oracle are adjusted together.
 
 ## Runtime Surface
 
-`pin run` executes the manifest's `setup` and `harness` strings with
-`shell: true`. This is not a security sandbox. Keep pinning opt-in, review
-manifest command changes like code, and run slow pins in CI rather than pre-push.
+`pin run` accepts only empty commands or `node <repo-relative .js path>` for
+manifest `setup` and `harness` entries. It does not execute shell strings.
+Keep pinning opt-in, review manifest command changes like code, and run slow
+pins in CI rather than pre-push.
