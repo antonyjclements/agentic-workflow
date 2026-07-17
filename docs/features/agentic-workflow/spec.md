@@ -197,7 +197,7 @@ The workflow routes:
 - New installs include `AGENTS.md` and `CLAUDE.md`; `CLAUDE.md` delegates to `AGENTS.md`.
 - New installs place skills in `~/.agents/skills` and, when safe, symlink `~/.claude/skills`, `~/.codeium/skills`, and `~/.windsurf/skills` to that directory.
 - The agentic-workflow repository self-hosts its own install for dogfooding: root `AGENTS.md`/`CLAUDE.md` and the `docs/workflow/` copies are committed and must stay identical to their `skills/aw-init/artifacts/` sources, enforced by `scripts/test-install.sh`. Target repos receive those artifacts only through `aw-init`, and there is no root `scripts/install.sh`.
-- The installed `AGENTS.md` artifact stays within the word budget enforced by `scripts/test-install.sh` (currently 2,500 words), and `scripts/test-install.sh` fails when it is exceeded.
+- The installed `AGENTS.md` artifact stays within the word budget enforced by `scripts/test-install.sh` (currently 1,200 words), and `scripts/test-install.sh` fails when it is exceeded.
 - `scripts/test-install.sh` validates docs registries — every `docs/**/index.yml` parses, every indexed `path`/`spec` reference exists, and every `docs/features/*/spec.md` is indexed — for this repository and for each test-installed target repo.
 - Agents can discover and use the spec, standard, decision, and learning registries from `AGENTS.md`.
 - Installed `AGENTS.md` includes top-level task triage so trivial changes and small fixes can avoid the full spec/plan/review workflow when it is not warranted.

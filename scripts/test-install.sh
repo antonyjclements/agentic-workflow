@@ -70,7 +70,7 @@ fi
 # AGENTS.md is loaded into agent context at the start of every session in every
 # installed repo. Keep it lightweight: fail if it grows past the word budget so
 # additions must cut something or consciously raise the budget in the same diff.
-agents_word_budget=2500
+agents_word_budget=1200
 agents_words="$(wc -w < "$repo_root/skills/aw-init/artifacts/AGENTS.md" | tr -d '[:space:]')"
 if [ "$agents_words" -gt "$agents_word_budget" ]; then
   echo "skills/aw-init/artifacts/AGENTS.md exceeds word budget: $agents_words > $agents_word_budget" >&2
