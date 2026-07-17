@@ -17,6 +17,8 @@ This file guides coding agents working in this repository. Follow it in addition
 
 Match the workflow to the smallest path that safely handles the request. A repo may need every workflow capability over time, but most individual tasks do not need the full ceremony.
 
+Size the path by reversibility, not effort: if this is wrong, what does undoing it cost? Cheap to undo — take the smaller path, even when the work is large. Expensive or impossible to undo — data loss, released contracts, security posture, anything others already depend on — take the High-Risk path, even when the diff is one line. The lists below are examples, not limits: a change that is hard to reverse and matches nothing listed is still High-Risk.
+
 ### Trivial Change
 
 Use for typos, broken links, comments, formatting, obvious one-line fixes, or tiny docs edits.
