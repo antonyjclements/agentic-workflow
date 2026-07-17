@@ -38,7 +38,7 @@ For auth, payments, security, migrations, CI/CD, architecture, multi-module work
 - `docs/context/wiki.md`: optional orientation. If older than 30 days or behind several unprocessed session logs, verify important claims against their source artifacts.
 - `README.md`: user-facing setup and operation. Update it when setup, commands, configuration, architecture, repository structure, or workflow behavior changes.
 
-Keep durable artifacts only when the knowledge is worth rediscovering months later. Keep intent alive in specs, let plans expire, and record decisions immutably. Use `aw-capture` proactively at natural pauses, not only when asked: log a decision when a trade-off is resolved, save a learning after a correction, and write a session log when meaningful work wraps up.
+Keep durable artifacts when knowledge is worth rediscovering later. Keep intent alive in specs, let plans expire, and record decisions immutably. At natural pauses, offer `aw-capture` for resolved trade-offs, corrections, reusable learnings, and meaningful session wrap-up; write immediately only when the target is explicit and repo-local.
 
 ## Workflow Step Routing
 
