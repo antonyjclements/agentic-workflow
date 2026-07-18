@@ -708,6 +708,200 @@ YAML
   git -C "$pin_check" add -A
   git -C "$pin_check" commit -qm $'coupled with override\n\nPin-Override: docs/features/demo/behavior-pin.yml — test fixture override'
   node "$pin_check/.scripts/aw-gate.js" pin check --base "$check_base" >/dev/null
+
+  make_migration_pin_repo() {
+    local target="$1"
+    local reference_value="$2"
+    local candidate_value="$3"
+    local reference="$target-reference"
+    mkdir -p "$reference/src" "$target/docs/workflow" "$target/.scripts" "$target/docs/features/demo" "$target/src" "$target/test/pin" "$target/test/golden"
+    cp "$repo_root/skills/aw-init/artifacts/aw-gate.js" "$target/.scripts/aw-gate.js"
+    cat > "$target/docs/workflow/config.yml" <<'YAML'
+pin:
+  enabled: true
+  manifest_paths:
+    - "docs/features/*/behavior-pin.yml"
+  worktree_dir: .aw/pin
+  out: .aw/pin/equivalence.json
+  timeout_seconds: 30
+YAML
+    cat > "$reference/src/tool.js" <<JS
+process.stdout.write('$reference_value');
+JS
+    git init -q "$reference"
+    git -C "$reference" config user.email test@example.com
+    git -C "$reference" config user.name test
+    git -C "$reference" add -A
+    git -C "$reference" commit -qm reference
+    local reference_ref
+    reference_ref="$(git -C "$reference" rev-parse HEAD)"
+    cat > "$target/src/tool.js" <<JS
+process.stdout.write('$candidate_value');
+JS
+    cat > "$target/test/pin/migration.pin.js" <<'JS'
+const assert = require('assert');
+const { spawnSync } = require('child_process');
+const path = require('path');
+
+assert.strictEqual(process.env.AW_PIN_MODE, 'reference-repo');
+assert.ok(process.env.AW_PIN_MANIFEST.endsWith('docs/features/demo/behavior-pin.yml'));
+assert.ok(process.env.AW_PIN_REFERENCE_ROOT);
+assert.ok(process.env.AW_PIN_CANDIDATE_ROOT);
+assert.ok(process.env.AW_PIN_GOLDEN_ROOT.endsWith('test/golden'));
+
+function run(root) {
+  const result = spawnSync(process.execPath, [path.join(root, 'src/tool.js')], {
+    encoding: 'utf8',
+  });
+  assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+  return result.stdout;
+}
+
+const reference = run(process.env.AW_PIN_REFERENCE_ROOT);
+if (reference !== 'legacy-behavior') process.exit(10);
+assert.strictEqual(run(process.env.AW_PIN_CANDIDATE_ROOT), reference);
+JS
+    cat > "$target/docs/features/demo/behavior-pin.yml" <<YAML
+mode: reference-repo
+reference:
+  repo: $reference
+  ref: $reference_ref
+harness: node test/pin/migration.pin.js
+subject:
+  - src/tool.js
+oracle:
+  - test/pin/migration.pin.js
+golden:
+  dir: test/golden
+  generated_from:
+    repo: $reference
+    ref: $reference_ref
+    sha: $reference_ref
+created: 2026-07-18
+YAML
+    git init -q "$target"
+    git -C "$target" config user.email test@example.com
+    git -C "$target" config user.name test
+    git -C "$target" add -A
+    git -C "$target" commit -qm candidate
+  }
+
+  pin_migration_pass="$tmp_root/pin-migration-pass"
+  make_migration_pin_repo "$pin_migration_pass" legacy-behavior legacy-behavior
+  node "$pin_migration_pass/.scripts/aw-gate.js" pin --json run > "$pin_migration_pass/migration-pass.json"
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); r=data.fetch("results").fetch(0); abort "migration pin should pass" unless r["verdict"] == "pass"; abort "reference repo missing" unless r.dig("reference", "repo"); abort "reference sha missing" unless r.dig("reference", "sha"); abort "golden dir missing" unless r.dig("golden", "dir") == "test/golden"' \
+    "$pin_migration_pass/migration-pass.json"
+  if find "$pin_migration_pass/.aw/pin" -maxdepth 1 -type d -name '*reference-*' | grep -q .; then
+    echo "migration pin run should not leak reference checkouts" >&2
+    exit 1
+  fi
+
+  pin_migration_drift="$tmp_root/pin-migration-drift"
+  make_migration_pin_repo "$pin_migration_drift" legacy-behavior changed-behavior
+  if node "$pin_migration_drift/.scripts/aw-gate.js" pin --json run > "$pin_migration_drift/migration-drift.json" 2>/dev/null; then
+    echo "migration pin run should fail when candidate behavior differs" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected equivalence-broken" unless data.dig("results", 0, "verdict") == "equivalence-broken"' \
+    "$pin_migration_drift/migration-drift.json"
+
+  pin_migration_ref_bad="$tmp_root/pin-migration-reference-bad"
+  make_migration_pin_repo "$pin_migration_ref_bad" wrong-reference legacy-behavior
+  if node "$pin_migration_ref_bad/.scripts/aw-gate.js" pin --json run > "$pin_migration_ref_bad/migration-ref-bad.json" 2>/dev/null; then
+    echo "migration pin run should fail when reference does not characterize old behavior" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected pin-not-characterizing" unless data.dig("results", 0, "verdict") == "pin-not-characterizing"' \
+    "$pin_migration_ref_bad/migration-ref-bad.json"
+
+  pin_migration_missing_ref="$tmp_root/pin-migration-missing-ref"
+  make_migration_pin_repo "$pin_migration_missing_ref" legacy-behavior legacy-behavior
+  ruby -e 't=File.read(ARGV[0]); t.sub!(/^  ref: .+$/, "  ref: missing-ref"); File.write(ARGV[0], t)' \
+    "$pin_migration_missing_ref/docs/features/demo/behavior-pin.yml"
+  if node "$pin_migration_missing_ref/.scripts/aw-gate.js" pin --json run > "$pin_migration_missing_ref/migration-missing-ref.json" 2>/dev/null; then
+    echo "migration pin run should fail when reference ref cannot be checked out" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected pin-not-characterizing" unless data.dig("results", 0, "verdict") == "pin-not-characterizing"' \
+    "$pin_migration_missing_ref/migration-missing-ref.json"
+
+  pin_migration_invalid="$tmp_root/pin-migration-invalid"
+  make_migration_pin_repo "$pin_migration_invalid" legacy-behavior legacy-behavior
+  ruby -e 't=File.read(ARGV[0]); t.sub!("mode: reference-repo", "mode: unknown-mode"); File.write(ARGV[0], t)' \
+    "$pin_migration_invalid/docs/features/demo/behavior-pin.yml"
+  if node "$pin_migration_invalid/.scripts/aw-gate.js" pin --json run > "$pin_migration_invalid/migration-invalid.json" 2>/dev/null; then
+    echo "migration pin run should reject unsupported modes" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected unsupported-pin-mode" unless data.fetch("findings").any? { |f| f["type"] == "unsupported-pin-mode" }' \
+    "$pin_migration_invalid/migration-invalid.json"
+
+  pin_migration_missing_repo="$tmp_root/pin-migration-missing-repo"
+  make_migration_pin_repo "$pin_migration_missing_repo" legacy-behavior legacy-behavior
+  ruby -e 't=File.read(ARGV[0]); t.sub!(/^  repo: .+\n/, ""); File.write(ARGV[0], t)' \
+    "$pin_migration_missing_repo/docs/features/demo/behavior-pin.yml"
+  if node "$pin_migration_missing_repo/.scripts/aw-gate.js" pin --json run > "$pin_migration_missing_repo/migration-missing-repo.json" 2>/dev/null; then
+    echo "migration pin run should reject missing reference repos" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected missing-reference-repo" unless data.fetch("findings").any? { |f| f["type"] == "missing-reference-repo" }' \
+    "$pin_migration_missing_repo/migration-missing-repo.json"
+
+  pin_migration_missing_ref_field="$tmp_root/pin-migration-missing-ref-field"
+  make_migration_pin_repo "$pin_migration_missing_ref_field" legacy-behavior legacy-behavior
+  ruby -e 't=File.read(ARGV[0]); t.sub!(/^  ref: .+\n/, ""); File.write(ARGV[0], t)' \
+    "$pin_migration_missing_ref_field/docs/features/demo/behavior-pin.yml"
+  if node "$pin_migration_missing_ref_field/.scripts/aw-gate.js" pin --json run > "$pin_migration_missing_ref_field/migration-missing-ref-field.json" 2>/dev/null; then
+    echo "migration pin run should reject missing reference refs" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected missing-reference-ref" unless data.fetch("findings").any? { |f| f["type"] == "missing-reference-ref" }' \
+    "$pin_migration_missing_ref_field/migration-missing-ref-field.json"
+
+  pin_migration_unsafe_repo="$tmp_root/pin-migration-unsafe-repo"
+  make_migration_pin_repo "$pin_migration_unsafe_repo" legacy-behavior legacy-behavior
+  ruby -e 't=File.read(ARGV[0]); t.sub!(/^  repo: .+$/, "  repo: https://example.com/repo.git;touch-owned"); File.write(ARGV[0], t)' \
+    "$pin_migration_unsafe_repo/docs/features/demo/behavior-pin.yml"
+  if node "$pin_migration_unsafe_repo/.scripts/aw-gate.js" pin --json run > "$pin_migration_unsafe_repo/migration-unsafe-repo.json" 2>/dev/null; then
+    echo "migration pin run should reject unsafe reference repos" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected unsafe-reference-repo" unless data.fetch("findings").any? { |f| f["type"] == "unsafe-reference-repo" }' \
+    "$pin_migration_unsafe_repo/migration-unsafe-repo.json"
+
+  pin_migration_unsafe_ref="$tmp_root/pin-migration-unsafe-ref"
+  make_migration_pin_repo "$pin_migration_unsafe_ref" legacy-behavior legacy-behavior
+  ruby -e 't=File.read(ARGV[0]); t.sub!(/^  ref: .+$/, "  ref: main;touch-owned"); File.write(ARGV[0], t)' \
+    "$pin_migration_unsafe_ref/docs/features/demo/behavior-pin.yml"
+  if node "$pin_migration_unsafe_ref/.scripts/aw-gate.js" pin --json run > "$pin_migration_unsafe_ref/migration-unsafe-ref.json" 2>/dev/null; then
+    echo "migration pin run should reject unsafe reference refs" >&2
+    exit 1
+  fi
+  ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "expected unsafe-reference-ref" unless data.fetch("findings").any? { |f| f["type"] == "unsafe-reference-ref" }' \
+    "$pin_migration_unsafe_ref/migration-unsafe-ref.json"
+
+  pin_migration_check="$tmp_root/pin-migration-check"
+  make_migration_pin_repo "$pin_migration_check" legacy-behavior legacy-behavior
+  check_base="$(git -C "$pin_migration_check" rev-parse HEAD)"
+  printf "process.stdout.write('changed-behavior');\n" > "$pin_migration_check/src/tool.js"
+  printf '\n// coupled oracle change\n' >> "$pin_migration_check/test/pin/migration.pin.js"
+  git -C "$pin_migration_check" add -A
+  git -C "$pin_migration_check" commit -qm migration-coupled
+  if node "$pin_migration_check/.scripts/aw-gate.js" pin check --base "$check_base" >/dev/null 2>&1; then
+    echo "migration pin check should fail when one commit changes subject and oracle" >&2
+    exit 1
+  fi
+  git -C "$pin_migration_check" reset --hard -q "$check_base"
+  printf "process.stdout.write('changed-behavior');\n" > "$pin_migration_check/src/tool.js"
+  git -C "$pin_migration_check" add -A
+  git -C "$pin_migration_check" commit -qm migration-candidate-only
+  node "$pin_migration_check/.scripts/aw-gate.js" pin check --base "$check_base" >/dev/null
+  git -C "$pin_migration_check" reset --hard -q "$check_base"
+  printf "process.stdout.write('changed-behavior');\n" > "$pin_migration_check/src/tool.js"
+  printf '\n// coupled oracle change\n' >> "$pin_migration_check/test/pin/migration.pin.js"
+  git -C "$pin_migration_check" add -A
+  git -C "$pin_migration_check" commit -qm $'migration coupled with override\n\nPin-Override: docs/features/demo/behavior-pin.yml — migration oracle update'
+  node "$pin_migration_check/.scripts/aw-gate.js" pin check --base "$check_base" >/dev/null
   echo "pin functional test passed"
 else
   echo "pin functional test skipped: node or git not available"

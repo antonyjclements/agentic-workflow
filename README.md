@@ -722,7 +722,7 @@ The org base is **governed content**: one accountable owner (a senior lead or di
 
 **Workflow trace.** With `workflow_trace.enabled: true`, skills can leave deterministic process breadcrumbs through `workflow-record`, and `record <gate>` automatically appends gate events. `workflow-check` can then verify facts such as "a tier was chosen" and "review/compliance gates ran" instead of relying on a final agent summary.
 
-**Behavior pins.** With `pin.enabled: true`, `node .scripts/aw-gate.js pin run` checks that a committed characterization harness passes on both the manifest's old `base` and the current checkout. Manifest commands are limited to empty values or `node <repo-relative .js path>`. `pin check` enforces that oracle/support files and the judged subject are not changed in the same commit unless a manifest-scoped `Pin-Override:` trailer explains why. A green pin proves equivalence, not correctness.
+**Behavior pins.** With `pin.enabled: true`, `node .scripts/aw-gate.js pin run` checks that a committed characterization harness passes on both the manifest's old `base` and the current checkout. `mode: reference-repo` supports migration pins by checking out a pinned old repo/ref and passing its path to the current-tree harness through `AW_PIN_REFERENCE_ROOT`; golden fixture metadata can record cache provenance without replacing live reference runs. Manifest commands are limited to empty values or `node <repo-relative .js path>`. `pin check` enforces that oracle/support files and the judged subject are not changed in the same commit unless a manifest-scoped `Pin-Override:` trailer explains why. A green pin proves equivalence, not correctness.
 
 Full schema for all six is in [docs/workflow/README.md](docs/workflow/README.md).
 

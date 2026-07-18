@@ -2,11 +2,13 @@
 title: Spec-Driven Agentic Workflow
 status: active
 created: 2026-05-24
-updated: 2026-07-16
+updated: 2026-07-18
 tags:
   - workflow
   - specs
   - decisions
+  - migrations
+  - testing
 related_decisions:
   - docs/decisions/2026-05-24-use-docs-for-spec-driven-workflow.md
   - docs/decisions/2026-05-24-proactively-prompt-for-knowledge-capture.md
@@ -165,6 +167,12 @@ The workflow routes:
 - Pin verdicts distinguish invalid oracles (`pin-not-characterizing`, old failed) from implementation drift (`equivalence-broken`, old passed and new failed).
 - `node .scripts/aw-gate.js pin check` fails when one commit changes both the judged subject and its oracle/support files unless a `Pin-Override:` trailer is present.
 - Behavior pins prove equivalence, not correctness; they can preserve bugs intentionally so behavior fixes happen in separate changes.
+- Migration pins extend behavior pinning beyond same-repo old-commit comparisons. A migration pin can name a pinned reference implementation repo/ref and compare the current repo against it through a black-box contract harness.
+- Reference-repo migration pins are the first-class migration model: the old repo/ref remains the source of behavioral truth, and harnesses run the same contract cases against old and new implementations through public boundaries such as CLIs, APIs, parsers, generated files, or data transforms.
+- Golden fixtures are an optional optimization for migration pins, not the primary authority. They may cache normalized outputs generated from the pinned reference implementation so fast CI jobs can compare the new implementation without running the old system every time.
+- Migration pins must record enough provenance to regenerate or audit golden fixtures from the pinned reference repo/ref, and a live reference run remains available for higher-trust CI, release gates, or suspected fixture drift.
+- Migration pin harnesses compare observable behavior only. They must not require matching internals, source layout, class names, or language-specific implementation structure.
+- Migration pins preserve old behavior intentionally, including bugs and quirks. Behavior corrections after migration require separate acceptance tests or explicit contract updates.
 
 ### Knowledge Capture and Memory Synthesis
 
@@ -233,3 +241,8 @@ The workflow routes:
 - With workflow trace disabled, `workflow-record` and `workflow-check` exit 0 without requiring process artifacts.
 - With workflow trace enabled, `workflow-record` appends JSONL events and `workflow-check` fails when configured requirements such as tier selection or required gate events are missing.
 - With pin enabled, `pin run` emits distinct pass, `pin-not-characterizing`, and `equivalence-broken` results; `pin check` enforces subject/oracle separation and honors `Pin-Override:` trailers.
+- Migration pins can declare a pinned reference implementation repo/ref and a black-box contract harness that compares current-repo behavior against that reference implementation.
+- Migration pins support cross-repo and cross-language migrations by comparing public behavior boundaries, not internal implementation structure.
+- Migration pin results distinguish an invalid reference characterization from candidate implementation drift with the same failure-class clarity as same-repo behavior pins.
+- Golden fixture mode is optional and derives fixtures from the pinned reference implementation; fixture metadata records the reference repo/ref and contract case source needed to regenerate or audit the fixtures.
+- A migration pin can run in live-reference mode for high-trust checks even when golden fixtures are present for faster local or routine CI checks.

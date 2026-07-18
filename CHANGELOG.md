@@ -12,6 +12,12 @@ version has no entry here.
 
 ## [Unreleased]
 
+### Added
+
+- Reference-repo behavior pins for migrations: `mode: reference-repo` manifests
+  can compare the current repo to a pinned old repo/ref through a current-tree
+  Node harness, with optional golden fixture provenance.
+
 ## [0.8.0] - 2026-07-16
 
 Behavior pinning: an opt-in equivalence oracle for characterization-first work.
