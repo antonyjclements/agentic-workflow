@@ -158,8 +158,12 @@ function loadConfig() {
 }
 
 // --- git helpers ---------------------------------------------------------
+function gitAt(cwd, args, options) {
+  return spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8', ...(options || {}) });
+}
+
 function git(args) {
-  return spawnSync('git', ['-C', repoRoot, ...args], { encoding: 'utf8' });
+  return gitAt(repoRoot, args);
 }
 
 function currentCommit() {
@@ -1235,7 +1239,7 @@ function pinCommandScripts(manifest) {
     .map((parsed) => parsed.script);
 }
 
-function runPinCommand(command, cwd, timeoutMs, logDir, name) {
+function runPinCommand(command, cwd, timeoutMs, logDir, name, env) {
   const parsed = parsePinCommand(command);
   if (parsed.skipped) {
     return {
@@ -1273,6 +1277,7 @@ function runPinCommand(command, cwd, timeoutMs, logDir, name) {
     timeout: timeoutMs,
     encoding: 'utf8',
     maxBuffer: 10 * 1024 * 1024,
+    env: env ? { ...process.env, ...env } : process.env,
   });
   const stdout = r.stdout || '';
   const stderr = r.stderr || '';
@@ -1309,12 +1314,31 @@ function loadPinManifests(pin) {
     const manifest = {
       path: file,
       key: pinKey(file),
+      mode: typeof data.mode === 'string' && data.mode.trim() !== '' ? data.mode : 'same-repo',
       base: typeof data.base === 'string' ? data.base : '',
       harness: typeof data.harness === 'string' ? data.harness : '',
       setup: typeof data.setup === 'string' ? data.setup : '',
       subject: asStringList(data.subject),
       oracle: asStringList(data.oracle),
       support: asStringList(data.support),
+      reference: data.reference && typeof data.reference === 'object' && !Array.isArray(data.reference)
+        ? {
+          repo: typeof data.reference.repo === 'string' ? data.reference.repo : '',
+          ref: typeof data.reference.ref === 'string' ? data.reference.ref : '',
+        }
+        : { repo: '', ref: '' },
+      golden: data.golden && typeof data.golden === 'object' && !Array.isArray(data.golden)
+        ? {
+          dir: typeof data.golden.dir === 'string' ? data.golden.dir : '',
+          generated_from: data.golden.generated_from && typeof data.golden.generated_from === 'object' && !Array.isArray(data.golden.generated_from)
+            ? {
+              repo: typeof data.golden.generated_from.repo === 'string' ? data.golden.generated_from.repo : '',
+              ref: typeof data.golden.generated_from.ref === 'string' ? data.golden.generated_from.ref : '',
+              sha: typeof data.golden.generated_from.sha === 'string' ? data.golden.generated_from.sha : '',
+            }
+            : {},
+        }
+        : {},
       created: data.created || '',
     };
     manifests.push(manifest);
@@ -1356,10 +1380,50 @@ function pathMatchesAny(file, specs) {
   return specs.some((spec) => pathMatchesSpec(file, spec));
 }
 
+function hasUnsafeGitText(value) {
+  return /[\x00-\x1f`$;&|<>\s]/.test(value);
+}
+
+function isSafeReferenceRepo(repo) {
+  if (typeof repo !== 'string' || repo.trim() === '' || repo.startsWith('-') || hasUnsafeGitText(repo)) return false;
+  if (/^(https?|ssh|git|file):\/\//.test(repo)) return true;
+  if (/^[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+:[A-Za-z0-9_./-]+$/.test(repo)) return true;
+  if (path.isAbsolute(repo)) return true;
+  return /^[A-Za-z0-9_./-]+$/.test(repo) && !repo.split('/').includes('..');
+}
+
+function isSafeReferenceRef(ref) {
+  if (typeof ref !== 'string' || ref.trim() === '' || ref.startsWith('-') || hasUnsafeGitText(ref)) return false;
+  if (ref.includes('..') || ref.includes('@{') || ref.endsWith('.') || ref.endsWith('/')) return false;
+  return /^[A-Za-z0-9_./+-]+$/.test(ref);
+}
+
+function referenceRepoSource(repo) {
+  if (/^(https?|ssh|git|file):\/\//.test(repo) || /^[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+:[A-Za-z0-9_./-]+$/.test(repo)) {
+    return repo;
+  }
+  return path.isAbsolute(repo) ? path.resolve(repo) : path.resolve(repoRoot, repo);
+}
+
 function validatePinManifest(manifest) {
   const findings = [];
-  if (!manifest.base) findings.push({ level: 'error', type: 'missing-base', file: manifest.path, message: `${manifest.path}: base is required` });
-  else if (!commitReachable(manifest.base)) findings.push({ level: 'error', type: 'base-ref-not-found', file: manifest.path, message: `${manifest.path}: base ref ${manifest.base} not found` });
+  if (!['same-repo', 'reference-repo'].includes(manifest.mode)) {
+    findings.push({ level: 'error', type: 'unsupported-pin-mode', file: manifest.path, message: `${manifest.path}: unsupported mode ${manifest.mode}` });
+  }
+  if (manifest.mode === 'same-repo') {
+    if (!manifest.base) findings.push({ level: 'error', type: 'missing-base', file: manifest.path, message: `${manifest.path}: base is required` });
+    else if (!commitReachable(manifest.base)) findings.push({ level: 'error', type: 'base-ref-not-found', file: manifest.path, message: `${manifest.path}: base ref ${manifest.base} not found` });
+  }
+  if (manifest.mode === 'reference-repo') {
+    if (!manifest.reference.repo) findings.push({ level: 'error', type: 'missing-reference-repo', file: manifest.path, message: `${manifest.path}: reference.repo is required` });
+    else if (!isSafeReferenceRepo(manifest.reference.repo)) findings.push({ level: 'error', type: 'unsafe-reference-repo', file: manifest.path, message: `${manifest.path}: reference.repo is not a supported git URL or local path` });
+    if (!manifest.reference.ref) findings.push({ level: 'error', type: 'missing-reference-ref', file: manifest.path, message: `${manifest.path}: reference.ref is required` });
+    else if (!isSafeReferenceRef(manifest.reference.ref)) findings.push({ level: 'error', type: 'unsafe-reference-ref', file: manifest.path, message: `${manifest.path}: reference.ref is not a supported git ref` });
+  }
+  if (manifest.golden.dir) {
+    const goldenDir = resolveRepoPath(manifest.golden.dir);
+    if (!goldenDir) findings.push({ level: 'error', type: 'invalid-golden-dir', file: manifest.path, message: `${manifest.path}: golden.dir must be repo-relative` });
+  }
   if (!manifest.harness) findings.push({ level: 'error', type: 'missing-harness', file: manifest.path, message: `${manifest.path}: harness is required` });
   for (const [field, command] of [['setup', manifest.setup], ['harness', manifest.harness]]) {
     const parsed = parsePinCommand(command);
@@ -1406,7 +1470,13 @@ function pinVerdict(oldSetup, oldHarness, newSetup, newHarness) {
   return 'pass';
 }
 
-function runOnePin(manifest, pin) {
+function migrationPinVerdict(setup, harness) {
+  if ((setup && setup.status === 10) || harness.status === 10) return 'pin-not-characterizing';
+  if ((setup && setup.status !== 0) || harness.status !== 0) return 'equivalence-broken';
+  return 'pass';
+}
+
+function runSameRepoPin(manifest, pin) {
   const worktreeRoot = resolveRepoPath(pin.worktree_dir);
   if (!worktreeRoot) fail(`pin.worktree_dir must be repo-relative: ${pin.worktree_dir}`);
   const logDir = path.join(path.dirname(pin.out), 'logs');
@@ -1445,6 +1515,7 @@ function runOnePin(manifest, pin) {
   return {
     manifest: manifest.path,
     key: manifest.key,
+    mode: manifest.mode,
     verdict,
     base: manifest.base,
     base_sha: revParse(manifest.base),
@@ -1455,6 +1526,87 @@ function runOnePin(manifest, pin) {
     old: { setup: oldSetup, harness: oldHarness },
     new: { setup: newSetup, harness: newHarness },
   };
+}
+
+function cloneReferenceRepo(manifest, checkout, timeoutMs) {
+  const source = referenceRepoSource(manifest.reference.repo);
+  const clone = spawnSync('git', ['clone', '--quiet', '--no-checkout', source, checkout], { encoding: 'utf8', timeout: timeoutMs });
+  if (clone.status !== 0) return { error: (clone.stderr || '').trim() || 'git clone failed' };
+  const checkoutRef = gitAt(checkout, ['checkout', '--quiet', '--detach', manifest.reference.ref], { timeout: timeoutMs });
+  if (checkoutRef.status !== 0) return { error: (checkoutRef.stderr || '').trim() || 'git checkout failed' };
+  const sha = gitAt(checkout, ['rev-parse', 'HEAD'], { timeout: timeoutMs });
+  if (sha.status !== 0) return { error: (sha.stderr || '').trim() || 'git rev-parse failed' };
+  return { sha: sha.stdout.trim() };
+}
+
+function runReferenceRepoPin(manifest, pin) {
+  const worktreeRoot = resolveRepoPath(pin.worktree_dir);
+  if (!worktreeRoot) fail(`pin.worktree_dir must be repo-relative: ${pin.worktree_dir}`);
+  const logDir = path.join(path.dirname(pin.out), 'logs');
+  const checkoutName = `${manifest.key}-reference-${process.pid}-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
+  const checkout = path.join(worktreeRoot, checkoutName);
+  const timeoutMs = pin.timeout_seconds * 1000;
+  const copied = listCurrentFiles(Array.from(new Set(manifest.oracle.concat(manifest.support, pinCommandScripts(manifest)))));
+  if (copied.error) {
+    return { manifest: manifest.path, verdict: 'pin-not-characterizing', findings: [{ level: 'error', type: 'copy-path-error', message: copied.error }] };
+  }
+  let reference = null;
+  let setup = null;
+  let harness = null;
+  try {
+    fs.rmSync(checkout, { recursive: true, force: true });
+    fs.mkdirSync(path.dirname(checkout), { recursive: true });
+    reference = cloneReferenceRepo(manifest, checkout, timeoutMs);
+    if (reference.error) {
+      return {
+        manifest: manifest.path,
+        key: manifest.key,
+        mode: manifest.mode,
+        verdict: 'pin-not-characterizing',
+        reference: {
+          repo: manifest.reference.repo,
+          ref: manifest.reference.ref,
+          sha: null,
+        },
+        golden: manifest.golden,
+        findings: [{ level: 'error', type: 'reference-checkout-failed', message: reference.error }],
+      };
+    }
+    const env = {
+      AW_PIN_MODE: manifest.mode,
+      AW_PIN_MANIFEST: manifest.path,
+      AW_PIN_REFERENCE_ROOT: checkout,
+      AW_PIN_CANDIDATE_ROOT: repoRoot,
+      AW_PIN_GOLDEN_ROOT: manifest.golden.dir ? resolveRepoPath(manifest.golden.dir) : '',
+    };
+    setup = runPinCommand(manifest.setup, repoRoot, timeoutMs, logDir, `${manifest.key}-migration-setup`, env);
+    harness = runPinCommand(manifest.harness, repoRoot, timeoutMs, logDir, `${manifest.key}-migration-harness`, env);
+  } finally {
+    fs.rmSync(checkout, { recursive: true, force: true });
+  }
+  const verdict = migrationPinVerdict(setup, harness);
+  return {
+    manifest: manifest.path,
+    key: manifest.key,
+    mode: manifest.mode,
+    verdict,
+    subject: manifest.subject,
+    oracle: manifest.oracle,
+    support: manifest.support,
+    copied_files: copied.files,
+    reference: {
+      repo: manifest.reference.repo,
+      ref: manifest.reference.ref,
+      sha: reference.sha,
+    },
+    golden: manifest.golden,
+    run: { setup, harness },
+  };
+}
+
+function runOnePin(manifest, pin) {
+  if (manifest.mode === 'reference-repo') return runReferenceRepoPin(manifest, pin);
+  return runSameRepoPin(manifest, pin);
 }
 
 function pinSummary(results, findings, disabled) {

@@ -19,8 +19,10 @@ subject cannot be identified, ask before writing tests.
 1. Read `docs/workflow/config.yml` and the relevant spec/plan/code.
 2. Identify the behavior boundary to pin: public command, module function, file
    transform, CLI output, or other observable surface.
-3. Set `base` to the current `HEAD` before implementation work starts unless the
-   user provided a more specific old ref.
+3. For same-repo pins, set `base` to the current `HEAD` before implementation
+   work starts unless the user provided a more specific old ref. For migration
+   pins, set `mode: reference-repo` with the old implementation's
+   `reference.repo` and pinned `reference.ref`.
 4. Choose `docs/features/<feature>/behavior-pin.yml` for the manifest.
 
 ## Phase 2: Study Existing Behavior
@@ -42,6 +44,9 @@ Rules:
 - Keep the oracle separate from the subject.
 - Add manifest `support` entries for current-tree files needed to run the
   oracle in the old tree, such as package scripts, helpers, configs, or fixtures.
+- For migration pins, write a black-box harness that compares public behavior
+  using `AW_PIN_REFERENCE_ROOT` and `AW_PIN_CANDIDATE_ROOT`; exit `10` when the
+  reference implementation itself fails the oracle.
 - Avoid network, time, random, or environment-sensitive assertions unless they
   are controlled by the harness.
 
@@ -71,6 +76,21 @@ oracle:
   - test/pin/<feature>.pin.js
 support:
   - <optional-helper-or-config>
+created: YYYY-MM-DD
+```
+
+For migrations where the old implementation lives outside this repo:
+
+```yaml
+mode: reference-repo
+reference:
+  repo: <old-repo-url-or-path>
+  ref: <old-ref>
+harness: node test/pin/<feature>-migration.pin.js
+subject:
+  - <candidate-path-being-judged>
+oracle:
+  - test/pin/<feature>-migration.pin.js
 created: YYYY-MM-DD
 ```
 

@@ -53,9 +53,36 @@ support:
   - package.json
 ```
 
+Migration pins compare the current repo to a pinned reference implementation:
+
+```yaml
+mode: reference-repo
+reference:
+  repo: ../old-system
+  ref: 8f41c2a
+harness: node test/pin/migration-contract.pin.js
+subject:
+  - src
+oracle:
+  - test/pin/migration-contract.pin.js
+golden:
+  dir: test/golden
+  generated_from:
+    repo: ../old-system
+    ref: 8f41c2a
+    sha: 8f41c2a...
+```
+
 `support` is optional and is for current-tree files needed to run the oracle in
 the old tree, such as package scripts, test config, helpers, or fixtures.
 `subject` must not overlap `oracle` or `support`.
+
+Reference-repo harnesses run once from the current repo with
+`AW_PIN_REFERENCE_ROOT`, `AW_PIN_CANDIDATE_ROOT`, `AW_PIN_MANIFEST`,
+`AW_PIN_MODE`, and optional `AW_PIN_GOLDEN_ROOT` environment variables. Exit
+code `10` means the reference implementation failed the oracle and reports
+`pin-not-characterizing`; other non-zero exits report `equivalence-broken`.
+Golden fixtures are provenance/caching data, not the primary authority.
 
 ## Ordering Rule
 

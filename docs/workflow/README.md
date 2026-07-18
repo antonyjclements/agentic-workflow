@@ -234,7 +234,9 @@ are clean no-ops.
 ### Behavior pinning (`pin`)
 
 `pin` runs characterization harnesses against both the old tree declared in a
-manifest and the current checkout:
+manifest and the current checkout. With `mode: reference-repo`, it compares the
+current repo to a pinned external/local reference repo through a black-box
+harness:
 
 ```sh
 node .scripts/aw-gate.js pin run [--json] [--out .aw/pin/equivalence.json]
@@ -249,6 +251,13 @@ commit changes both the judged subject and its manifest/oracle/support files,
 unless the commit has a manifest-scoped `Pin-Override:
 docs/features/<feature>/behavior-pin.yml — <reason>` trailer. A green pin proves
 equivalence, not correctness.
+
+Reference-repo manifests declare `reference.repo` and `reference.ref`. Their
+current-tree Node harness receives `AW_PIN_REFERENCE_ROOT`,
+`AW_PIN_CANDIDATE_ROOT`, `AW_PIN_MANIFEST`, `AW_PIN_MODE`, and optional
+`AW_PIN_GOLDEN_ROOT`; exit code `10` reports `pin-not-characterizing`. Optional
+`golden` metadata records fixture provenance without replacing live reference
+execution.
 
 ## Workflow Step Keys
 

@@ -167,17 +167,25 @@ only events recorded by commits in that range. Appends retain the newest
 
 ### `pin run`
 
-Runs each `docs/features/*/behavior-pin.yml` manifest against the manifest's old
-`base` and the current checkout. It copies current oracle/support files into a
-temporary worktree so both sides run the same harness. Results are written to
-`pin.out` with verdicts:
+Runs each `docs/features/*/behavior-pin.yml` manifest. The default same-repo mode
+compares the manifest's old `base` with the current checkout, copying current
+oracle/support files into a temporary worktree so both sides run the same
+harness. `mode: reference-repo` checks out `reference.repo` at `reference.ref`
+under `.aw/pin/` and runs the current-tree harness once with
+`AW_PIN_REFERENCE_ROOT`, `AW_PIN_CANDIDATE_ROOT`, `AW_PIN_MANIFEST`,
+`AW_PIN_MODE`, and optional `AW_PIN_GOLDEN_ROOT`.
+
+Results are written to `pin.out` with verdicts:
 
 - `pass`: old and new both pass
-- `pin-not-characterizing`: old failed, so the oracle does not describe reality
-- `equivalence-broken`: old passed and new failed
+- `pin-not-characterizing`: old/reference failed, so the oracle does not describe reality
+- `equivalence-broken`: old/reference passed and new failed
 
 Manifest `setup` and `harness` commands must be empty or
 `node <repo-relative .js path>`. `pin run` does not execute shell strings.
+Reference-repo harnesses can exit `10` to report `pin-not-characterizing`.
+Golden fixture config is recorded as provenance but does not replace live
+reference execution.
 
 ### `pin check`
 
