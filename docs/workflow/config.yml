@@ -45,6 +45,21 @@ workflow:
       skill: ""
     synthesize_memory:
       skill: ""
+  design:
+    enabled: false
+    reference_paths:
+      - docs/standards
+    hooks:
+      discovery:
+        skill: ""
+      spec_review:
+        skill: ""
+      plan_review:
+        skill: ""
+      implementation_review:
+        skill: ""
+      pre_pr:
+        skill: ""
 pull_request:
   template:
     title: ""

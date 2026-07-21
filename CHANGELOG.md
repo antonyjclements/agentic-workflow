@@ -17,6 +17,10 @@ version has no entry here.
 - Reference-repo behavior pins for migrations: `mode: reference-repo` manifests
   can compare the current repo to a pinned old repo/ref through a current-tree
   Node harness, with optional golden fixture provenance.
+- Disabled-by-default `workflow.design` hooks for design-team participation at
+  discovery, spec review, plan review, implementation review, and pre-PR
+  checkpoints, plus repo-local design reference paths defaulting to
+  `docs/standards`.
 
 ## [0.8.0] - 2026-07-16
 
