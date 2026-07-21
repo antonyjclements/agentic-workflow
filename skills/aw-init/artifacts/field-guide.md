@@ -126,6 +126,7 @@ The full chain pays off here because context loss and cross-session continuity b
 - Use `aw-create-tickets` to split plans into Linear/GitHub issues so agents can pick up work independently
 - Use `aw-request-human-review` for specs and plans before implementation starts
 - Use `aw-check-workflow-compliance` before PRs on any high-risk change
+- Configure `workflow.design` hooks when a design team should participate in discovery, spec review, plan review, implementation review, or pre-PR acceptance
 - Configure `workflow.steps.monitor_pipeline.skill` for CI monitoring
 
 ---
@@ -136,6 +137,7 @@ The full chain pays off here because context loss and cross-session continuity b
 |------|-----|
 | Just capture decisions | `aw-capture decision` ad hoc |
 | Standardize code conventions | `aw-discover-standards` once, then reference `docs/standards/` |
+| Add design-team checkpoints | configure `workflow.design` hooks and put design references in `docs/standards/` |
 | Keep AI sessions continuous | `aw-capture session` at session end; `aw-synthesize-memory` monthly |
 | Structured feature development | brainstorm → spec → work → review → PR |
 | Team onboarding / cross-session wiki | `aw-synthesize-memory` → `docs/context/wiki.md` |

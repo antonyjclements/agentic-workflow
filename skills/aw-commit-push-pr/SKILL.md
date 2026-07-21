@@ -93,6 +93,8 @@ Run a capture checkpoint before committing non-trivial work: confirm decisions a
 
 Run `aw-review` before pushing or opening a PR for non-trivial changes. Address safe findings before Step 3; carry judgment calls into the PR body when not fixed.
 
+If `workflow.design.enabled` is true and `workflow.design.hooks.pre_pr.skill` is non-empty, invoke that design hook with the current diff or PR-ready artifact set before pushing or opening the PR. Include pass/fail evidence or justified skips in the PR body inputs.
+
 ## Step 3: Commit and push
 
 If on the default branch, branch creation needs to handle stale local `<base>`, unpushed commits on local `<base>`, and uncommitted changes that collide with the fresh remote base. Read `references/branch-creation.md` and follow its decision flow before continuing.

@@ -23,6 +23,9 @@ version has no entry here.
   discovery, spec review, plan review, implementation review, and pre-PR
   checkpoints, plus repo-local design reference paths defaulting to
   `docs/standards`.
+- `aw-help`, lifecycle skills, and workflow compliance now recognize configured
+  design hooks so enabled design checkpoints are recommended, invoked, and
+  checked as shipping evidence.
 
 ## [0.8.0] - 2026-07-16
 

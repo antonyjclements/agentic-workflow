@@ -13,7 +13,7 @@ Read context. Recommend the right next skill. Input: `$ARGUMENTS`.
 Before asking anything, silently read:
 
 1. `AGENTS.md` if present — understand workflow config and task routing rules.
-2. `docs/workflow/config.yml` if present — check for configured step/auxiliary overrides.
+2. `docs/workflow/config.yml` if present — check for configured step/auxiliary overrides and enabled design hooks.
 3. `docs/workflow/field-guide.md` if present — reference for skill-by-task recommendations.
 4. `$ARGUMENTS` if provided — the user's description of what they're trying to do.
 
@@ -29,6 +29,7 @@ Determine which of these best matches the user's current state:
 - Refactor or simplification
 - PR or code review
 - Catching up on decisions or knowledge synthesis
+- Design-team workflow setup or design reference capture
 - Session wrap-up
 
 **Workflow position:**
@@ -86,6 +87,8 @@ Use this when determining which skill to recommend:
 | End of session, want to preserve context | `aw-capture session` |
 | Many session logs accumulated | `aw-synthesize-memory` |
 | Conventions are repeated but undocumented | `aw-discover-standards` |
+| Need repo-specific design principles or UX rules captured | `aw-discover-standards` |
+| Need design-team checkpoints in the workflow | configure `workflow.design` in `docs/workflow/config.yml` |
 | Specs, decisions, or features index is stale | `aw-refresh` |
 | Need a worktree for isolated work | `aw-create-worktree` |
 | Unsure what changed or spec may have drifted | `aw-review` (spec drift mode) |
@@ -103,5 +106,6 @@ If the user says yes, invoke the recommended skill directly. Pass any context fr
 
 - If `docs/workflow/field-guide.md` exists, mention it as a reference for the full skill-by-task matrix: "See `docs/workflow/field-guide.md` for the complete task-type guide."
 - If the user's configured `docs/workflow/config.yml` overrides a default skill, use the configured skill name in the recommendation, not the default.
+- If `workflow.design.enabled` is true and the user's current position matches a configured non-empty design hook, recommend that design hook skill as the next step before continuing the normal workflow.
 - If the user is using a team size that suggests lighter workflow (solo or pair), skip ceremony: do not recommend `aw-request-human-review`, `aw-create-tickets`, or full compliance checks unless the task warrants them.
 - Do not recommend multiple parallel skills. Give one clear next step.
