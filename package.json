@@ -1,6 +1,6 @@
 {
   "name": "agentic-workflow",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "private": true,
   "description": "Repo-native agentic operating model: portable AGENTS.md, skills, and durable context.",
   "scripts": {

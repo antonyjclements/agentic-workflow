@@ -12,6 +12,8 @@ version has no entry here.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-07-21
+
 ### Added
 
 - Reference-repo behavior pins for migrations: `mode: reference-repo` manifests
