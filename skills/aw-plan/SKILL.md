@@ -132,7 +132,9 @@ Before writing, check:
 - plan does not duplicate living spec content except as traceability
 - plan can be converted into tickets by `aw-create-tickets` without inventing missing acceptance criteria
 
-After writing, offer engineering/human review for the plan only when `human_review.plan.reviewers` is configured in `docs/workflow/config.yml`, the change is high-risk, or the user asked for review; otherwise continue without asking. If review is wanted, invoke `aw-request-human-review plan <plan path>`.
+After writing, if `workflow.design.enabled` is true and `workflow.design.hooks.plan_review.skill` is non-empty, invoke that design hook with the plan path before ticket creation or implementation.
+
+Offer engineering/human review for the plan only when `human_review.plan.reviewers` is configured in `docs/workflow/config.yml`, the change is high-risk, or the user asked for review; otherwise continue without asking. If review is wanted, invoke `aw-request-human-review plan <plan path>`.
 
 Then summarize the plan file path, depth, major decisions, unresolved assumptions, whether human review was requested, and recommended next step (`aw-create-tickets <plan path>`, `aw-work <plan path>`, `aw-brainstorm`, or manual review).
 

@@ -468,6 +468,21 @@ install_repo_files() {
       skill: \"\"
     synthesize_memory:
       skill: \"\"
+  design:
+    enabled: false
+    reference_paths:
+      - docs/standards
+    hooks:
+      discovery:
+        skill: \"\"
+      spec_review:
+        skill: \"\"
+      plan_review:
+        skill: \"\"
+      implementation_review:
+        skill: \"\"
+      pre_pr:
+        skill: \"\"
 pull_request:
   template:
     title: \"\"
@@ -683,7 +698,7 @@ Next steps:
 1. Read docs/workflow/field-guide.md — step-by-step guide on which skills to run for bug fixes, new features, refactors, and more, by team size.
 2. Not sure which skill fits your situation? Use aw-help for an interactive recommendation.
 3. Review AGENTS.md and CLAUDE.md for workflow routing details.
-4. Configure docs/workflow/config.yml for workflow step overrides, implementation test policy, commit messages, PR templates, human reviewers, and CI monitoring.
+4. Configure docs/workflow/config.yml for workflow step overrides, implementation test policy, design hooks, commit messages, PR templates, human reviewers, and CI monitoring.
    Set workflow.steps.monitor_pipeline.skill to enable post-PR CI monitoring for your provider (GitHub Actions, CircleCI, Jenkins, etc.).
 5. If this is an existing install with an older docs/workflow/config.yml, run:
    skills/aw-init/scripts/upgrade.sh --repo $repo_dir --dry-run

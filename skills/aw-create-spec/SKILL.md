@@ -30,7 +30,8 @@ Create durable feature intent that stays current with the code. A spec describes
    - `status: promoted`
    - `promoted: YYYY-MM-DD`
    - `promoted_to: docs/features/<feature>/spec.md`
-8. Offer product/human review for the spec only when `human_review.spec.reviewers` is configured in `docs/workflow/config.yml`, the change is high-risk, or the user asked for review; otherwise finish without asking. If review is wanted, invoke `aw-request-human-review spec <spec path>`.
+8. If `workflow.design.enabled` is true and `workflow.design.hooks.spec_review.skill` is non-empty, invoke that design hook with the spec path before human review or planning.
+9. Offer product/human review for the spec only when `human_review.spec.reviewers` is configured in `docs/workflow/config.yml`, the change is high-risk, or the user asked for review; otherwise finish without asking. If review is wanted, invoke `aw-request-human-review spec <spec path>`.
 
 ## Rules
 

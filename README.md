@@ -330,7 +330,7 @@ Use aw-create-tickets to turn docs/features/mfa/plan.md into stories.
 Create Jira tickets from this plan, using the configured ticket creation skill.
 ```
 
-Workflow step overrides, implementation test policy, and related behavior are configured in `docs/workflow/config.yml`. Most repos should leave skill overrides blank; blank values use the bundled defaults.
+Workflow step overrides, implementation test policy, design hooks, and related behavior are configured in `docs/workflow/config.yml`. Most repos should leave skill overrides blank; blank values use the bundled defaults.
 
 Minimal example:
 
@@ -350,6 +350,21 @@ workflow:
   auxiliary:
     research_slack:
       skill: ""
+  design:
+    enabled: false
+    reference_paths:
+      - docs/standards
+    hooks:
+      discovery:
+        skill: ""
+      spec_review:
+        skill: ""
+      plan_review:
+        skill: ""
+      implementation_review:
+        skill: ""
+      pre_pr:
+        skill: ""
 pull_request:
   template:
     title: ""
@@ -391,6 +406,9 @@ Schema:
 | `workflow.implementation.test_policy` | string | `acceptance-first` | How implementation work should map acceptance criteria to tests or checks. |
 | `workflow.steps.<step>.skill` | string | `""` | Optional replacement skill for a named workflow lifecycle step. Blank means use the bundled default. |
 | `workflow.auxiliary.<key>.skill` | string | `""` | Optional replacement skill for a helper capability used by one or more workflow steps. Blank means use the bundled default. |
+| `workflow.design.enabled` | boolean | `false` | Master switch for additive design-team hooks. |
+| `workflow.design.reference_paths` | string list | `["docs/standards"]` | Repo-relative files or directories containing design reference material. |
+| `workflow.design.hooks.<hook>.skill` | string | `""` | Optional design skill for a design hook. Blank skips that hook. |
 | `pull_request.template.title` | string | `""` | Optional path or URL for a PR title template. Blank means generate the title normally. |
 | `pull_request.template.body` | string | `""` | Optional path or URL for a PR body template. Blank means generate the body normally. |
 | `git.commit.format` | string | `conventional` | Commit message convention used by bundled commit skills. |
@@ -407,6 +425,10 @@ The config customizes how named workflow routes execute. It does not decide whet
 Set `workflow.steps.<step>.skill` to replace a bundled workflow step with a custom skill. Blank values use the bundled default. The full default step map is documented in the installed `docs/workflow/README.md`.
 
 Set `workflow.auxiliary.<key>.skill` to replace helper skills that can be invoked by multiple workflow steps.
+
+Set `workflow.design.enabled: true` to add design-team checkpoints around the core workflow without replacing it. Hook skills live under `workflow.design.hooks`: `discovery` after PRD intake or brainstorming, `spec_review` after spec creation, `plan_review` after planning, `implementation_review` after UI-affecting implementation, and `pre_pr` before PR creation. Leave a hook skill blank to skip it.
+
+Design reference material is repo-local. Put enforceable design principles, accessibility rules, content style, and interaction conventions in `docs/standards/` and index them in `docs/standards/index.yml`; keep feature-specific UX requirements in `docs/features/<feature>/spec.md`, durable tradeoffs in `docs/decisions/`, and corrections in `docs/learnings/`. Design hook skills should read `workflow.design.reference_paths` before reviewing artifacts or diffs.
 
 Default workflow step keys:
 

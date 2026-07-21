@@ -27,6 +27,7 @@ Read `docs/workflow/config.yml` first.
 - Read `workflow.implementation.test_policy`; blank or missing values default to `acceptance-first`.
 - Read `workflow.steps.*.skill` to understand configured replacement steps. Do not use removed legacy skill-selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` for routing if they appear in older repos; report the migration path instead.
 - Read `workflow.auxiliary.*.skill` to understand configured helper skill replacements such as Slack research.
+- Read `workflow.design`; when enabled, configured non-empty design hooks are expected process checkpoints at discovery, spec review, plan review, implementation review, and pre-PR.
 - Treat non-skill configuration fields as authoritative, including `git.commit.*`, `pull_request.template.*`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
 
 ## Evidence To Gather
@@ -39,6 +40,7 @@ Read `docs/workflow/config.yml` first.
 6. Tests/checks run, based on terminal/session context when available and changed test files in the diff.
 7. README changes when setup, commands, configuration, architecture, or workflow behavior changed.
 8. Evidence that `aw-review` ran, or a justified exception.
+9. Evidence that enabled, configured design hooks ran at applicable checkpoints, or a justified skip.
 
 ## Checks
 
@@ -46,6 +48,7 @@ Report findings when:
 
 - A configured `workflow.steps.<step>.skill` appears ignored without explanation.
 - A configured `workflow.auxiliary.<key>.skill` appears ignored without explanation.
+- `workflow.design.enabled` is true and an applicable configured design hook appears ignored without explanation.
 - A removed legacy skill-selector field is used as the active routing source.
 - The effective implementation test policy is missing from the work summary, PR inputs, or handoff evidence.
 - Acceptance criteria from the linked spec, plan, or ticket are not mapped to automated tests or explicit manual checks.

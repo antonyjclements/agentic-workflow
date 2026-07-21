@@ -2,7 +2,7 @@
 
 `docs/workflow/config.yml` customizes how Agentic Workflow runs in this repo. Most repos should leave skill overrides blank; blank values use the bundled defaults.
 
-Task-size routing belongs in `AGENTS.md`. Use `config.yml` for execution details such as replacement skills, implementation test policy, PR templates, commit conventions, CI monitoring, and human reviewers.
+Task-size routing belongs in `AGENTS.md`. Use `config.yml` for execution details such as replacement skills, implementation test policy, design hooks, PR templates, commit conventions, CI monitoring, and human reviewers.
 
 For a step-by-step guide on which skills to run and when — by task type and team size — see [field-guide.md](field-guide.md).
 
@@ -20,6 +20,21 @@ workflow:
   auxiliary:
     research_slack:
       skill: ""
+  design:
+    enabled: false
+    reference_paths:
+      - docs/standards
+    hooks:
+      discovery:
+        skill: ""
+      spec_review:
+        skill: ""
+      plan_review:
+        skill: ""
+      implementation_review:
+        skill: ""
+      pre_pr:
+        skill: ""
 pull_request:
   template:
     title: ""
@@ -49,6 +64,9 @@ human_review:
 | `workflow.implementation.test_policy` | string | `acceptance-first` | How implementation work maps acceptance criteria to tests or checks. |
 | `workflow.steps.<step>.skill` | string | `""` | Optional replacement skill for a workflow lifecycle step. Blank uses the bundled default. |
 | `workflow.auxiliary.<key>.skill` | string | `""` | Optional replacement skill for a helper capability. Blank uses the bundled default. |
+| `workflow.design.enabled` | boolean | `false` | Master switch for additive design-team hooks. |
+| `workflow.design.reference_paths` | string list | `["docs/standards"]` | Repo-relative files or directories containing design reference material. |
+| `workflow.design.hooks.<hook>.skill` | string | `""` | Optional design skill for a design hook. Blank skips that hook. |
 | `pull_request.template.title` | string | `""` | Optional path or URL for a PR title template. |
 | `pull_request.template.body` | string | `""` | Optional path or URL for a PR body template. |
 | `git.commit.format` | string | `conventional` | Commit message convention used by bundled commit skills. |
@@ -289,6 +307,24 @@ pin_behavior -> aw-pin-behavior
 resolve_pr_feedback -> aw-resolve-pr-feedback
 synthesize_memory -> aw-synthesize-memory
 ```
+
+## Design Hooks
+
+Design hooks are additive checkpoints for teams with design skills. They do not replace the core workflow steps; use `workflow.steps.<step>.skill` when a design-owned skill should replace an entire lifecycle step.
+
+Design reference material lives in repo-local docs, usually `docs/standards/`, and should be indexed in `docs/standards/index.yml` when it is intended to guide agents. Use feature specs for feature-specific UX requirements, decisions for durable design tradeoffs, and learnings for corrections that should influence future work.
+
+Hook keys:
+
+```text
+discovery -> after PRD intake or during brainstorming, before durable UX intent is settled
+spec_review -> after a spec is created or updated
+plan_review -> after a plan is created, before tickets or implementation
+implementation_review -> after UI-affecting implementation work
+pre_pr -> before PR creation for design acceptance evidence
+```
+
+When `workflow.design.enabled` is false, agents skip design hooks. When it is true, agents invoke only hooks with a non-empty `skill`, passing the current artifact path, diff, or PR URL that matches the hook. Design hook skills should read `workflow.design.reference_paths`, report pass/fail evidence or findings, and state any unsupported contract element.
 
 ## Artifact Handoff Contract
 

@@ -37,7 +37,7 @@ Ask one question at a time. Prefer concise single-select choices; use multi-sele
    - brief alignment for simple low-risk work
    - standard requirements for normal feature/problem work
    - deep exploration for ambiguous, strategic, cross-cutting, or high-risk work
-6. Gather context from user, repo, imported PRDs under `docs/product/prds/`, docs, learnings, and named resources. Use web/current research when outside facts may have changed.
+6. Gather context from user, repo, imported PRDs under `docs/product/prds/`, docs, learnings, and named resources. If `workflow.design.enabled` is true and `workflow.design.hooks.discovery.skill` is non-empty, invoke that design hook with the PRD path, brainstorm context, or feature idea before durable UX intent is settled. Use web/current research when outside facts may have changed.
 7. Explore:
    - actors/users
    - problem and evidence
@@ -97,6 +97,7 @@ Rules for spec output:
 - Keep specs focused on durable behavior and intent, not implementation tasks or progress.
 - Link imported PRDs, idea docs, brainstorm notes, and related decisions when they exist.
 - When a source PRD under `docs/product/prds/` informs the spec, mark that PRD `status: promoted` in frontmatter and `docs/product/prds/index.yml`, and add `promoted: YYYY-MM-DD` plus `promoted_to: <spec path>`. Do not rewrite the PRD body.
+- If `workflow.design.enabled` is true and `workflow.design.hooks.spec_review.skill` is non-empty, invoke that design hook with the spec path before human review or planning.
 - Offer product/human review for the spec only when `human_review.spec.reviewers` is configured in `docs/workflow/config.yml`, the change is high-risk, or the user asked for review; otherwise finish without asking. If review is wanted, invoke `aw-request-human-review spec <spec path>`.
 
 ## Ideation Output

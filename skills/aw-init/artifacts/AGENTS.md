@@ -43,6 +43,7 @@ Keep durable artifacts when knowledge is worth rediscovering later. Keep intent 
 ## Workflow Step Routing
 
 - Read `docs/workflow/config.yml` before invoking a configurable step. A configured `workflow.steps.<step>.skill` or `workflow.auxiliary.<key>.skill` replaces the bundled default; blank means use the default. See `docs/workflow/README.md` for key maps, contracts, and legacy migration.
+- When `workflow.design.enabled` is true, run configured non-empty design hooks at their documented checkpoints; design reference material usually lives in `docs/standards/`.
 - Read `workflow.implementation.test_policy` before implementation; blank defaults to `acceptance-first`. Follow the policy described in `docs/workflow/README.md`.
 - Use `docs/workflow/field-guide.md` for task and team-size sequences, or `aw-help` when the next step is unclear. Pass each step's artifact or identifier to the next step.
 - A ticket is a valid entrypoint. Fetch it through the configured tool, follow its links to source artifacts, and stop if it conflicts with the living spec or decisions.

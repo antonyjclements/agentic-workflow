@@ -2,7 +2,7 @@
 title: Spec-Driven Agentic Workflow
 status: active
 created: 2026-05-24
-updated: 2026-07-18
+updated: 2026-07-21
 tags:
   - workflow
   - specs
@@ -46,6 +46,7 @@ related_decisions:
   - docs/decisions/2026-07-16-add-spec-traceability-checks.md
   - docs/decisions/2026-07-16-add-workflow-execution-trace.md
   - docs/decisions/2026-07-16-add-behavior-pinning.md
+  - docs/decisions/2026-07-21-add-design-team-hooks.md
 ---
 
 # Spec-Driven Agentic Workflow
@@ -80,6 +81,7 @@ The workflow routes:
 - session logs to `docs/sessions/` (self-describing, no index)
 - the synthesized project wiki to `docs/context/wiki.md`
 - ticket creation, workflow step overrides, implementation test policy, PR templates, commit messages, post-PR CI monitoring, Slack research, human review, enforcement gates, telemetry, and org-shared knowledge routing to `docs/workflow/config.yml`
+- additive design-team hooks and design reference paths to `docs/workflow/config.yml`
 - optional spec traceability routing to `docs/workflow/config.yml`
 - optional workflow execution trace routing to `docs/workflow/config.yml`
 - repo initialization only through `aw-init`; upgrades through `skills/aw-init/scripts/upgrade.sh`
@@ -116,6 +118,8 @@ The workflow routes:
 - Plans are reviewed with `aw-review plan` before human review, ticket creation, or implementation.
 - A plan may be turned into stories or tickets through `aw-create-tickets`. Repos can replace that step through `workflow.steps.create_tickets.skill`; when it is blank, the bundled step drafts the ticket split without creating external tickets.
 - Repos can override skill-backed workflow steps through `workflow.steps.<step>.skill` and auxiliary helper skills through `workflow.auxiliary.<key>.skill` in `docs/workflow/config.yml`. Blank values use the bundled default. Configured custom skills must preserve the same workflow contract: read relevant workflow config, accept the same handoff artifact or identifier, return the expected artifact path or ID, and report any unsupported contract element.
+- Repos can configure additive design-team hooks through `workflow.design` without replacing core lifecycle steps. Design hooks are disabled by default; when enabled, only hooks with a non-empty skill run. The hook keys are `discovery`, `spec_review`, `plan_review`, `implementation_review`, and `pre_pr`. Lifecycle skills invoke configured hooks at the matching checkpoints, and `aw-help` recommends configured hooks when they match the user's current workflow position.
+- Design hook skills read `workflow.design.reference_paths`, usually `docs/standards`, before reviewing artifacts or diffs. Repo-specific design principles, accessibility rules, content style, and interaction conventions live in `docs/standards/` when they should guide agents; feature-specific UX requirements live in feature specs, durable design tradeoffs in decisions, and corrections in learnings.
 - The default workflow step keys are `prd`, `brainstorm`, `create_spec`, `request_human_review`, `plan`, `review`, `create_tickets`, `work`, `check_workflow_compliance`, `commit`, `commit_push_pr`, and `monitor_pipeline` (config-only; no bundled monitor skill).
 - The default auxiliary skill keys are `refresh`, `debug`, `create_worktree`, `capture`, `discover_standards`, `research_slack` (config-only), `resolve_pr_feedback`, and `synthesize_memory`.
 - Installed `AGENTS.md` starts with task triage that routes trivial changes, small fixes, feature or behavior changes, and high-risk or cross-cutting changes to the smallest safe workflow path. Task triage lives in `AGENTS.md`, not `docs/workflow/config.yml`.
@@ -214,9 +218,11 @@ The workflow routes:
 - PRD promotion updates source PRD lifecycle metadata without rewriting PRD content, and archived artifacts can be removed from the working tree by `aw-refresh cleanup`.
 - `aw-brainstorm` can resolve ambiguous PRDs or raw ideas and create/update the living feature spec without requiring a separate `aw-create-spec` handoff; `aw-create-spec` remains available for direct spec creation.
 - Skill-backed workflow steps and auxiliary helpers can be overridden through `workflow.steps.<step>.skill` and `workflow.auxiliary.<key>.skill`; blank values preserve bundled defaults, and custom skills preserve the default step contract.
+- Additive design-team hooks can be configured through `workflow.design`; disabled or blank hooks skip cleanly, and configured hook skills preserve the design hook contract.
 - The installed `docs/workflow/README.md` defines the `docs/workflow/config.yml` schema — value types, defaults, workflow step keys, auxiliary keys, implementation test policies, the artifact handoff contract, and the legacy field migration mapping.
 - Implementation test policy is configurable through `workflow.implementation.test_policy`; missing or blank values default to `acceptance-first`; the supported policies are `acceptance-first`, `tdd`, `bdd`, `characterization-first`, `test-after`, `manual-verification`, and `none`.
 - `aw-work` and configured replacement work skills apply the configured implementation test policy and report tests, manual checks, acceptance coverage, and exceptions.
+- `aw-help`, `aw-brainstorm`, `aw-create-spec`, `aw-plan`, `aw-work`, `aw-commit-push-pr`, and `aw-check-workflow-compliance` honor configured `workflow.design` hooks at their matching checkpoints.
 - `aw-create-worktree` hands off to the configured work skill and implementation test policy after creating an isolated checkout.
 - Upgrades run through `skills/aw-init/scripts/upgrade.sh` in dry-run mode before applying; applying creates a timestamped backup, writes the migrated config, updates `.agentic-workflow-version`, preserves unknown fields, removes migrated legacy selector fields, and reports conflicts instead of choosing between incompatible values.
 - The installer supports a remote source path through `--remote`, `--source-url`, or `AGENTIC_WORKFLOW_SOURCE_URL` so installed repos can fetch updated skills and agent artifacts without a local clone.
@@ -229,6 +235,7 @@ The workflow routes:
 - New installs write the `trace` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` gitignores `.aw/tmp/` for transient trace annotation batches.
 - New installs write the `workflow_trace` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` gitignores `.aw/workflow-trace.jsonl` for local workflow breadcrumbs.
 - New installs write the `pin` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` gitignores `.aw/pin/` for temporary pin worktrees and logs.
+- New installs write the `workflow.design` section to `docs/workflow/config.yml`, disabled by default, with `reference_paths: [docs/standards]` and blank design hook skills.
 - With telemetry enabled, `record` appends to a month-sharded log (`events-YYYY-MM.jsonl`) by default, and `node .scripts/aw-gate.js prune-telemetry` deletes shards older than `telemetry.retention_months` (no-op when rotation or retention is unset).
 - `.scripts/aw-gate.js check` exits zero when `gates.enabled` is false, and exits non-zero when any gate under `gates.checks` fails its `mode` (`age` staleness, `commit` path changes since the recorded commit, or both); `record <gate>` stamps the git-ignored state file with the current time and commit and, when `telemetry.enabled`, appends a no-PII event to `telemetry.path`.
 - The self-hosted `.scripts/aw-gate.js` stays identical to `skills/aw-init/artifacts/aw-gate.js`, and `scripts/test-install.sh` fails on drift and exercises the gate's disabled/unrecorded/recorded behavior when `node` is available.
@@ -236,6 +243,7 @@ The workflow routes:
 - `upgrade-config.rb` injects the disabled `trace` default section into older configs during migration without overwriting existing values.
 - `upgrade-config.rb` injects the disabled `workflow_trace` default section into older configs during migration without overwriting existing values.
 - `upgrade-config.rb` injects the disabled `pin` default section into older configs during migration without overwriting existing values.
+- `upgrade-config.rb` injects the disabled `workflow.design` default section into older configs during migration without overwriting existing values.
 - With trace disabled, `trace` exits 0 and `trace-annotate` skips writes; safe `.aw/tmp/trace-intents.*.json` batch files are removed before exit.
 - With trace enabled, `trace` reports dangling anchors, untested requirements, duplicate requirement IDs, optional code-anchor gaps, and uncoupled test changes. `trace-annotate` supports direct and batch annotation, merges multi-ID code labels, applies batch edits in descending line order, and preserves failed enabled batch files for debugging.
 - With workflow trace disabled, `workflow-record` and `workflow-check` exit 0 without requiring process artifacts.

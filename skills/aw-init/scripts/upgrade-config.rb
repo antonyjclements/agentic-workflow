@@ -39,7 +39,18 @@ DEFAULT_CONFIG = {
       "test_policy" => "acceptance-first"
     },
     "steps" => DEFAULT_STEPS.to_h { |step| [step, { "skill" => "" }] },
-    "auxiliary" => DEFAULT_AUXILIARY.to_h { |skill| [skill, { "skill" => "" }] }
+    "auxiliary" => DEFAULT_AUXILIARY.to_h { |skill| [skill, { "skill" => "" }] },
+    "design" => {
+      "enabled" => false,
+      "reference_paths" => ["docs/standards"],
+      "hooks" => {
+        "discovery" => { "skill" => "" },
+        "spec_review" => { "skill" => "" },
+        "plan_review" => { "skill" => "" },
+        "implementation_review" => { "skill" => "" },
+        "pre_pr" => { "skill" => "" }
+      }
+    }
   },
   "pull_request" => {
     "template" => {
@@ -406,6 +417,15 @@ DEFAULT_AUXILIARY.each do |key|
 end
 
 ensure_hash(ensure_hash(config, "workflow"), "implementation")["test_policy"] ||= "acceptance-first"
+
+design = ensure_hash(ensure_hash(config, "workflow"), "design")
+design["enabled"] = false unless design.key?("enabled")
+design["reference_paths"] = ["docs/standards"] unless design.key?("reference_paths")
+design_hooks = ensure_hash(design, "hooks")
+%w[discovery spec_review plan_review implementation_review pre_pr].each do |hook|
+  hook_config = ensure_hash(design_hooks, hook)
+  hook_config["skill"] = "" unless hook_config.key?("skill")
+end
 
 valid_policies = %w[
   acceptance-first
