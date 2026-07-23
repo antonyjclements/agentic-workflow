@@ -673,7 +673,7 @@ gates:
       max_age_hours: 336
 ```
 
-After a successful run, `aw-review`, `aw-capture`, and `aw-check-workflow-compliance` call `node .scripts/aw-gate.js record <gate>`, writing the timestamp to the git-ignored `.aw-gate-state.json`. `aw-synthesize-memory` records `synthesize` every time it is invoked, including no-op runs, so repos can enforce a periodic memory-synthesis gate. You wire the check wherever you want it to block:
+After a successful run, `aw-review`, `aw-capture`, and `aw-check-workflow-compliance` write a proof-of-work receipt (`node .scripts/aw-gate.js receipt <gate> --summary "..."`) and then call `node .scripts/aw-gate.js record <gate>`, writing the timestamp to the git-ignored `.aw-gate-state.json`. `aw-synthesize-memory` records `synthesize` every time it is invoked, including no-op runs, so repos can enforce a periodic memory-synthesis gate. When `gates.require_receipt` is on (the installer's default), `record` refuses to stamp without a fresh, single-use receipt — so an agent cannot clear a blocked push by running `record` without actually running the skill (`--no-receipt` bypasses it for bootstrap only). You wire the check wherever you want it to block:
 
 ```sh
 node .scripts/aw-gate.js check   # exit 1 if any configured gate is missing or stale; exit 0 when gates.enabled is false

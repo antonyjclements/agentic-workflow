@@ -6,6 +6,7 @@
   "scripts": {
     "prepare": "husky",
     "gate:check": "node .scripts/aw-gate.js check",
+    "gate:test": "node test/gate/receipt.test.js",
     "trace:check": "node .scripts/aw-gate.js trace",
     "workflow:check": "node .scripts/aw-gate.js workflow-check",
     "pin:check": "node .scripts/aw-gate.js pin check",

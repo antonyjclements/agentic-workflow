@@ -16,6 +16,16 @@ or CI. For the terse schema, see [README.md](README.md); this file is the how-to
 > "did we review this?" enforceable and deterministic, while the judgment of
 > whether the review was any good stays with the agent and the humans. Keep that
 > boundary in mind when deciding what to gate on.
+>
+> **Receipts close the "stamp without running" gap.** Left alone, `record review`
+> is a single command an agent can run to clear a blocked push *without running
+> `aw-review` at all*. When `gates.require_receipt` is on, `record` refuses to
+> stamp unless the skill has just written a fresh, gate-named **receipt**
+> summarizing what it did, and consumes that receipt (single-use) so it cannot
+> re-stamp a later commit. This does not make a lazy review good — it raises the
+> floor from "type one command" to "produce recent, substantive, single-use
+> evidence", and leaves an auditable trail. It is a deterrent and an audit aid,
+> not a proof of quality.
 
 ---
 
@@ -55,7 +65,8 @@ The script requires **Node ≥ 16** at the enforcement point (local hook or CI).
 ## 3. The CLI
 
 ```sh
-node .scripts/aw-gate.js record <event> [--detail "text"]
+node .scripts/aw-gate.js receipt <gate> --summary "text" [--detail "text"]
+node .scripts/aw-gate.js record <event> [--detail "text"] [--no-receipt]
 node .scripts/aw-gate.js check [--against head|worktree]
 node .scripts/aw-gate.js trace [--base <ref>] [--json] [--out <path>]
 node .scripts/aw-gate.js trace-annotate <spec|test|code> --file <path> --line <n> --id <ID>[,<ID>]
@@ -66,6 +77,21 @@ node .scripts/aw-gate.js pin run [--json] [--out <path>]
 node .scripts/aw-gate.js pin check [--base <ref>] [--json]
 node .scripts/aw-gate.js org-sync
 ```
+
+### `receipt <gate>`
+
+Writes a git-ignored **proof-of-work receipt** for `<gate>` to
+`<gates.receipt_dir>/<gate>.json` (default `.aw/receipts/<gate>.json`). The skill
+calls this when it finishes, passing a `--summary` that restates what it did. The
+receipt records `{ gate, ts, commit, summary, detail }`. `record` verifies and
+then consumes it.
+
+```sh
+node .scripts/aw-gate.js receipt review --summary "reviewed the auth diff; fixed one P1, no P0s"
+```
+
+`--summary` is required and must be non-empty — an empty summary is refused, so
+stamping always carries at least a stated claim of what ran.
 
 ### `record <event>`
 
@@ -78,13 +104,28 @@ latest stamp wins.
 node .scripts/aw-gate.js record review --detail "code review"
 ```
 
-The bundled skills call this automatically when they finish:
+When the gate is **receipt-required** (`gates.require_receipt: true`, or a
+per-gate `checks.<name>.require_receipt: true`), `record` first verifies a fresh,
+gate-matching receipt written by `receipt <gate>`:
+
+- the receipt's `gate` must equal `<event>`;
+- its `summary` must be non-empty;
+- its `ts` must be within `gates.receipt_max_age_minutes` (default 180) — a stale
+  or reused-from-last-week receipt is rejected;
+
+then folds a digest of it into the state entry and **deletes** the receipt so it
+is single-use. Without a valid receipt, `record` exits non-zero and does not
+stamp. `--no-receipt` bypasses this check with a loud stderr warning — it exists
+only for bootstrap (the commit that first enables the gate, fresh clones, hand
+use), never to skip running the skill.
+
+The bundled skills call `receipt` then `record` automatically when they finish:
 `aw-review` → `review`, `aw-capture` → `capture`,
 `aw-check-workflow-compliance` → `check_workflow_compliance`,
 `aw-synthesize-memory` → `synthesize`. `aw-synthesize-memory` records its gate
-on every invocation, including no-op runs with no unprocessed sessions, so an
-age-based `synthesize` gate can enforce periodic memory review. You can also call
-it by hand.
+on every invocation, including no-op runs with no unprocessed sessions (its
+receipt summary says so), so an age-based `synthesize` gate can enforce periodic
+memory review. You can also call them by hand.
 
 ### `check`
 
@@ -201,6 +242,9 @@ trailer only when coupling those edits is intentional.
 ```yaml
 gates:
   enabled: true                  # master switch; false makes `check` a no-op
+  require_receipt: true          # `record` needs a fresh receipt from the skill
+  receipt_dir: .aw/receipts      # where receipts are written (git-ignored)
+  receipt_max_age_minutes: 180   # how recent a receipt must be to count
   state_file: .aw-gate-state.json
   checks:
     review:
@@ -223,6 +267,15 @@ gates:
 - `checks.<name>` — one entry per gate. `<name>` is the event the matching skill
   records. Remove an entry to stop enforcing that gate (the skill still records
   it harmlessly).
+- `require_receipt` — when `true`, `record <name>` refuses to stamp unless the
+  skill has just written a fresh receipt (see [§3](#3-the-cli)). Defaults to
+  `false` in the tool for backward compatibility; the installer ships it `true`.
+  A per-gate `checks.<name>.require_receipt` boolean overrides this default for
+  one gate — e.g. keep it strict for `review` but relax it for `synthesize`.
+- `receipt_dir` — where receipts are written and consumed. Keep it git-ignored;
+  the installer adds `.aw/receipts/` to `.gitignore`.
+- `receipt_max_age_minutes` — how recent a receipt must be to be accepted
+  (default 180). Tightening it forces the skill to have run closer to the stamp.
 
 ### Modes
 
@@ -437,8 +490,11 @@ When enabled, every `record <gate>` call also writes a `gate` event to this file
 
 ## 8. The everyday loop
 
-1. You do work and run a skill — e.g. `aw-review`. On completion it runs
-   `node .scripts/aw-gate.js record review`, stamping the current commit/time.
+1. You do work and run a skill — e.g. `aw-review`. On completion it writes a
+   receipt (`receipt review --summary "…"`) and then runs
+   `node .scripts/aw-gate.js record review`, which verifies and consumes that
+   receipt and stamps the current commit/time. If the skill did not run, there is
+   no receipt and `record` refuses to stamp.
 2. You push. The pre-push hook runs `node .scripts/aw-gate.js check`.
 3. If the review gate is fresh (no non-doc changes since the review, per its
    `paths`), the push proceeds. If you changed code after reviewing, the gate is
@@ -459,10 +515,11 @@ commit. For that one push, bypass the hook once:
 git push --no-verify
 ```
 
-Or record after committing, then push normally:
+Or record after committing, then push normally. With `require_receipt` on, this
+first commit has no receipt yet, so bypass the receipt check once:
 
 ```sh
-node .scripts/aw-gate.js record review
+node .scripts/aw-gate.js record review --no-receipt
 git push
 ```
 
@@ -476,6 +533,8 @@ After the bootstrap, the normal loop enforces every subsequent push.
 | --- | --- | --- |
 | `gates disabled … skipping` (exit 0) | `gates.enabled` is not `true` | set `gates.enabled: true` |
 | `<gate>: never recorded` | no marker yet | run the skill, or `record <gate>` (first run / fresh clone — state is per-checkout and git-ignored) |
+| `no receipt at … — run the skill` (from `record`) | receipt-required gate has no fresh receipt | run the skill (it writes the receipt), or `receipt <gate> --summary "…"` then `record`; bootstrap only: `record <gate> --no-receipt` |
+| `receipt … is stale` / `is for gate "X"` (from `record`) | receipt too old or for the wrong gate | re-run the skill so it writes a fresh, correct receipt, then `record` |
 | `<gate>: stale (last run Nh ago, limit Mh)` | age-mode window exceeded | re-run the skill |
 | `<gate>: code changed in <paths> … since it last ran` | commit-mode: relevant paths changed | re-run the review/skill, then re-record |
 | `<gate>: recorded commit <sha> not found (rebased or shallow clone)` | the recorded commit is gone | re-run the skill; in CI use `fetch-depth: 0` |

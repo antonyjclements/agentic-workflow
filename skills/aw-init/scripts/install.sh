@@ -515,6 +515,7 @@ human_review:
     reviewers: []
 gates:
   enabled: false
+  require_receipt: true
   state_file: .aw-gate-state.json
   checks:
     review:
@@ -584,7 +585,7 @@ install_gate_script() {
 
   # The freshness state file and org cache are per-checkout, never committed.
   local gitignore="$repo_dir/.gitignore"
-  for entry in ".aw-gate-state.json" ".aw-org-cache/" ".aw/tmp/" ".aw/workflow-trace.jsonl" ".aw/pin/"; do
+  for entry in ".aw-gate-state.json" ".aw/receipts/" ".aw-org-cache/" ".aw/tmp/" ".aw/workflow-trace.jsonl" ".aw/pin/"; do
     if [ ! -f "$gitignore" ] || ! grep -Fqx "$entry" "$gitignore"; then
       printf '%s\n' "$entry" >> "$gitignore"
       echo "gitignore: $entry"

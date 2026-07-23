@@ -256,6 +256,102 @@ function writeState(config, state) {
   fs.writeFileSync(stateFilePath(config), JSON.stringify(state, null, 2) + '\n');
 }
 
+// --- Receipts (git-ignored proof-of-work the recording skill writes) ------
+// A gate stamp only asserts "this step ran"; a receipt is the byproduct that
+// makes that assertion checkable at record time. When a gate is receipt-required,
+// `record <gate>` refuses to stamp unless the matching skill has just written a
+// fresh, gate-named receipt summarizing what it did. This does NOT prove the work
+// was good (see docs/workflow/gates.md) — it turns "one convenient command clears
+// the gate" into "produce substantive, recent, single-use evidence", and leaves
+// an auditable trail. Receipts are per-checkout and git-ignored, like gate state.
+function receiptPolicy(config, gate) {
+  const gates = config.gates || {};
+  const globalRequire = gates.require_receipt === true;
+  const check = (gates.checks || {})[gate] || {};
+  const required = typeof check.require_receipt === 'boolean'
+    ? check.require_receipt
+    : globalRequire;
+  const dir = typeof gates.receipt_dir === 'string' && gates.receipt_dir.trim() !== ''
+    ? gates.receipt_dir
+    : '.aw/receipts';
+  const maxAgeMinutes = Number.isFinite(Number(gates.receipt_max_age_minutes)) && Number(gates.receipt_max_age_minutes) > 0
+    ? Number(gates.receipt_max_age_minutes)
+    : 180;
+  return { required, dir, maxAgeMinutes };
+}
+
+function receiptFilePath(policy, gate) {
+  const rel = path.join(policy.dir, `${gate}.json`);
+  const abs = resolveRepoPath(rel);
+  if (!abs) fail(`gates.receipt_dir must be repo-relative: ${policy.dir}`);
+  return { rel, abs };
+}
+
+// Returns { receipt, rel, abs } on success or { error } describing why the
+// receipt does not stand in for a real skill run.
+function verifyReceipt(policy, gate) {
+  const { rel, abs } = receiptFilePath(policy, gate);
+  let text;
+  try {
+    text = fs.readFileSync(abs, 'utf8');
+  } catch (_) {
+    return { error: `no receipt at ${rel} — run the skill (it writes the receipt), then record` };
+  }
+  let receipt;
+  try {
+    receipt = JSON.parse(text);
+  } catch (e) {
+    return { error: `receipt ${rel} is not valid JSON: ${e.message}` };
+  }
+  if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt)) {
+    return { error: `receipt ${rel} must be a JSON object` };
+  }
+  if (receipt.gate !== gate) {
+    return { error: `receipt ${rel} is for gate "${receipt.gate}", not "${gate}"` };
+  }
+  if (typeof receipt.summary !== 'string' || receipt.summary.trim() === '') {
+    return { error: `receipt ${rel} has no non-empty summary of what the skill did` };
+  }
+  const ageMs = Date.now() - Date.parse(receipt.ts);
+  if (!Number.isFinite(ageMs)) {
+    return { error: `receipt ${rel} has an unreadable ts "${receipt.ts}"` };
+  }
+  if (ageMs < -5 * 60 * 1000) {
+    return { error: `receipt ${rel} ts "${receipt.ts}" is in the future` };
+  }
+  if (ageMs > policy.maxAgeMinutes * 60 * 1000) {
+    const ageMin = (ageMs / 60000).toFixed(0);
+    return { error: `receipt ${rel} is stale (${ageMin}m old, limit ${policy.maxAgeMinutes}m) — re-run the skill` };
+  }
+  return { receipt, rel, abs };
+}
+
+function cmdReceipt(args) {
+  const { positional, flags } = parseFlags(args);
+  const gate = positional[0];
+  if (!gate || !/^[a-z][a-z0-9_-]*$/.test(gate)) {
+    fail('receipt requires a gate name like `review`, `capture`, `check_workflow_compliance`, or `synthesize`');
+  }
+  const summary = typeof flags.summary === 'string' ? flags.summary.trim() : '';
+  if (summary === '') {
+    fail('receipt requires --summary "<what the skill actually did>" — the proof-of-work the gate verifies');
+  }
+  const config = loadConfig();
+  const policy = receiptPolicy(config, gate);
+  const { rel, abs } = receiptFilePath(policy, gate);
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  const receipt = {
+    gate,
+    ts: new Date().toISOString(),
+    commit: currentCommit(),
+    summary,
+    detail: typeof flags.detail === 'string' ? flags.detail : null,
+  };
+  fs.writeFileSync(abs, JSON.stringify(receipt, null, 2) + '\n');
+  process.stdout.write(`aw-gate: receipt written for ${gate} (${rel})\n`);
+  process.exit(0);
+}
+
 // --- Commands ------------------------------------------------------------
 function parseFlags(args) {
   const positional = [];
@@ -549,8 +645,31 @@ function cmdRecord(args) {
   const now = new Date().toISOString();
   const commit = currentCommit();
 
+  // Proof-of-work gate: a receipt-required gate cannot be stamped without a
+  // fresh, gate-matching receipt written by the skill. The bypass exists only
+  // for bootstrap (the commit that enables this, fresh clones, hand use) and
+  // announces itself loudly so a human can spot it in logs.
+  const policy = receiptPolicy(config, event);
+  let receiptDigest = null;
+  if (policy.required && flags['no-receipt'] === true) {
+    process.stderr.write(`aw-gate: WARNING recording ${event} with --no-receipt (no proof-of-work verified)\n`);
+    receiptDigest = { bypassed: true };
+  } else if (policy.required) {
+    const verified = verifyReceipt(policy, event);
+    if (verified.error) {
+      fail(`${verified.error}\n  (bootstrap only: bypass once with --no-receipt; never to skip running the skill)`);
+    }
+    receiptDigest = {
+      summary: verified.receipt.summary,
+      ts: verified.receipt.ts,
+      commit: verified.receipt.commit || null,
+    };
+    // Single-use: consume the receipt so it cannot re-stamp a later commit.
+    try { fs.unlinkSync(verified.abs); } catch (_) { /* best effort */ }
+  }
+
   const state = loadState(config);
-  state[event] = { lastRun: now, commit, detail };
+  state[event] = { lastRun: now, commit, detail, receipt: receiptDigest };
   appendWorkflowEvent(config, { event: 'gate', gate: event, status: 'ran', detail });
   writeState(config, state);
 
@@ -1838,7 +1957,8 @@ function usage() {
       'aw-gate — agentic-workflow deterministic helper',
       '',
       'Usage:',
-      '  node .scripts/aw-gate.js record <event> [--detail "text"]',
+      '  node .scripts/aw-gate.js receipt <gate> --summary "text" [--detail "text"]',
+      '  node .scripts/aw-gate.js record <event> [--detail "text"] [--no-receipt]',
       '  node .scripts/aw-gate.js check [--against head|worktree]',
       '  node .scripts/aw-gate.js trace [--base <ref>] [--json] [--out <path>]',
       '  node .scripts/aw-gate.js trace-annotate <spec|test|code> --file <path> --line <n> --id <ID>[,<ID>]',
@@ -1860,6 +1980,8 @@ function usage() {
 function main() {
   const [command, ...rest] = process.argv.slice(2);
   switch (command) {
+    case 'receipt':
+      return cmdReceipt(rest);
     case 'record':
       return cmdRecord(rest);
     case 'check':
