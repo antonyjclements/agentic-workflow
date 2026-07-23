@@ -329,22 +329,38 @@ if command -v node >/dev/null 2>&1; then
     exit 1
   fi
 
-  # Recording every configured gate makes the check pass.
-  node "$gates_target/.scripts/aw-gate.js" record review >/dev/null
-  node "$gates_target/.scripts/aw-gate.js" record capture >/dev/null
-  node "$gates_target/.scripts/aw-gate.js" record check_workflow_compliance >/dev/null
-  node "$gates_target/.scripts/aw-gate.js" record synthesize >/dev/null
+  # The installer ships require_receipt: true, so a bare record is refused until
+  # the skill writes a proof-of-work receipt.
+  if node "$gates_target/.scripts/aw-gate.js" record review >/dev/null 2>&1; then
+    echo "record should refuse to stamp without a receipt when require_receipt is on" >&2
+    exit 1
+  fi
+
+  # Recording every configured gate (receipt then record) makes the check pass.
+  for gate in review capture check_workflow_compliance synthesize; do
+    node "$gates_target/.scripts/aw-gate.js" receipt "$gate" --summary "install acceptance test" >/dev/null
+    node "$gates_target/.scripts/aw-gate.js" record "$gate" >/dev/null
+  done
   node "$gates_target/.scripts/aw-gate.js" check >/dev/null
+
+  # Receipts are single-use: the record above consumed it, so a second bare
+  # record is refused again.
+  if node "$gates_target/.scripts/aw-gate.js" record review >/dev/null 2>&1; then
+    echo "record should refuse a second stamp after the receipt was consumed" >&2
+    exit 1
+  fi
 
   # Inline comments on scalar values must not turn booleans into strings.
   ruby -e 't=File.read(ARGV[0]); t.sub!("enabled: true", "enabled: true # inline comment"); File.write(ARGV[0], t)' \
     "$gates_target/docs/workflow/config.yml"
   node "$gates_target/.scripts/aw-gate.js" check >/dev/null
 
-  # State files must stay under the repo.
+  # State files must stay under the repo. Bypass the receipt check with
+  # --no-receipt so this exercises the state_file guard rather than failing
+  # earlier at receipt verification.
   ruby -e 't=File.read(ARGV[0]); t.sub!("state_file: .aw-gate-state.json", "state_file: ../outside-state.json"); File.write(ARGV[0], t)' \
     "$gates_target/docs/workflow/config.yml"
-  if node "$gates_target/.scripts/aw-gate.js" record review >/dev/null 2>&1; then
+  if node "$gates_target/.scripts/aw-gate.js" record review --no-receipt >/dev/null 2>&1; then
     echo "record should reject gates.state_file outside the repo" >&2
     exit 1
   fi
