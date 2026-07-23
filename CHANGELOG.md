@@ -12,6 +12,8 @@ version has no entry here.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-23
+
 ### Added
 
 - Proof-of-work receipts for freshness gates. When `gates.require_receipt` is on
