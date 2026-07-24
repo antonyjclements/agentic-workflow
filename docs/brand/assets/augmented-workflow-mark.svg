@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 360" role="img" aria-labelledby="title desc">
+  <title id="title">Augmented Workflow AW mark</title>
+  <desc id="desc">A rounded AW monogram with a navy to violet gradient.</desc>
+  <defs>
+    <linearGradient id="aw-gradient" x1="40" y1="180" x2="800" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="0.58" stop-color="#39406D"/>
+      <stop offset="1" stop-color="#7C6CFF"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#aw-gradient)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 305 L190 54 L380 305 L506 153 L632 305 L782 82" stroke-width="62"/>
+    <path d="M132 210 H292" stroke-width="40"/>
+  </g>
+</svg>
