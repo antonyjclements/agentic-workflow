@@ -1,9 +1,9 @@
 # Changelog
 
-All notable, user-visible changes to Agentic Workflow are documented here. The
+All notable, user-visible changes to Augmented Workflow are documented here. The
 format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project uses semantic versioning for its installed and config surface. The version
-below tracks `aw-version.txt` and the `.agentic-workflow-version` marker written
+below tracks `aw-version.txt` and the `.augmented-workflow-version` marker written
 into installed repos.
 
 Changes before 0.6.0 predate this changelog; see git history and `docs/decisions/`
@@ -11,6 +11,15 @@ for that record. `scripts/test-install.sh` fails if the current `aw-version.txt`
 version has no entry here.
 
 ## [Unreleased]
+
+### Changed
+
+- Rebranded the project and install surface as Augmented Workflow, including
+  docs, package metadata, default remote source URLs, PR badge examples, and
+  generated installer output.
+- Renamed the install marker to `.augmented-workflow-version`, the installer
+  environment variable prefix to `AUGMENTED_WORKFLOW_*`, and the living spec path
+  to `docs/features/augmented-workflow/`.
 
 ## [0.9.0] - 2026-07-23
 
@@ -145,7 +154,7 @@ an older install, run `skills/aw-init/scripts/upgrade.sh --repo <path> --apply`.
 
 ### Changed
 
-- The agentic-workflow repository now dogfoods gates through a husky `pre-push`
+- The augmented-workflow repository now dogfoods gates through a husky `pre-push`
   hook running `aw-gate.js check`. (#39)
 - Documented the config reader's supported YAML subset beside the parser and in
   `gates.md`, to keep the hand-rolled reader on a short leash. (#41, #42)

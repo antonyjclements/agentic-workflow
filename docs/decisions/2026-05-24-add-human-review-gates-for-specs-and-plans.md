@@ -7,7 +7,7 @@ tags:
   - review
   - github
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -37,4 +37,4 @@ Teams can insert human approval without making it mandatory for every repo or ev
 ## Links
 
 - `docs/workflow/config.yml`
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

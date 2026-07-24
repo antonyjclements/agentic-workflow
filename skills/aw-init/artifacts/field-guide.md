@@ -1,4 +1,4 @@
-# When to Use What: Agentic Workflow Field Guide
+# When to Use What: Augmented Workflow Field Guide
 
 ## First session in any repo
 

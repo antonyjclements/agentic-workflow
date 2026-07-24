@@ -7,7 +7,7 @@ tags:
   - plans
   - features
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes:
   - docs/decisions/2026-05-24-use-feature-directories-for-specs-and-plans.md
 ---
@@ -28,4 +28,4 @@ Agents should create, resume, review, ticket from, and implement against `docs/f
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

@@ -7,7 +7,7 @@ tags:
   - telemetry
   - git
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -70,6 +70,6 @@ Keep telemetry git-native and solve both problems with three defaults:
 
 ## Links
 
-- docs/features/agentic-workflow/spec.md
+- docs/features/augmented-workflow/spec.md
 - docs/workflow/gates.md (section 9)
 - docs/metrics/README.md

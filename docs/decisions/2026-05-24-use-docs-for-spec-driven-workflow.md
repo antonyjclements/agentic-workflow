@@ -7,7 +7,7 @@ tags:
   - documentation
   - installer
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -15,7 +15,7 @@ supersedes: []
 
 ## Context
 
-The spec-driven development model needs living specs, encoded standards, immutable decisions, and feedback-loop learnings. The existing Agentic Workflow already used `docs/standards/` and `docs/learnings/`, so adding more root-level folders would split related workflow documentation.
+The spec-driven development model needs living specs, encoded standards, immutable decisions, and feedback-loop learnings. The existing Augmented Workflow already used `docs/standards/` and `docs/learnings/`, so adding more root-level folders would split related workflow documentation.
 
 ## Decision
 
@@ -32,4 +32,4 @@ The installer can create a consistent `docs/` structure in any target repo. Repo
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

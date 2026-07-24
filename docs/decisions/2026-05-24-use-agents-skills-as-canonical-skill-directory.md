@@ -7,7 +7,7 @@ tags:
   - installer
   - skills
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -34,4 +34,4 @@ Skills can be updated once and exposed to multiple agents. Existing runtime-spec
 ## Links
 
 - `scripts/install.sh`
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

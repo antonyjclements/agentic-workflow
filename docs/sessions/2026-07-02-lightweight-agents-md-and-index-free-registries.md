@@ -45,4 +45,4 @@ tags:
 
 - Are the synthesis promotion thresholds (3 corroborations to activate, 3 unconfirmed runs to expire) right? Needs real usage cycles.
 - Does pointer-following hold on non-Claude runtimes with the leaner AGENTS.md?
-- docs/features/agentic-workflow/spec.md does not yet cover the memory-synthesis loop (pre-existing drift).
+- docs/features/augmented-workflow/spec.md does not yet cover the memory-synthesis loop (pre-existing drift).

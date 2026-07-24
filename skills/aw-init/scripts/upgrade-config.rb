@@ -245,7 +245,7 @@ end
 
 repo = File.expand_path(options[:repo])
 config_path = File.join(repo, "docs", "workflow", "config.yml")
-version_path = File.join(repo, ".agentic-workflow-version")
+version_path = File.join(repo, ".augmented-workflow-version")
 source_root = File.expand_path("../../..", __dir__)
 installed_skills_root = File.expand_path("../..", __dir__)
 version_file = [
@@ -443,7 +443,7 @@ end
 
 changed = config != existing
 
-puts "Agentic Workflow config upgrade"
+puts "Augmented Workflow config upgrade"
 puts "Repo: #{repo}"
 puts "Config: #{config_path}"
 puts "Mode: #{options[:apply] ? 'apply' : 'dry-run'}"

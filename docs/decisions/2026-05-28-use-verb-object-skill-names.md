@@ -16,7 +16,7 @@ After renaming the workflow namespace to `aw-*`, bundled skill names still mixed
 
 ## Decision
 
-Use `aw-<verb>-<object>` as the default naming convention for multi-word Agentic Workflow skills.
+Use `aw-<verb>-<object>` as the default naming convention for multi-word Augmented Workflow skills.
 
 Single-word command verbs remain acceptable when the action is clear, such as `aw-plan`, `aw-work`, `aw-debug`, `aw-commit`, and `aw-brainstorm`.
 

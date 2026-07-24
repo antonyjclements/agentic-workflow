@@ -100,7 +100,7 @@ The opening goes under `## Summary` if the body uses any `##` headings; bare par
 ```markdown
 ---
 
-[![Agentic Workflow](https://img.shields.io/badge/Built_with-Agentic_Workflow-6366f1)](https://github.com/antonyjclements/agentic-workflow)
+[![Augmented Workflow](https://img.shields.io/badge/Built_with-Augmented_Workflow-7C6CFF)](https://github.com/antonyjclements/augmented-workflow)
 ![HARNESS](https://img.shields.io/badge/MODEL_SLUG-COLOR?logo=LOGO&logoColor=white)
 ```
 

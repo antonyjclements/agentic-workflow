@@ -1,6 +1,6 @@
-# Agentic Workflow
+# Augmented Workflow
 
-Agentic Workflow is a lightweight repo-native operating model for teams using coding agents on real, long-lived codebases. It keeps product intent, standards, decisions, corrections, and session memory versioned with the code, so agents and humans can pick up work without losing context.
+Augmented Workflow is a lightweight repo-native operating model for teams using coding agents on real, long-lived codebases. It keeps product intent, standards, decisions, corrections, and session memory versioned with the code, so agents and humans can pick up work without losing context.
 
 This repo installs the same operating model into any codebase:
 
@@ -25,15 +25,16 @@ Install the workflow on any project. Start with decisions and session logs. Let 
 
 ## Presentations
 
-- [Overview deck](https://antonyjclements.github.io/agentic-workflow/) — the adoption story: the collaboration problems product teams already have, shared living memory, and the workflow that fixes both human↔agent and human↔human.
-- [Technical deep dive](https://antonyjclements.github.io/agentic-workflow/technical.html) — how it works: artifacts as state machines, decisions as an event log, routing as dependency injection, and the determinism boundary.
+- [Overview deck](https://antonyjclements.github.io/augmented-workflow/) — the adoption story: the collaboration problems product teams already have, shared living memory, and the workflow that fixes both human↔agent and human↔human.
+- [Technical deep dive](https://antonyjclements.github.io/augmented-workflow/technical.html) — how it works: artifacts as state machines, decisions as an event log, routing as dependency injection, and the determinism boundary.
+- [Brand style guide](docs/brand/style-guide.md) — marketing positioning, logo usage, color, typography, voice, and approved AW reference asset.
 
 ## Quick Start
 
 Use the `aw-init` skill to install the workflow into a target repo:
 
 ```text
-Use aw-init to install agentic-workflow into /path/to/target/repo.
+Use aw-init to install augmented-workflow into /path/to/target/repo.
 ```
 
 From a clone of this repo, the same installer is available inside the skill:
@@ -55,7 +56,7 @@ The installer:
   - `~/.windsurf/skills`
 - copies `AGENTS.md` into the target repo
 - copies `CLAUDE.md` into the target repo as a Claude Code shim containing `@AGENTS.md`
-- writes `.agentic-workflow-version`
+- writes `.augmented-workflow-version`
 - creates repo-local indexes if missing:
   - `docs/product/prds/index.yml`
   - `docs/features/index.yml`
@@ -98,7 +99,7 @@ Pass `--refresh-skills --remote` to also refresh global skills and repo-local ag
 skills/aw-init/scripts/upgrade.sh --repo /path/to/target/repo --apply --refresh-skills --remote
 ```
 
-Applying the migration creates a timestamped backup beside the original config and writes the current `.agentic-workflow-version`.
+Applying the migration creates a timestamped backup beside the original config and writes the current `.augmented-workflow-version`.
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed between versions (new config keys, installer flags, behavior changes, and migrations). The version tracks `aw-version.txt`; `scripts/test-install.sh` fails if a version bump lacks a changelog entry.
 
@@ -180,7 +181,7 @@ After installation, a repo should have:
 ```text
 AGENTS.md
 CLAUDE.md
-.agentic-workflow-version
+.augmented-workflow-version
 docs/
   product/
     prds/
@@ -844,9 +845,9 @@ skills/aw-init/scripts/install.sh --source-url URL --repo .     # fetch source f
 Environment overrides:
 
 ```bash
-AGENTIC_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/aw-init/scripts/install.sh --repo .
-AGENTIC_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/install.sh --repo .
-AGENTIC_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/agentic-workflow/archive/refs/tags/v0.6.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
+AUGMENTED_WORKFLOW_SKILLS_DIR=~/.codex/skills skills/aw-init/scripts/install.sh --repo .
+AUGMENTED_WORKFLOW_LEARNINGS_DIR=~/.agents/learnings skills/aw-init/scripts/install.sh --repo .
+AUGMENTED_WORKFLOW_SOURCE_URL=https://github.com/antonyjclements/augmented-workflow/archive/refs/tags/v0.6.0.tar.gz skills/aw-init/scripts/install.sh --remote --repo .
 ```
 
 ## Included Skills

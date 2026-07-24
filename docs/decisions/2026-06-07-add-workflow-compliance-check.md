@@ -7,7 +7,7 @@ tags:
   - review
   - shipping
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 

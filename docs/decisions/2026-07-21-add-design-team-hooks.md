@@ -7,14 +7,14 @@ tags:
   - design
   - configuration
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 ---
 
 # Add Additive Design-Team Hooks
 
 ## Context
 
-Agentic Workflow already lets repos replace named lifecycle steps through
+Augmented Workflow already lets repos replace named lifecycle steps through
 `workflow.steps.<step>.skill` and helper capabilities through
 `workflow.auxiliary.<key>.skill`. A design team needs to participate at several
 points in the workflow, but replacing core engineering steps would force design

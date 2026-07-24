@@ -7,7 +7,7 @@ tags:
   - tickets
   - configuration
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -32,4 +32,4 @@ Repos can opt out of ticket creation without repeated prompts. Ticketing becomes
 ## Links
 
 - `docs/workflow/config.yml`
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

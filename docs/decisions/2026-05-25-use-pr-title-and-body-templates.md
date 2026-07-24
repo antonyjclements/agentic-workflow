@@ -7,7 +7,7 @@ tags:
   - pull-requests
   - configuration
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes:
   - docs/decisions/2026-05-25-configure-pr-creation-skill.md
 ---

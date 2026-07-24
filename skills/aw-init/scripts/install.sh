@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_REMOTE_SOURCE_URL="https://github.com/antonyjclements/agentic-workflow/archive/refs/heads/main.tar.gz"
+DEFAULT_REMOTE_SOURCE_URL="https://github.com/antonyjclements/augmented-workflow/archive/refs/heads/main.tar.gz"
 
 usage() {
   cat <<'USAGE'
-Install agentic-workflow globally and into a target repository.
+Install augmented-workflow globally and into a target repository.
 
 Usage:
   install.sh [--repo PATH] [--skills-dir PATH] [--learnings-dir PATH] [--force] [--skip-skills] [--skip-skill-links] [--skip-repo] [--with-gates] [--remote] [--source-url URL]
@@ -14,7 +14,7 @@ Defaults:
   --repo          current directory
   --skills-dir    ~/.agents/skills
   --learnings-dir ~/.agents/learnings
-  --source-url    https://github.com/antonyjclements/agentic-workflow/archive/refs/heads/main.tar.gz
+  --source-url    https://github.com/antonyjclements/augmented-workflow/archive/refs/heads/main.tar.gz
   skill links     ~/.claude/skills, ~/.codeium/skills, ~/.windsurf/skills
 
 What it does:
@@ -22,7 +22,7 @@ What it does:
   2. Installs AGENTS.md and CLAUDE.md into the repo root.
   3. Symlinks Claude Code, Codeium, and Windsurf skill dirs to the global skills directory when safe.
   4. Creates repo-local docs/product/prds, docs/brainstorms, docs/features, docs/standards, docs/decisions, docs/learnings, docs/sessions, and docs/workflow config if missing.
-  5. Writes .agentic-workflow-version.
+  5. Writes .augmented-workflow-version.
   6. Creates global ~/.agents/learnings/index.yml if missing.
   7. Installs .claude/hooks/log-session.sh and merges a Stop hook into .claude/settings.json for automatic session logging (Claude Code only).
   8. With --with-gates, installs the deterministic .scripts/aw-gate.js helper (freshness gates, telemetry, org-knowledge sync) and gitignores its per-checkout state.
@@ -30,20 +30,20 @@ What it does:
 
 Existing files are preserved unless --force is passed.
 Existing non-symlink skill directories are always preserved.
-Use --remote or --source-url when running from an installed aw-init skill without a local agentic-workflow clone.
+Use --remote or --source-url when running from an installed aw-init skill without a local augmented-workflow clone.
 USAGE
 }
 
 repo_dir="$(pwd)"
-skills_dir="${AGENTIC_WORKFLOW_SKILLS_DIR:-$HOME/.agents/skills}"
-learnings_dir="${AGENTIC_WORKFLOW_LEARNINGS_DIR:-$HOME/.agents/learnings}"
+skills_dir="${AUGMENTED_WORKFLOW_SKILLS_DIR:-$HOME/.agents/skills}"
+learnings_dir="${AUGMENTED_WORKFLOW_LEARNINGS_DIR:-$HOME/.agents/learnings}"
 force=0
 skip_skills=0
 skip_skill_links=0
 skip_repo=0
 with_gates=0
 use_remote=0
-source_url="${AGENTIC_WORKFLOW_SOURCE_URL:-}"
+source_url="${AUGMENTED_WORKFLOW_SOURCE_URL:-}"
 remote_tmp_dir=""
 
 cleanup() {
@@ -122,7 +122,7 @@ source_dir="$(cd "$script_dir/../../.." && pwd)"
 
 fetch_remote_source() {
   local url="$1"
-  remote_tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/agentic-workflow-source.XXXXXX")"
+  remote_tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/augmented-workflow-source.XXXXXX")"
   local archive="$remote_tmp_dir/source.tar.gz"
   local extract_dir="$remote_tmp_dir/extract"
   mkdir -p "$extract_dir"
@@ -166,18 +166,18 @@ resolve_source() {
   local version_file="$source_dir/aw-version.txt"
   if [ ! -f "$version_file" ]; then
     echo "missing workflow version source: $version_file" >&2
-    echo "Run from a current agentic-workflow source tree or use --remote/--source-url." >&2
+    echo "Run from a current augmented-workflow source tree or use --remote/--source-url." >&2
     exit 1
   fi
-  AGENTIC_WORKFLOW_VERSION="$(sed -n '1p' "$version_file" | tr -d '[:space:]')"
-  if [ -z "$AGENTIC_WORKFLOW_VERSION" ]; then
+  AUGMENTED_WORKFLOW_VERSION="$(sed -n '1p' "$version_file" | tr -d '[:space:]')"
+  if [ -z "$AUGMENTED_WORKFLOW_VERSION" ]; then
     echo "empty workflow version source: $version_file" >&2
     exit 1
   fi
 
   if [ ! -d "$artifact_dir" ]; then
     echo "missing installer artifacts: $artifact_dir" >&2
-    echo "Run from a local agentic-workflow clone or use --remote/--source-url." >&2
+    echo "Run from a local augmented-workflow clone or use --remote/--source-url." >&2
     exit 1
   fi
 }
@@ -222,8 +222,8 @@ copy_agents_prompted() {
   local src="$1"
   local dest="$2"
   local temp_file
-  temp_file="$(mktemp "${TMPDIR:-/tmp}/agentic-workflow-agents.XXXXXX")"
-  sed "s/AGENTIC_WORKFLOW_VERSION=[^ ]*/AGENTIC_WORKFLOW_VERSION=$AGENTIC_WORKFLOW_VERSION/" "$src" > "$temp_file"
+  temp_file="$(mktemp "${TMPDIR:-/tmp}/augmented-workflow-agents.XXXXXX")"
+  sed "s/AUGMENTED_WORKFLOW_VERSION=[^ ]*/AUGMENTED_WORKFLOW_VERSION=$AUGMENTED_WORKFLOW_VERSION/" "$src" > "$temp_file"
   copy_prompted "$temp_file" "$dest"
   rm -f "$temp_file"
 }
@@ -251,7 +251,7 @@ install_skills() {
 
   mkdir -p "$skills_dir"
   cp "$source_dir/aw-version.txt" "$skills_dir/aw-version.txt"
-  echo "version: $AGENTIC_WORKFLOW_VERSION -> $skills_dir/aw-version.txt"
+  echo "version: $AUGMENTED_WORKFLOW_VERSION -> $skills_dir/aw-version.txt"
 
   # Remove all existing aw-* skills so stale or removed skills never linger
   # across upgrades. The current skill set is written fresh below.
@@ -388,7 +388,7 @@ install_repo_files() {
   copy_agents_prompted "$artifact_dir/AGENTS.md" "$repo_dir/AGENTS.md"
   copy_prompted "$artifact_dir/CLAUDE.md" "$repo_dir/CLAUDE.md"
 
-  write_file_if_missing "$repo_dir/.agentic-workflow-version" "$AGENTIC_WORKFLOW_VERSION"
+  write_file_if_missing "$repo_dir/.augmented-workflow-version" "$AUGMENTED_WORKFLOW_VERSION"
   write_file_if_missing "$repo_dir/docs/product/prds/index.yml" "prds: []"
   copy_prompted "$artifact_dir/prd-template.md" "$repo_dir/docs/product/prds/template.md"
   write_file_if_missing "$repo_dir/docs/features/index.yml" "features: []"
@@ -689,7 +689,7 @@ install_global_learnings
 
 cat <<EOF
 
-Installed agentic-workflow.
+Installed augmented-workflow.
 
 Global skills: $skills_dir
 Global learnings: $learnings_dir

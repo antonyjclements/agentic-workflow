@@ -1,4 +1,13 @@
 decisions:
+  - path: docs/decisions/2026-07-24-rebrand-as-augmented-workflow.md
+    title: Rebrand as Augmented Workflow
+    date: 2026-07-24
+    status: active
+    tags:
+      - workflow
+      - branding
+      - installer
+      - documentation
   - path: docs/decisions/2026-07-21-add-design-team-hooks.md
     title: Add additive design-team hooks
     date: 2026-07-21

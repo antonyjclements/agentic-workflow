@@ -7,7 +7,7 @@ tags:
   - configuration
   - migration
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -15,13 +15,13 @@ supersedes: []
 
 ## Context
 
-Existing Agentic Workflow users can replace global skills and repo-local agent instructions, but `docs/workflow/config.yml` is user-owned state. The workflow step routing change removes older skill selector fields, so users need a safe migration path that preserves local intent without requiring hand edits.
+Existing Augmented Workflow users can replace global skills and repo-local agent instructions, but `docs/workflow/config.yml` is user-owned state. The workflow step routing change removes older skill selector fields, so users need a safe migration path that preserves local intent without requiring hand edits.
 
 ## Decision
 
 Add `aw-upgrade` as the user-facing upgrade skill and bundle a structural config migrator under `skills/aw-init/scripts/upgrade-config.rb`.
 
-The migrator dry-runs by default, applies only when requested, creates a timestamped backup before writing, preserves unknown fields and non-skill config, adds missing current defaults, removes migrated legacy skill selector fields, and updates `.agentic-workflow-version`.
+The migrator dry-runs by default, applies only when requested, creates a timestamped backup before writing, preserves unknown fields and non-skill config, adds missing current defaults, removes migrated legacy skill selector fields, and updates `.augmented-workflow-version`.
 
 Known legacy mappings:
 

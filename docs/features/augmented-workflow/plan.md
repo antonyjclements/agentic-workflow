@@ -1,7 +1,7 @@
 ---
 status: completed
 created: 2026-07-18
-origin: docs/features/agentic-workflow/spec.md
+origin: docs/features/augmented-workflow/spec.md
 depth: deep
 ---
 
@@ -272,7 +272,7 @@ Primary verification follows `workflow.implementation.test_policy: acceptance-fi
 
 - `bash -n scripts/test-install.sh`
 - `bash -n skills/aw-init/scripts/install.sh`
-- YAML/frontmatter parse for `docs/features/agentic-workflow/spec.md`, `docs/features/agentic-workflow/plan.md`, and `docs/features/index.yml`
+- YAML/frontmatter parse for `docs/features/augmented-workflow/spec.md`, `docs/features/augmented-workflow/plan.md`, and `docs/features/index.yml`
 - Targeted `node .scripts/aw-gate.js pin --json run` for the existing self-pin
 - `bash scripts/test-install.sh`
 
@@ -306,6 +306,6 @@ Acceptance-derived scenarios to cover in `scripts/test-install.sh`:
 
 ## Handoff
 
-Implement with `aw-work docs/features/agentic-workflow/plan.md`.
+Implement with `aw-work docs/features/augmented-workflow/plan.md`.
 
 Start with tests in `scripts/test-install.sh` that describe the migration pin behavior using local disposable repos. Then update `.scripts/aw-gate.js`, mirror it to `skills/aw-init/artifacts/aw-gate.js`, update docs/artifacts, and run the targeted pin checks before the full install test.

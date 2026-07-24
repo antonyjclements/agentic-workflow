@@ -7,7 +7,7 @@ tags:
   - ci
   - configuration
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -27,4 +27,4 @@ The base workflow config remains a routing contract. CI monitor skills can evolv
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

@@ -12,7 +12,7 @@ sessions_synthesized: 3
 
 ## Active Features
 
-- **Spec-Driven Agentic Workflow** — active living spec for installer-owned workflow behavior, self-hosting, gates, telemetry, org knowledge, and memory synthesis. `docs/features/agentic-workflow/spec.md`
+- **Spec-Driven Augmented Workflow** — active living spec for installer-owned workflow behavior, self-hosting, gates, telemetry, org knowledge, and memory synthesis. `docs/features/augmented-workflow/spec.md`
 
 ## Recent Decisions
 

@@ -8,7 +8,7 @@ tags:
   - skills
   - templates
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -45,4 +45,4 @@ Repos can define their preferred authored PRD sections by adding `docs/product/p
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

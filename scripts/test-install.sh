@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/agentic-workflow-install.XXXXXX")"
+tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/augmented-workflow-install.XXXXXX")"
 workflow_version="$(sed -n '1p' "$repo_root/aw-version.txt" | tr -d '[:space:]')"
 
 # This repo self-hosts its own install for dogfooding (see
@@ -42,9 +42,9 @@ fi
 # installer writes it whitespace-stripped and only when missing, so compare
 # stripped values (not a byte diff) against aw-version.txt. This marker already
 # drifted once (stale at 0.1.0) during self-install verification.
-self_host_version="$(sed -n '1p' "$repo_root/.agentic-workflow-version" | tr -d '[:space:]')"
+self_host_version="$(sed -n '1p' "$repo_root/.augmented-workflow-version" | tr -d '[:space:]')"
 if [ "$self_host_version" != "$workflow_version" ]; then
-  echo "self-hosted install drift: .agentic-workflow-version ($self_host_version) does not match aw-version.txt ($workflow_version)" >&2
+  echo "self-hosted install drift: .augmented-workflow-version ($self_host_version) does not match aw-version.txt ($workflow_version)" >&2
   exit 1
 fi
 
@@ -204,7 +204,7 @@ assert_repo_install() {
 
   assert_file "$target_repo/AGENTS.md"
   assert_file "$target_repo/CLAUDE.md"
-  assert_file "$target_repo/.agentic-workflow-version"
+  assert_file "$target_repo/.augmented-workflow-version"
   assert_file "$target_repo/docs/product/prds/index.yml"
   assert_file "$target_repo/docs/product/prds/template.md"
   assert_file "$target_repo/docs/features/index.yml"
@@ -266,7 +266,7 @@ assert_repo_install() {
   assert_contains "$target_repo/AGENTS.md" "workflow.steps"
   assert_contains "$target_repo/AGENTS.md" "workflow.auxiliary"
   assert_contains "$target_repo/AGENTS.md" "workflow.implementation.test_policy"
-  assert_contains "$target_repo/AGENTS.md" "AGENTIC_WORKFLOW_VERSION=$workflow_version"
+  assert_contains "$target_repo/AGENTS.md" "AUGMENTED_WORKFLOW_VERSION=$workflow_version"
 }
 
 validate_docs_indexes "$repo_root"
@@ -1161,7 +1161,7 @@ assert_not_contains "$migration_target/docs/workflow/config.yml" "monitor_circle
 assert_not_contains "$migration_target/docs/workflow/config.yml" "ticket_creation:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "research:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "skill: aw-monitor-circleci"
-assert_contains "$migration_target/.agentic-workflow-version" "$workflow_version"
+assert_contains "$migration_target/.augmented-workflow-version" "$workflow_version"
 if ! ls "$migration_target"/docs/workflow/config.yml.bak-* >/dev/null 2>&1; then
   echo "missing migration backup" >&2
   exit 1
@@ -1225,7 +1225,7 @@ assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "skill: enter
 assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "research_slack:"
 assert_contains "$auxiliary_split_target/docs/workflow/config.yml" "skill: enterprise-slack-research"
 
-remote_archive="$tmp_root/agentic-workflow-source.tar.gz"
+remote_archive="$tmp_root/augmented-workflow-source.tar.gz"
 tar -czf "$remote_archive" -C "$repo_root" .
 
 bundled_skills="$tmp_root/bundled-skills"
@@ -1262,7 +1262,7 @@ cp -R "$repo_root/skills/aw-init" "$remote_bootstrap/aw-init"
   --force
 
 assert_repo_install "$remote_target"
-assert_contains "$remote_target/.agentic-workflow-version" "$workflow_version"
+assert_contains "$remote_target/.augmented-workflow-version" "$workflow_version"
 assert_file "$remote_skills/aw-capture/SKILL.md"
 assert_file "$remote_skills/aw-refresh/SKILL.md"
 assert_file "$remote_skills/aw-check-workflow-compliance/SKILL.md"

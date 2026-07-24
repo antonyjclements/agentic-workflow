@@ -7,7 +7,7 @@ tags:
   - configuration
   - skills
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 related_decisions:
   - docs/decisions/2026-05-24-configure-ticket-creation-skill.md
   - docs/decisions/2026-05-24-configure-post-pr-ci-monitoring.md
@@ -20,7 +20,7 @@ supersedes: []
 
 ## Context
 
-Agentic Workflow had several separate skill selector fields in `docs/workflow/config.yml`, including ticket creation, commit, CI monitoring, and Slack research hooks. Adding configurable skills for every workflow step would make those older selector fields overlap with a broader routing mechanism.
+Augmented Workflow had several separate skill selector fields in `docs/workflow/config.yml`, including ticket creation, commit, CI monitoring, and Slack research hooks. Adding configurable skills for every workflow step would make those older selector fields overlap with a broader routing mechanism.
 
 ## Decision
 

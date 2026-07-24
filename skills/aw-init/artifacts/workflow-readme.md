@@ -1,6 +1,6 @@
 # Workflow Config
 
-`docs/workflow/config.yml` customizes how Agentic Workflow runs in this repo. Most repos should leave skill overrides blank; blank values use the bundled defaults.
+`docs/workflow/config.yml` customizes how Augmented Workflow runs in this repo. Most repos should leave skill overrides blank; blank values use the bundled defaults.
 
 Task-size routing belongs in `AGENTS.md`. Use `config.yml` for execution details such as replacement skills, implementation test policy, design hooks, PR templates, commit conventions, CI monitoring, and human reviewers.
 
@@ -210,7 +210,7 @@ is **governed content, not just a synced folder**:
 - **Consumers pin `org_knowledge.ref`** to a reviewed tag for change control.
 
 The full governance model, templates (`CODEOWNERS`, `GOVERNANCE.md`, entry
-frontmatter), and promotion path live in the agentic-workflow project at
+frontmatter), and promotion path live in the augmented-workflow project at
 `docs/workflow/org-knowledge.md`.
 
 ### Spec traceability (`trace`)

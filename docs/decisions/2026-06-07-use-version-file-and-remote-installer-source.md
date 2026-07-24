@@ -7,7 +7,7 @@ tags:
   - installer
   - updates
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -15,7 +15,7 @@ supersedes: []
 
 ## Context
 
-Agentic Workflow needs to be updateable in repos that have already installed the skills and `AGENTS.md`. Users should not need a local clone of `agentic-workflow` just to refresh global skills or repo-local agent instructions. Version markers also need one source of truth so installer output, migration output, and installed `AGENTS.md` do not drift.
+Augmented Workflow needs to be updateable in repos that have already installed the skills and `AGENTS.md`. Users should not need a local clone of `augmented-workflow` just to refresh global skills or repo-local agent instructions. Version markers also need one source of truth so installer output, migration output, and installed `AGENTS.md` do not drift.
 
 ## Decision
 
@@ -25,7 +25,7 @@ Make the installer remote-aware:
 
 - `--remote` fetches the default GitHub archive source.
 - `--source-url URL` fetches a pinned branch, tag, release archive, local archive, or internal mirror.
-- `AGENTIC_WORKFLOW_SOURCE_URL` can provide the remote source without a command-line URL.
+- `AUGMENTED_WORKFLOW_SOURCE_URL` can provide the remote source without a command-line URL.
 
 After fetching, the installer uses the remote source's `skills/`, `skills/aw-init/artifacts/`, and `aw-version.txt` as if it were running from a local clone.
 

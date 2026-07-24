@@ -1,8 +1,8 @@
 {
-  "name": "agentic-workflow",
+  "name": "augmented-workflow",
   "version": "0.9.0",
   "private": true,
-  "description": "Repo-native agentic operating model: portable AGENTS.md, skills, and durable context.",
+  "description": "Repo-native AI workflow operating model: portable AGENTS.md, skills, and durable context.",
   "scripts": {
     "prepare": "husky",
     "gate:check": "node .scripts/aw-gate.js check",

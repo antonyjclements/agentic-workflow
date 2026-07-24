@@ -12,11 +12,11 @@ tags:
 
 ## Context
 
-The agentic-workflow repository started from a broader Compound Engineering skill set. Some inherited skills and references are not appropriate for this portable workflow, and stale documentation creates the same drift the workflow is meant to prevent.
+The augmented-workflow repository started from a broader Compound Engineering skill set. Some inherited skills and references are not appropriate for this portable workflow, and stale documentation creates the same drift the workflow is meant to prevent.
 
 ## Decision
 
-Keep the bundled skill set curated for agentic-workflow. Remove skills that are not part of the intended workflow, starting with `lfg` and broader specialty/plugin-maintenance skills, and update inherited repository references to point at `antonyjclements/agentic-workflow`.
+Keep the bundled skill set curated for augmented-workflow. Remove skills that are not part of the intended workflow, starting with `lfg` and broader specialty/plugin-maintenance skills, and update inherited repository references to point at `antonyjclements/augmented-workflow`.
 
 Keep `ce-doc-review` in the bare-bones set because plan review is part of the core flow. After `ce-plan` creates a plan, run `ce-doc-review` before human review, ticket creation, or implementation.
 
