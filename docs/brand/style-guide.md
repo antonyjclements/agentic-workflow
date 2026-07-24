@@ -11,6 +11,7 @@ Source asset: [augmented-workflow-logo-sheet.jpg](assets/augmented-workflow-logo
 
 Split assets:
 
+- [augmented-workflow-mark.svg](assets/augmented-workflow-mark.svg) - scalable AW monogram for product UI, websites, print, and high-resolution marketing.
 - [augmented-workflow-logo-lockup.jpg](assets/augmented-workflow-logo-lockup.jpg) - full AW lockup with wordmark and tagline.
 - [augmented-workflow-icon-light.jpg](assets/augmented-workflow-icon-light.jpg) - light app-icon tile.
 - [augmented-workflow-icon-dark-gradient.jpg](assets/augmented-workflow-icon-dark-gradient.jpg) - dark app-icon tile with gradient mark.
@@ -50,7 +51,7 @@ Use the full lockup when introducing the brand:
 
 Use the monogram alone for app icons, favicons, social avatars, small badges, and places where the name appears nearby.
 
-Use the split assets directly when possible. Keep the source sheet only as a reference or for recreating derived assets.
+Use `augmented-workflow-mark.svg` when the mark needs to scale cleanly. Use the split JPG assets for previews, raster-only placements, and compositions that need the supplied icon-tile treatments. Keep the source sheet only as a reference or for recreating derived assets.
 
 ### Clear Space
 
