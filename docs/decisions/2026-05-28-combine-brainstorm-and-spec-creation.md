@@ -8,7 +8,7 @@ tags:
   - specs
   - brainstorming
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes:
   - docs/decisions/2026-05-24-use-brainstorm-for-prd-intake.md
 ---
@@ -44,4 +44,4 @@ Agents should no longer force a separate requirements document and `aw-create-sp
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// agentic-workflow deterministic helper.
+// augmented-workflow deterministic helper.
 //
 // One dependency-free CLI that backs six opt-in capabilities configured in
 // docs/workflow/config.yml:
@@ -1954,7 +1954,7 @@ function cmdOrgSync() {
 function usage() {
   process.stdout.write(
     [
-      'aw-gate — agentic-workflow deterministic helper',
+      'aw-gate — augmented-workflow deterministic helper',
       '',
       'Usage:',
       '  node .scripts/aw-gate.js receipt <gate> --summary "text" [--detail "text"]',

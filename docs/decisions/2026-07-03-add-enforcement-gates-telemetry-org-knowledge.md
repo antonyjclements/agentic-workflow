@@ -9,7 +9,7 @@ tags:
   - knowledge
   - installer
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -79,6 +79,6 @@ dependency-free Node helper installed at `<repo>/.scripts/aw-gate.js` via
 
 ## Links
 
-- docs/features/agentic-workflow/spec.md
+- docs/features/augmented-workflow/spec.md
 - docs/workflow/README.md (Enforcement Gates, Telemetry, and Org Knowledge)
 - skills/aw-init/artifacts/aw-gate.js

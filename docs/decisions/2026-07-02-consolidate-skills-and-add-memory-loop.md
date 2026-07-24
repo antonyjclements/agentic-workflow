@@ -7,7 +7,7 @@ tags:
   - skills
   - memory-synthesis
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -39,6 +39,6 @@ Before the change, the workflow bundled ~33 single-purpose skills. Each new capa
 
 ## Links
 
-- docs/features/agentic-workflow/spec.md
+- docs/features/augmented-workflow/spec.md
 - docs/decisions/2026-07-02-session-logs-self-describing-and-hook-independent.md
 - docs/decisions/2026-07-02-remove-brainstorm-index-and-validate-registries.md

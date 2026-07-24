@@ -1,5 +1,5 @@
 ---
-title: Refresh the agentic-workflow living spec for memory-loop coverage and consolidated skill names
+title: Refresh the augmented-workflow living spec for memory-loop coverage and consolidated skill names
 date: 2026-07-02
 status: processed
 tags:
@@ -10,7 +10,7 @@ tags:
 
 ## What Was Attempted
 
-- Ran the spec drift review against docs/features/agentic-workflow/spec.md after PR #31 merged.
+- Ran the spec drift review against docs/features/augmented-workflow/spec.md after PR #31 merged.
 - Found drift far beyond the known memory-loop gap: nine pre-consolidation skill names (aw-import-prd, aw-create-prd, aw-clean-artifacts, aw-index-features, aw-review-doc/spec/code, aw-log-decision, aw-record-retrospective, aw-capture-solution, aw-refresh-solutions/decisions, aw-monitor-pipeline, aw-monitor-circleci, aw-upgrade), stale step/auxiliary key lists, and no coverage of sessions, synthesis, the wiki, hook independence, or the new CI guards.
 - Rewrote Current Behavior, Key Flows (now grouped into five subsections), and Acceptance Criteria against actual current behavior; added the 2026-07-02 decisions to related_decisions; bumped `updated`.
 
@@ -30,7 +30,7 @@ tags:
 
 ## Key Files
 
-- docs/features/agentic-workflow/spec.md (rewritten)
+- docs/features/augmented-workflow/spec.md (rewritten)
 - docs/decisions/2026-07-02-*.md (now linked from the spec)
 
 ## Open Questions

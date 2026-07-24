@@ -7,7 +7,7 @@ tags:
   - automation
   - knowledge-capture
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -34,4 +34,4 @@ Knowledge capture becomes part of the workflow instead of a separate user habit.
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

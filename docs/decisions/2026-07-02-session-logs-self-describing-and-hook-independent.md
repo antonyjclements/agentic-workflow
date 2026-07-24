@@ -24,7 +24,7 @@ Session logs (`docs/sessions/`) are transient synthesis input with a 14-day rete
 ## Decision
 
 1. **Drop `docs/sessions/index.yml`.** Session logs are self-describing: each file carries `status: unprocessed|processed` in its own frontmatter. `aw-synthesize-memory` globs `docs/sessions/*.md` instead of reading an index, marks processed status in the log's frontmatter, and deletes any legacy index it finds. The installer no longer creates the index.
-2. **The Stop hook is a convenience, not the system of record.** Agents must offer or run `aw-capture session` at the end of meaningful sessions regardless of whether the hook exists or fired. The hook now detects installation via `.agentic-workflow-version` rather than the removed index.
+2. **The Stop hook is a convenience, not the system of record.** Agents must offer or run `aw-capture session` at the end of meaningful sessions regardless of whether the hook exists or fired. The hook now detects installation via `.augmented-workflow-version` rather than the removed index.
 3. **Session logs are committed as separate chore exhaust.** Never staged into feature/fix commits; `chore(session): log <slug>` per log, one batched `chore(memory): synthesize N sessions` for synthesis output. Logs ride along in PRs as labeled chore commits; squash-merge absorbs them.
 
 ## Consequences

@@ -8,7 +8,7 @@ tags:
   - circleci
   - configuration
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes:
   - docs/decisions/2026-05-24-add-circleci-pipeline-monitor-skill.md
 ---

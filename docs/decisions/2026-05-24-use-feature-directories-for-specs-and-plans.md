@@ -7,7 +7,7 @@ tags:
   - specs
   - plans
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes:
   - docs/decisions/2026-05-24-use-docs-for-spec-driven-workflow.md
   - docs/decisions/2026-05-24-support-feature-spec-indexes.md
@@ -35,4 +35,4 @@ Agents should look for feature specs through `docs/features/index.yml` first. Ne
 ## Links
 
 - `docs/features/index.yml`
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

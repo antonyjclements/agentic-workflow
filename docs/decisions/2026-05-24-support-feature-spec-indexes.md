@@ -7,7 +7,7 @@ tags:
   - specs
   - features
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -32,4 +32,4 @@ Agents can work with feature-scoped spec directories and refresh the index after
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

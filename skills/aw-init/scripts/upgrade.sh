@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# upgrade.sh — upgrade an existing Agentic Workflow installation
+# upgrade.sh — upgrade an existing Augmented Workflow installation
 #
 # Usage:
 #   ./upgrade.sh --repo /path/to/repo [--dry-run]

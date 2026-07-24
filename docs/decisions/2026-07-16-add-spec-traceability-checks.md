@@ -7,7 +7,7 @@ tags:
   - enforcement
   - specs
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -15,7 +15,7 @@ supersedes: []
 
 ## Context
 
-Agentic Workflow uses living specs as durable product intent, but there was no
+Augmented Workflow uses living specs as durable product intent, but there was no
 deterministic way to verify that requirements, tests, and behavior entry points
 remained linked. Agents could mention traceability in summaries, but those claims
 were not machine-checkable and could not run in a hook or CI.
@@ -71,7 +71,7 @@ Traceability stays disabled by default through `trace.enabled: false`.
 
 ## Links
 
-- docs/features/agentic-workflow/spec.md
+- docs/features/augmented-workflow/spec.md
 - docs/workflow/gates.md
 - docs/workflow/README.md
 - docs/standards/traceability.md

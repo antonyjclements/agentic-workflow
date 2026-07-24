@@ -21,7 +21,7 @@ Last refreshed: 2026-07-03
 - [Use workflow steps for skill routing](../2026-06-07-use-workflow-steps-for-skill-routing.md) - Route custom skills through `workflow.steps.<step>.skill` and remove old step-specific skill selector fields.
 - [Use verb-object skill names](../2026-05-28-use-verb-object-skill-names.md) - Keep multi-word `aw-*` skill names in action-first form.
 - [Use PRD lifecycle statuses and cleanup archived artifacts](../2026-05-28-use-prd-lifecycle-statuses-and-cleanup.md) - Track PRD promotion/archive state explicitly and remove only artifacts marked archived.
-- [Rename skills to aw prefix](../2026-05-28-rename-skills-to-aw-prefix.md) - Use `aw-*` as the canonical Agentic Workflow skill namespace and remove unneeded browser QA skills.
+- [Rename skills to aw prefix](../2026-05-28-rename-skills-to-aw-prefix.md) - Use `aw-*` as the canonical Augmented Workflow skill namespace and remove unneeded browser QA skills.
 - [Add dedicated PRD creation skill](../2026-05-28-add-dedicated-prd-creation-skill.md) - Keep authored PRD creation in `aw-create-prd`, with repo-local template override support.
 - [Combine brainstorm and spec creation](../2026-05-28-combine-brainstorm-and-spec-creation.md) - Make `aw-brainstorm` the combined discovery-to-spec path for PRDs, raw ideas, and ambiguous product requests.
 - [Delegate CI monitor retry policy](../2026-05-25-delegate-ci-monitor-retry-policy.md) - Keep retry counts and polling cadence inside the linked CI monitor skill instead of the base workflow config.

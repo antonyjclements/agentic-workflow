@@ -7,7 +7,7 @@ tags:
   - prd
   - product
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -33,4 +33,4 @@ The workflow preserves original product input without confusing it with `docs/pr
 ## Links
 
 - `docs/product/prds/index.yml`
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

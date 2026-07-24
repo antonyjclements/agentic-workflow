@@ -1,6 +1,6 @@
 ---
 name: aw-check-workflow-compliance
-description: "Check whether completed work followed Agentic Workflow config, implementation test policy, acceptance coverage, README expectations, and review gates. Use after branch push and before PR creation for non-trivial changes."
+description: "Check whether completed work followed Augmented Workflow config, implementation test policy, acceptance coverage, README expectations, and review gates. Use after branch push and before PR creation for non-trivial changes."
 argument-hint: "[optional: plan/spec/ticket path or branch ref]"
 ---
 

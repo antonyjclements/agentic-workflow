@@ -7,7 +7,7 @@ tags:
   - skills
   - naming
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -15,13 +15,13 @@ supersedes: []
 
 ## Context
 
-The workflow skill set started from Compound Engineering `ce-*` naming, but Agentic Workflow has diverged into its own portable workflow with repo-local templates, PRD authoring/import separation, brainstorm-to-spec behavior, installer ownership, and docs-as-source-of-truth conventions.
+The workflow skill set started from Compound Engineering `ce-*` naming, but Augmented Workflow has diverged into its own portable workflow with repo-local templates, PRD authoring/import separation, brainstorm-to-spec behavior, installer ownership, and docs-as-source-of-truth conventions.
 
 The sole current consumer can tolerate a hard rename without a compatibility period.
 
 ## Decision
 
-Rename retained skills from `ce-*` to `aw-*`, where `aw` stands for Agentic Workflow.
+Rename retained skills from `ce-*` to `aw-*`, where `aw` stands for Augmented Workflow.
 
 Remove `ce-dogfood-beta` and `ce-test-browser` from the bundled skill set instead of renaming them.
 
@@ -42,4 +42,4 @@ Because there is no compatibility period, users must invoke the renamed skills d
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

@@ -7,7 +7,7 @@ tags:
   - tickets
   - automation
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -33,4 +33,4 @@ Agents can turn plans into stories without the user repeating which ticket syste
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

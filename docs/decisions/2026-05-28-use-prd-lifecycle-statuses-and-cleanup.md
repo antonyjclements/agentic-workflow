@@ -8,7 +8,7 @@ tags:
   - cleanup
   - artifacts
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -48,4 +48,4 @@ Archived artifacts can leave the working tree without losing historical context 
 
 ## Links
 
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

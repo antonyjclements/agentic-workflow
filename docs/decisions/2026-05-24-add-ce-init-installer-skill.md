@@ -7,7 +7,7 @@ tags:
   - installer
   - skills
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -15,7 +15,7 @@ supersedes: []
 
 ## Context
 
-Users need a portable way to initialize agentic-workflow inside any repo after the global skills are available. The initialization should work across agent runtimes and avoid silently overwriting existing repo guidance files.
+Users need a portable way to initialize augmented-workflow inside any repo after the global skills are available. The initialization should work across agent runtimes and avoid silently overwriting existing repo guidance files.
 
 ## Decision
 

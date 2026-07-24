@@ -7,7 +7,7 @@ tags:
   - ci
   - automation
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -36,4 +36,4 @@ Repos can opt into CI automation for their provider while keeping the default in
 ## Links
 
 - `docs/workflow/config.yml`
-- `docs/features/agentic-workflow/spec.md`
+- `docs/features/augmented-workflow/spec.md`

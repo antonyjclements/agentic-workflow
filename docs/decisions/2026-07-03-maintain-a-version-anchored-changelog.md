@@ -7,7 +7,7 @@ tags:
   - versioning
   - documentation
 related_specs:
-  - docs/features/agentic-workflow/spec.md
+  - docs/features/augmented-workflow/spec.md
 supersedes: []
 ---
 
@@ -15,8 +15,8 @@ supersedes: []
 
 ## Context
 
-Agentic Workflow is a distributed, installable tool: consumers install a version
-(`aw-version.txt` / `.agentic-workflow-version`) and later upgrade via
+Augmented Workflow is a distributed, installable tool: consumers install a version
+(`aw-version.txt` / `.augmented-workflow-version`) and later upgrade via
 `upgrade.sh`, which runs config migrations. But the version marker had stopped
 tracking releases — enforcement gates, telemetry, org knowledge, and governance
 (a wave of config-changing, migration-affecting work) all shipped under `0.5.0`.
@@ -66,5 +66,5 @@ The backlog since `0.5.0` was released as `0.6.0`.
 ## Links
 
 - CHANGELOG.md
-- docs/features/agentic-workflow/spec.md
+- docs/features/augmented-workflow/spec.md
 - docs/workflow/README.md (Legacy Fields / migration table)
