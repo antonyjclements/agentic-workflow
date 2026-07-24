@@ -330,4 +330,9 @@ Report: mode used · file path created · index/registry updated · related arti
 
 ## Freshness Gate
 
-After a capture completes, if `.scripts/aw-gate.js` exists, stamp the freshness gate: `node .scripts/aw-gate.js record capture --detail "<mode>"`. This updates the git-ignored gate state (and appends a telemetry event when enabled) so a deterministic pre-push/CI `aw-gate.js check` can enforce that capture ran recently. See `docs/workflow/README.md`.
+Only after you have actually captured (or deliberately determined there was nothing to capture), and if `.scripts/aw-gate.js` exists, stamp the freshness gate in two steps so the stamp carries proof the skill ran:
+
+1. Write the receipt: `node .scripts/aw-gate.js receipt capture --summary "<one line: what was captured and where, or why this was a no-op>"`.
+2. Record: `node .scripts/aw-gate.js record capture --detail "<mode>"`.
+
+When `gates.require_receipt` is on, `record` refuses to stamp without the fresh receipt from step 1 and consumes it (single-use). Never stamp the gate without running this skill — `--no-receipt` exists only for bootstrap. This updates the git-ignored gate state (and appends a telemetry event when enabled) so a deterministic pre-push/CI `aw-gate.js check` can enforce that capture ran recently. See `docs/workflow/README.md`.

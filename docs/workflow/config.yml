@@ -92,6 +92,7 @@ human_review:
     reviewers: []
 gates:
   enabled: true
+  require_receipt: true
   state_file: .aw-gate-state.json
   checks:
     review:

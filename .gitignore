@@ -6,6 +6,9 @@
 # Per-checkout freshness markers written by .scripts/aw-gate.js record
 .aw-gate-state.json
 
+# Per-checkout proof-of-work receipts consumed by .scripts/aw-gate.js record
+.aw/receipts/
+
 # Local cache of the org-shared knowledge repo (aw-gate.js org-sync)
 .aw-org-cache/
 

@@ -184,7 +184,12 @@ When `org_knowledge.source` is configured in `docs/workflow/config.yml`, run `no
 
 ## Invocation Gate and Telemetry
 
-At the end of every invocation, if `.scripts/aw-gate.js` exists, stamp the freshness gate: `node .scripts/aw-gate.js record synthesize`. Do this even when there are no unprocessed sessions, no learnings changed, or the wiki was already current, because repos may configure `gates.checks.synthesize` to require periodic memory-synthesis review. This writes the git-ignored gate state and, when telemetry is enabled, appends a no-PII telemetry event.
+At the end of every invocation, if `.scripts/aw-gate.js` exists, stamp the freshness gate in two steps so the stamp carries proof the pass ran:
+
+1. Write the receipt: `node .scripts/aw-gate.js receipt synthesize --summary "<one line: sessions processed and learnings extracted, or why this was a no-op>"`.
+2. Record: `node .scripts/aw-gate.js record synthesize`.
+
+Do this even when there are no unprocessed sessions, no learnings changed, or the wiki was already current (say so in the receipt summary), because repos may configure `gates.checks.synthesize` to require periodic memory-synthesis review. When `gates.require_receipt` is on, `record` refuses to stamp without the fresh receipt from step 1 and consumes it (single-use); `--no-receipt` exists only for bootstrap. This writes the git-ignored gate state and, when telemetry is enabled, appends a no-PII telemetry event.
 
 Then run the telemetry retention pass in the same maintenance step: `node .scripts/aw-gate.js prune-telemetry` deletes month shards older than `telemetry.retention_months` (git history is the archive; no-op when telemetry rotation or retention is not configured). Include any removed shards in the batched `chore(memory)` commit.
 

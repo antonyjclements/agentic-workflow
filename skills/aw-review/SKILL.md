@@ -143,4 +143,9 @@ Headless: end with `Review complete`.
 
 ## Freshness Gate
 
-After a review completes, if `.scripts/aw-gate.js` exists, stamp the freshness gate: `node .scripts/aw-gate.js record review --detail "<mode>"`. This updates the git-ignored gate state (and appends a telemetry event when enabled) so a deterministic pre-push/CI `aw-gate.js check` can enforce that review ran recently. See `docs/workflow/README.md`.
+Only after you have actually performed the review, and if `.scripts/aw-gate.js` exists, stamp the freshness gate. Do it in two steps so the stamp carries proof the review ran:
+
+1. Write the receipt from your findings: `node .scripts/aw-gate.js receipt review --summary "<one line: what you reviewed, findings by severity, fixes applied>"`.
+2. Record: `node .scripts/aw-gate.js record review --detail "<mode>"`.
+
+When `gates.require_receipt` is on, `record` refuses to stamp without the fresh receipt from step 1 and consumes it (single-use), so a later edit needs a fresh review and receipt. Never stamp the gate without running this review — `--no-receipt` exists only for bootstrap, not to skip the work. This updates the git-ignored gate state (and appends a telemetry event when enabled) so a deterministic pre-push/CI `aw-gate.js check` can enforce that review ran recently. See `docs/workflow/README.md`.

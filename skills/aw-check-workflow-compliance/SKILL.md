@@ -113,7 +113,12 @@ Expected result:
 
 ## Freshness Gate
 
-After the compliance review completes (reporting, not fixing), if `.scripts/aw-gate.js` exists, stamp the freshness gate: `node .scripts/aw-gate.js record check_workflow_compliance`. This writes only the git-ignored gate state (and an optional telemetry event); it is not a file mutation of tracked work. A deterministic pre-push/CI `aw-gate.js check` then enforces that compliance ran recently. See `docs/workflow/README.md`.
+Only after the compliance review completes (reporting, not fixing), if `.scripts/aw-gate.js` exists, stamp the freshness gate in two steps so the stamp carries proof the check ran:
+
+1. Write the receipt from your report: `node .scripts/aw-gate.js receipt check_workflow_compliance --summary "<one line: compliance verdict and any gaps found>"`.
+2. Record: `node .scripts/aw-gate.js record check_workflow_compliance`.
+
+When `gates.require_receipt` is on, `record` refuses to stamp without the fresh receipt from step 1 and consumes it (single-use). Never stamp the gate without running this check — `--no-receipt` exists only for bootstrap. This writes only the git-ignored gate state (and an optional telemetry event); it is not a file mutation of tracked work. A deterministic pre-push/CI `aw-gate.js check` then enforces that compliance ran recently. See `docs/workflow/README.md`.
 
 ## Rules
 

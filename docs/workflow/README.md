@@ -78,6 +78,10 @@ human_review:
 | `human_review.spec.reviewers` | string list | `[]` | GitHub usernames requested on spec review PRs. |
 | `human_review.plan.reviewers` | string list | `[]` | GitHub usernames requested on plan review PRs. |
 | `gates.enabled` | boolean | `false` | Master switch for freshness enforcement. When false, `aw-gate.js check` is a no-op. |
+| `gates.require_receipt` | boolean | `false` (installer ships `true`) | When true, `aw-gate.js record <gate>` refuses to stamp unless the skill has just written a fresh, gate-matching receipt (proof-of-work). Bypass once with `--no-receipt` for bootstrap. |
+| `gates.receipt_dir` | string | `.aw/receipts` | Git-ignored directory where receipts are written and consumed (single-use). |
+| `gates.receipt_max_age_minutes` | number | `180` | Maximum age, in minutes, a receipt stays valid for `record` to accept it. |
+| `gates.checks.<name>.require_receipt` | boolean | inherits `gates.require_receipt` | Per-gate override of the receipt requirement, e.g. strict for `review`, relaxed for `synthesize`. |
 | `gates.state_file` | string | `.aw-gate-state.json` | Git-ignored per-checkout file holding the last-run timestamp and commit for each gate. |
 | `gates.checks.<name>.mode` | string | `age` | `age` (wall-clock window), `commit` (relevant paths changed since the recorded commit), or `commit-and-age` (both must pass). |
 | `gates.checks.<name>.max_age_hours` | number | — | Maximum age, in hours, a recorded gate stays fresh. Required for `age` and `commit-and-age` modes. |
@@ -120,9 +124,13 @@ them require an agent to run in CI — the enforcement path is fully determinist
 The LLM-driven review, compliance, and memory-synthesis skills cannot run as a blocking CI check on
 their own. Instead, this workflow converts them into a **freshness contract**:
 
-1. After a successful run, the skill stamps a marker:
-   `node .scripts/aw-gate.js record <gate> [--detail "..."]`. This writes the
-   last-run timestamp **and the current commit** to the git-ignored `gates.state_file`.
+1. After a successful run, the skill writes a proof-of-work **receipt**
+   (`node .scripts/aw-gate.js receipt <gate> --summary "..."`) and then stamps a
+   marker: `node .scripts/aw-gate.js record <gate> [--detail "..."]`. This writes
+   the last-run timestamp **and the current commit** to the git-ignored
+   `gates.state_file`. When `gates.require_receipt` is on, `record` refuses to
+   stamp without a fresh receipt and consumes it (single-use), so an agent cannot
+   clear the gate by running `record` without actually running the skill.
 2. A deterministic checker enforces the contract:
    `node .scripts/aw-gate.js check` exits non-zero when any gate under
    `gates.checks` fails its mode, and exits 0 when `gates.enabled` is false.

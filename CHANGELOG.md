@@ -12,6 +12,20 @@ version has no entry here.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-23
+
+### Added
+
+- Proof-of-work receipts for freshness gates. When `gates.require_receipt` is on
+  (the installer's default), `node .scripts/aw-gate.js record <gate>` refuses to
+  stamp unless the skill has just written a fresh, gate-matching, single-use
+  receipt via the new `receipt <gate> --summary "..."` subcommand — closing the
+  gap where an agent could clear a blocked push by running `record` without
+  actually running `aw-review`/`aw-capture`/`aw-check-workflow-compliance`/
+  `aw-synthesize-memory`. New config: `gates.require_receipt`, `gates.receipt_dir`,
+  `gates.receipt_max_age_minutes`, and per-gate `checks.<name>.require_receipt`.
+  `--no-receipt` bypasses the check for bootstrap only.
+
 ## [0.8.1] - 2026-07-21
 
 ### Added
