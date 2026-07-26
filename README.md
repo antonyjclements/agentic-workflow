@@ -763,7 +763,7 @@ org_knowledge:
 
 The org base is **governed content**: one accountable owner (a senior lead or distinguished engineer), PR-reviewed changes, self-describing entries, advisory-by-default with repo-local precedence, and a human-gated promotion path. The full governance model and templates are in [docs/workflow/org-knowledge.md](docs/workflow/org-knowledge.md).
 
-**Spec traceability.** With `trace.enabled: true`, `node .scripts/aw-gate.js trace` checks that `@spec` anchors in tests and code point to living spec requirements, every requirement has a test anchor, and changed anchored tests are coupled to changed specs when run with `--base`. Skills write annotations through `trace-annotate`; batch files live under `.aw/tmp/` and are cleaned when tracing is disabled or on successful enabled runs.
+**Spec traceability.** With `trace.enabled: true`, `node .scripts/aw-gate.js trace` checks that `@spec` anchors in tests and code point to living spec requirements, every requirement has a test anchor, and changed anchored tests are coupled to changed specs when run with `--base`. Skills write annotations through `trace-annotate`; batch files live under `.aw/tmp/` and are cleaned when tracing is disabled or on successful enabled runs. Repos adopting the `[e2e]` marker on an existing suite can run `trace --suggest-e2e` to print the markers their own e2e anchors already justify, without editing anything.
 
 **Workflow trace.** With `workflow_trace.enabled: true`, skills can leave deterministic process breadcrumbs through `workflow-record`, and `record <gate>` automatically appends gate events. `workflow-check` can then verify facts such as "a tier was chosen" and "review/compliance gates ran" instead of relying on a final agent summary.
 

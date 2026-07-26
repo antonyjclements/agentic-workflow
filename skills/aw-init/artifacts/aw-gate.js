@@ -953,12 +953,160 @@ function commitSpecOverrideIds(commit) {
   return ids;
 }
 
+// --- E2E marker suggestions (advisory, read-only) ------------------------
+// Derives `[e2e]` markers from evidence the repo already carries rather than
+// from requirement prose. Two candidate classes:
+//
+//   covered-unmarked   an unmarked requirement already anchored in a file
+//                      matching e2e.test_paths. The decision was made when
+//                      somebody wrote that test; the spec just never recorded
+//                      it. Marking it cannot turn the gate red.
+//   near-miss-marker   a title ending in a marker variant trace does not
+//                      honor, so the requirement reads as marked but is not.
+//
+// Prose is never inspected. docs/standards/e2e-coverage.md puts the marking
+// decision with a human at spec time, and a keyword guess dressed up as a
+// finding would quietly move that bar into this script.
+function specHeadingLine(file, line) {
+  const abs = resolveRepoPath(file);
+  if (!abs) return null;
+  try {
+    const raw = fs.readFileSync(abs, 'utf8').split(/\r?\n/)[line - 1];
+    return typeof raw === 'string' ? raw.replace(/\s+$/, '') : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Suffix-only, per the standard: a marker before the em-dash stops the
+// requirement heading from matching at all.
+function markedHeading(raw) {
+  const trimmed = raw.replace(/\s+$/, '');
+  return E2E_MARKER_NEAR_MISS.test(trimmed)
+    ? trimmed.replace(E2E_MARKER_NEAR_MISS, '[e2e]')
+    : `${trimmed} [e2e]`;
+}
+
+function cmdTraceSuggestE2e(config, trace, flags) {
+  const jsonMode = flags.json === true;
+  const e2e = e2eConfig(config);
+  const specScan = scanSpecs(trace);
+  const specs = specScan.specs;
+  const findings = [...specScan.findings];
+
+  // Scanned regardless of e2e.enabled: surveying candidates before switching
+  // the gate on is the migration sequence this mode exists to serve.
+  const havePaths = e2e.test_paths.length > 0;
+  let anchors = [];
+  if (havePaths) {
+    const scan = scanAnchors(e2e.test_paths, 'e2e');
+    findings.push(...scan.findings);
+    anchors = scan.anchors;
+  }
+
+  const suggestions = [];
+  for (const id of Array.from(specs.keys()).sort()) {
+    const spec = specs.get(id);
+    if (isE2eMarked(spec.title)) continue;
+    const nearMiss = isE2eNearMiss(spec.title);
+    const evidence = sortedLocations(
+      anchors.filter((a) => a.id === id).map((a) => ({ file: a.file, line: a.line }))
+    );
+    if (!nearMiss && evidence.length === 0) continue;
+    const current = specHeadingLine(spec.file, spec.line);
+    suggestions.push({
+      id,
+      kind: nearMiss ? 'near-miss-marker' : 'covered-unmarked',
+      file: spec.file,
+      line: spec.line,
+      covered: evidence.length > 0,
+      // Marking an already-covered requirement satisfies missing-e2e-coverage
+      // on the next run; marking an uncovered one starts failing it.
+      gate_effect: evidence.length > 0 ? 'none' : 'enforces',
+      evidence,
+      current,
+      proposed: current === null ? null : markedHeading(current),
+    });
+  }
+
+  const summary = {
+    mode: 'suggest-e2e',
+    requirements: specs.size,
+    suggestions: suggestions.length,
+    covered_unmarked: suggestions.filter((s) => s.kind === 'covered-unmarked').length,
+    near_miss_markers: suggestions.filter((s) => s.kind === 'near-miss-marker').length,
+    e2e_paths_set: havePaths,
+    errors: findings.filter((f) => f.level === 'error').length,
+    warnings: findings.filter((f) => f.level === 'warning').length,
+  };
+
+  sortFindings(findings);
+  const output = { summary, suggestions, findings };
+  if (typeof flags.out === 'string') {
+    const out = resolveRepoPath(flags.out);
+    if (!out) fail(`trace --out must be a repo-relative path: ${flags.out}`);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, JSON.stringify(output, null, 2) + '\n');
+  }
+  if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+
+  if (summary.errors > 0) {
+    process.stderr.write('aw-gate: trace --suggest-e2e FAILED\n');
+    for (const f of findings.filter((item) => item.level === 'error')) {
+      process.stderr.write(`  - ${f.type}: ${f.message}\n`);
+    }
+    process.exit(1);
+  }
+
+  if (!jsonMode) {
+    const lines = ['aw-gate: e2e marker suggestions — advisory, nothing was modified'];
+    if (!havePaths) {
+      lines.push('  e2e.test_paths is empty — coverage-derived candidates skipped; only marker typos are detectable');
+    }
+    if (!suggestions.length) {
+      lines.push(`  no candidates (${summary.requirements} requirement(s) scanned)`);
+    }
+    for (const kind of ['covered-unmarked', 'near-miss-marker']) {
+      const group = suggestions.filter((s) => s.kind === kind);
+      if (!group.length) continue;
+      const note = kind === 'covered-unmarked'
+        ? 'already anchored in e2e.test_paths; marking is gate-neutral'
+        : 'reads as marked but trace does not honor it';
+      lines.push('', `  ${kind} (${group.length}) — ${note}`);
+      for (const s of group) {
+        lines.push(`    ${s.id}  ${s.file}:${s.line}`);
+        for (const e of s.evidence) lines.push(`      evidence  ${e.file}:${e.line}`);
+        if (s.gate_effect === 'enforces') {
+          lines.push('      no anchor in e2e.test_paths — marking starts enforcing coverage');
+        }
+        if (s.current !== null) {
+          lines.push(`      - ${s.current}`);
+          lines.push(`      + ${s.proposed}`);
+        }
+      }
+    }
+    if (suggestions.length) {
+      lines.push('', '  Apply by editing the headings above, then re-run trace to confirm.');
+    }
+    process.stdout.write(lines.join('\n') + '\n');
+  }
+  process.exit(0);
+}
+
 function cmdTrace(args) {
   const { flags } = parseFlags(args);
   const config = loadConfig();
   const trace = traceConfig(config);
   const jsonMode = flags.json === true;
+  const suggestE2e = flags['suggest-e2e'] === true;
   if (!trace.enabled) {
+    // Suggestion mode reads spec headings and @spec anchors, so it needs the
+    // same trace config the gate does. Reported separately from the disabled
+    // payload below, which is pinned behaviour.
+    if (suggestE2e) {
+      process.stderr.write('aw-gate: trace --suggest-e2e needs trace.enabled: true in docs/workflow/config.yml\n');
+      process.exit(2);
+    }
     if (jsonMode) {
       process.stdout.write(JSON.stringify({
         summary: {
@@ -977,6 +1125,11 @@ function cmdTrace(args) {
     }
     process.exit(0);
   }
+
+  // Advisory report, never the gate: it prints candidates and exits 0 rather
+  // than running the enforcement below, so a repo mid-migration can survey
+  // markers while trace is still failing for other reasons.
+  if (suggestE2e) return cmdTraceSuggestE2e(config, trace, flags);
 
   const e2e = e2eConfig(config);
   const scanE2ePaths = e2e.enabled && e2e.test_paths.length > 0;
@@ -2060,6 +2213,7 @@ function usage() {
       '  node .scripts/aw-gate.js record <event> [--detail "text"] [--no-receipt]',
       '  node .scripts/aw-gate.js check [--against head|worktree]',
       '  node .scripts/aw-gate.js trace [--base <ref>] [--json] [--out <path>]',
+      '  node .scripts/aw-gate.js trace --suggest-e2e [--json] [--out <path>]',
       '  node .scripts/aw-gate.js trace-annotate <spec|test|code> --file <path> --line <n> --id <ID>[,<ID>]',
       '  node .scripts/aw-gate.js trace-annotate --batch .aw/tmp/trace-intents.<token>.json [--delete-batch-on-success]',
       '  node .scripts/aw-gate.js workflow-record <event> [--tier <tier>] [--step <step>] [--gate <gate>] [--status <status>] [--reason <text>]',

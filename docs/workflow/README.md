@@ -232,6 +232,11 @@ a changed anchored test is not paired with a changed owning spec or a
 `Spec-Override:` commit trailer. It is deterministic and is **not** a freshness
 gate, so do not add it under `gates.checks`.
 
+`trace --suggest-e2e` is a separate read-only mode that reports which
+requirements an existing e2e suite already covers, for repos adopting the `[e2e]`
+marker retrospectively. It enforces nothing and always exits 0 — see
+[Adopting the marker in a repo that already has e2e tests](#adopting-the-marker-in-a-repo-that-already-has-e2e-tests).
+
 Skills write annotations through the deterministic proxy:
 
 ```sh
@@ -397,6 +402,43 @@ Keep external test-management identifiers out of `@spec` anchors. The anchor
 pattern accepts any `[A-Z][A-Z0-9]{1,7}-\d{3,}` ID, so a Jira or Xray key such as
 `PROJ-1234` parses as a requirement ID and `trace` reports `dangling-test-ref`
 when it is not in a living spec. Record platform keys in a separate annotation.
+
+### Adopting the marker in a repo that already has e2e tests
+
+Marking requirements one by one is the wrong first move when a suite already
+exists — the repo has already made most of those calls, it just never wrote them
+into the specs. `trace --suggest-e2e` prints the candidates and changes nothing:
+
+```bash
+node .scripts/aw-gate.js trace --suggest-e2e            # human-readable
+node .scripts/aw-gate.js trace --suggest-e2e --json     # or --out <path>
+```
+
+It reports two candidate classes, both derived from evidence rather than from
+requirement prose:
+
+| Candidate | Meaning | `gate_effect` |
+| --- | --- | --- |
+| `covered-unmarked` | Unmarked, but already anchored in a file matching `e2e.test_paths` | `none` |
+| `near-miss-marker` | Title ends in a variant such as `[E2E]` or `(e2e)`, which `trace` does not honor | `none` if covered, else `enforces` |
+
+Each candidate carries the heading's current text and the proposed replacement,
+so applying the set is a mechanical edit. `gate_effect: none` means the
+requirement already has the coverage the marker would demand, so marking it
+cannot turn `trace` red; `enforces` means the marker starts being checked on the
+next run and the test still has to be written.
+
+Requirements with no e2e anchor and no marker variant are never suggested. Which
+requirements *deserve* end-to-end proof is a judgment the standard puts with a
+human at spec time, and a keyword guess dressed up as a finding would quietly
+move that bar into a script.
+
+The mode is advisory: it exits 0 even when it has suggestions, and it does not
+run the coverage gate, so it stays readable while `trace` is failing for other
+reasons. It needs `trace.enabled: true` but deliberately not `e2e.enabled`, which
+is what makes the adoption order work — point `e2e.test_paths` at the existing
+suite, survey the candidates, apply the markers, then set `e2e.enabled: true` on
+a tree that is already green.
 
 ## Workflow Step Keys
 

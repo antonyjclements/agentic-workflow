@@ -57,6 +57,20 @@ Mark requirements at spec time — in `aw-create-spec` or `aw-brainstorm`, as th
 
 Do not mark at implementation time. A bar set by whoever is writing code that day, under deadline, produces either nothing or everything.
 
+## Adopting the Marker Retrospectively
+
+A repo that already has an e2e suite has already made most of these calls; the specs just never recorded them. Do not re-litigate the suite requirement by requirement — read the decisions back out of it:
+
+```bash
+node .scripts/aw-gate.js trace --suggest-e2e
+```
+
+This reports unmarked requirements that already carry an anchor in `e2e.test_paths`, plus headings ending in a marker variant, with the exact heading edit for each. It changes nothing and enforces nothing.
+
+Apply the `gate_effect: none` candidates freely — they already have the coverage the marker demands. Treat `enforces` candidates as a real decision: the marker starts being checked immediately and the test still has to exist.
+
+A requirement with no e2e anchor is never suggested, however important it sounds. Deciding that a requirement *should* have end-to-end proof is the judgment this standard puts with a human, and it stays there.
+
 ## Exceptions
 
 There is no override trailer. `Spec-Override:` and `Pin-Override:` work because those checks are scoped to a commit range; marked-coverage is a whole-tree invariant, so a per-commit escape hatch would clear once and fail again on the next commit.

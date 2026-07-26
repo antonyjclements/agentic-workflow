@@ -37,6 +37,17 @@ version has no entry here.
   an e2e test, keeping a ceiling on suite size, the marker convention and its
   suffix-only placement rule, where the decision is made, and why there is no
   override trailer.
+- `node .scripts/aw-gate.js trace --suggest-e2e`, a read-only mode for repos
+  adopting the `[e2e]` marker after an e2e suite already exists. It reports
+  unmarked requirements already anchored in `e2e.test_paths` (`covered-unmarked`,
+  safe to apply because the coverage is already there) and headings ending in an
+  unhonored variant such as `[E2E]` (`near-miss-marker`), each with the current
+  and proposed heading text and whether marking it starts enforcing coverage.
+  Requirement prose is never inspected — what deserves end-to-end proof stays a
+  human judgment made at spec time. Requires `trace.enabled` but deliberately not
+  `e2e.enabled`, so candidates can be surveyed before the gate is switched on;
+  it enforces nothing and exits 0 even while the enforcing `trace` run is red.
+  Supports `--json` and `--out <path>`.
 
 ### Changed
 
