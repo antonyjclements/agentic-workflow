@@ -12,6 +12,20 @@ version has no entry here.
 
 ## [Unreleased]
 
+### Added
+
+- Configurable end-to-end test authoring. New `workflow.auxiliary.e2e_tests.skill`
+  routing key and a disabled-by-default top-level `e2e` block (`enabled`,
+  `trigger_paths`, `test_dir`, `run_scope`). There is no bundled e2e skill —
+  frameworks are stack-specific, so the workflow owns the slot and the contract
+  while the repo supplies a Playwright, Cypress, XCUITest, or in-house skill.
+  `aw-work` invokes it after acceptance criteria are mapped and before
+  implementation edits, then runs authored specs per `e2e.run_scope`;
+  `aw-check-workflow-compliance` reports in-scope changes shipping without e2e
+  coverage or a stated exception. The config migrator adds the block with its
+  defaults and rejects an invalid `e2e.run_scope`. See
+  `docs/decisions/2026-07-26-add-e2e-test-authoring-capability.md`.
+
 ### Changed
 
 - Rebranded the project and install surface as Augmented Workflow, including

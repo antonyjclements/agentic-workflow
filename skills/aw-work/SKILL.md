@@ -76,6 +76,18 @@ Set up branch/worktree:
 
 Create/update task tracker from units, preserving unit IDs when present.
 
+Read the `e2e` block in `docs/workflow/config.yml`. When `e2e.enabled` is true,
+`workflow.auxiliary.e2e_tests.skill` is non-empty, and the change touches
+`e2e.trigger_paths` (empty means unscoped, so every change qualifies), invoke
+that skill after acceptance criteria are mapped and before Phase 2 edits. Pass
+the acceptance criteria, the changed paths, and the `e2e.*` config; expect back
+the spec files written, the command that runs them, and which acceptance
+criterion each spec covers. Under `acceptance-first`, `tdd`, or `bdd`, author the
+e2e specs before feature code. When the capability is enabled and in scope but
+the skill is unavailable or declines the case, record that as an explicit
+exception rather than dropping the coverage silently. When `e2e.enabled` is
+false or no skill is configured, skip this without comment.
+
 If the effective policy is `characterization-first`, run
 `workflow.auxiliary.pin_behavior.skill` when configured, otherwise run
 `aw-pin-behavior` for the subject before Phase 2 edits. The skill returns a
@@ -117,6 +129,10 @@ Run the narrowest meaningful verification first, then broader checks as risk war
 - lint/typecheck/build if affected
 - migrations/schema checks when relevant
 - browser/simulator/manual checks for UI flows
+- when e2e specs were authored this session, run them per `e2e.run_scope`:
+  `affected` runs only the specs covering changed behavior, `full` runs the
+  suite, and `none` defers the run to CI. Keep local runs narrow; a full suite
+  belongs to `workflow.steps.monitor_pipeline.skill` after PR creation
 
 If tests cannot run, record why. Fix failures caused by the change. Do not hide unrelated pre-existing failures; summarize them separately.
 
@@ -132,7 +148,7 @@ Before finishing:
 - if the work affects UI or UX and `workflow.design.enabled` is true with `workflow.design.hooks.implementation_review.skill` non-empty, invoke that design hook with the changed artifact, plan/spec path, or current diff
 - run `aw-review` for non-trivial or risky changes when time/context allows
 - address safe findings; surface judgment calls
-- record ship-readiness evidence needed by `aw-check-workflow-compliance`: effective test policy, tests/checks run, acceptance coverage, README status, review gates run/skipped, and justified exceptions
+- record ship-readiness evidence needed by `aw-check-workflow-compliance`: effective test policy, tests/checks run, acceptance coverage, e2e coverage or exception when `e2e` is enabled and in scope, README status, review gates run/skipped, and justified exceptions
 
 ## Phase 5: Ship Readiness
 

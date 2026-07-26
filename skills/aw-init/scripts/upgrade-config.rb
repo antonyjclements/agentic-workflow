@@ -29,9 +29,17 @@ DEFAULT_AUXILIARY = %w[
   discover_standards
   research_slack
   pin_behavior
+  e2e_tests
   resolve_pr_feedback
   synthesize_memory
 ].freeze
+
+DEFAULT_E2E = {
+  "enabled" => false,
+  "trigger_paths" => [],
+  "test_dir" => "",
+  "run_scope" => "affected"
+}.freeze
 
 DEFAULT_CONFIG = {
   "workflow" => {
@@ -121,6 +129,7 @@ DEFAULT_CONFIG = {
     "out" => ".aw/pin/equivalence.json",
     "timeout_seconds" => 900
   },
+  "e2e" => DEFAULT_E2E,
   "workflow_trace" => {
     "enabled" => false,
     "path" => ".aw/workflow-trace.jsonl",
@@ -425,6 +434,17 @@ design_hooks = ensure_hash(design, "hooks")
 %w[discovery spec_review plan_review implementation_review pre_pr].each do |hook|
   hook_config = ensure_hash(design_hooks, hook)
   hook_config["skill"] = "" unless hook_config.key?("skill")
+end
+
+e2e = ensure_hash(config, "e2e")
+DEFAULT_E2E.each do |key, default|
+  e2e[key] = default.dup unless e2e.key?(key)
+end
+
+valid_run_scopes = %w[affected full none]
+run_scope = dig_hash(config, "e2e", "run_scope")
+unless valid_run_scopes.include?(run_scope)
+  conflicts << "e2e.run_scope is #{run_scope.inspect}; expected one of #{valid_run_scopes.join(', ')}"
 end
 
 valid_policies = %w[

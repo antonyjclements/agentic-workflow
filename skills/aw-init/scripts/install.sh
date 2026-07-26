@@ -464,6 +464,8 @@ install_repo_files() {
       skill: \"\"
     pin_behavior:
       skill: \"\"
+    e2e_tests:
+      skill: \"\"
     resolve_pr_feedback:
       skill: \"\"
     synthesize_memory:
@@ -558,6 +560,11 @@ pin:
   worktree_dir: .aw/pin
   out: .aw/pin/equivalence.json
   timeout_seconds: 900
+e2e:
+  enabled: false
+  trigger_paths: []
+  test_dir: \"\"
+  run_scope: affected
 workflow_trace:
   enabled: false
   path: .aw/workflow-trace.jsonl

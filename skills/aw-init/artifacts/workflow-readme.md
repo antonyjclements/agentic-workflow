@@ -105,6 +105,10 @@ human_review:
 | `pin.worktree_dir` | string | `.aw/pin` | Git-ignored worktree root used for old-tree runs. |
 | `pin.out` | string | `.aw/pin/equivalence.json` | JSON result path for `pin run`. |
 | `pin.timeout_seconds` | number | `900` | Per-command timeout for setup and harness commands. |
+| `e2e.enabled` | boolean | `false` | Master switch for end-to-end test authoring. When false, the capability is skipped entirely. |
+| `e2e.trigger_paths` | string list | `[]` | Git pathspecs for the user-facing surface whose changes warrant e2e coverage. Empty means unscoped — every change is a candidate. |
+| `e2e.test_dir` | string | `""` | Directory e2e specs live in. Blank lets the configured skill use the project's own convention. |
+| `e2e.run_scope` | string | `affected` | How much of the suite runs during local verification: `affected`, `full`, or `none` (CI owns the run). |
 | `workflow_trace.enabled` | boolean | `false` | Master switch for deterministic workflow execution breadcrumbs. |
 | `workflow_trace.path` | string | `.aw/workflow-trace.jsonl` | Git-ignored JSONL file for local process events. |
 | `workflow_trace.max_events` | number | `10000` | Maximum events retained after each append. Older events are dropped first. |
@@ -285,6 +289,67 @@ current-tree Node harness receives `AW_PIN_REFERENCE_ROOT`,
 `golden` metadata records fixture provenance without replacing live reference
 execution.
 
+## End-to-End Test Authoring (`e2e`)
+
+End-to-end frameworks are stack-specific, so this workflow ships no bundled e2e
+skill. It defines the slot and the contract; the repo supplies the tool. Point
+`workflow.auxiliary.e2e_tests.skill` at a Playwright, Cypress, XCUITest, or
+in-house skill and set `e2e.enabled: true`.
+
+E2E authoring is **not** a lifecycle step and **not** a freshness gate. It hangs
+off the implementation test policy, because e2e specs are the automation of
+user-facing acceptance criteria. The invocation pattern mirrors
+`pin_behavior`: routing lives in `workflow.auxiliary`, enablement and scope live
+in this top-level block, and `aw-work` invokes it at a documented checkpoint.
+
+Checkpoints:
+
+- **`aw-work` Phase 1**, after acceptance criteria are mapped and before Phase 2
+  edits, when `e2e.enabled` is true, the skill is configured, and the change
+  touches `e2e.trigger_paths`. Under `acceptance-first`, `tdd`, or `bdd` the
+  specs are authored before feature code.
+- **`aw-work` Phase 3**, run the suite according to `e2e.run_scope`. Local runs
+  stay narrow; `full` belongs to CI via `workflow.steps.monitor_pipeline.skill`.
+- **`aw-check-workflow-compliance`**, which reports a finding when a change
+  touches `e2e.trigger_paths` with the capability enabled but carries neither
+  e2e coverage nor a stated exception.
+
+`e2e.trigger_paths` uses git pathspec semantics, like `gates.checks.<name>.paths`
+and `trace.*_paths`. The list is a positive allowlist — paths matching nothing in
+it are already out, so `:(exclude)` entries are only needed to carve holes inside
+a broader positive pattern:
+
+```yaml
+e2e:
+  enabled: true
+  trigger_paths:          # narrow positive: no exclude needed
+    - src/app
+    - src/components
+  test_dir: e2e
+  run_scope: affected
+```
+
+Configured skills must preserve a small contract:
+
+- **Accept** the acceptance criteria (or spec/plan/ticket path), the changed
+  paths, and the `e2e.*` config.
+- **Return** the spec files written, the command that runs them, and **which
+  acceptance criterion each spec covers** — that mapping is what feeds compliance
+  reporting and the PR body.
+- **State unsupported cases explicitly** rather than silently producing nothing.
+
+Because the contract names the capability rather than the tool, swapping
+frameworks is a config change. Tool-specific conventions — selector strategy,
+fixtures, wait policy, auth-state reuse, external test-management identifiers —
+belong in `docs/standards/` indexed in `docs/standards/index.yml`, not in this
+config. Skills that onboard tests into an external test-management platform
+(Xray, TestRail, Zephyr) own that integration and its credentials themselves;
+the workflow does not model it.
+
+E2E specs matching `trace.test_paths` can carry `@spec` anchors, which makes
+"every user-facing acceptance criterion has e2e coverage" deterministically
+checkable through `trace` with no extra machinery.
+
 ## Workflow Step Keys
 
 ```text
@@ -312,6 +377,7 @@ capture -> aw-capture
 discover_standards -> aw-discover-standards
 research_slack -> (no bundled skill; set workflow.auxiliary.research_slack.skill for enterprise routing)
 pin_behavior -> aw-pin-behavior
+e2e_tests -> (no bundled skill; set workflow.auxiliary.e2e_tests.skill)
 resolve_pr_feedback -> aw-resolve-pr-feedback
 synthesize_memory -> aw-synthesize-memory
 ```

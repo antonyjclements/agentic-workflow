@@ -410,6 +410,10 @@ Schema:
 | `workflow.design.enabled` | boolean | `false` | Master switch for additive design-team hooks. |
 | `workflow.design.reference_paths` | string list | `["docs/standards"]` | Repo-relative files or directories containing design reference material. |
 | `workflow.design.hooks.<hook>.skill` | string | `""` | Optional design skill for a design hook. Blank skips that hook. |
+| `e2e.enabled` | boolean | `false` | Master switch for end-to-end test authoring. |
+| `e2e.trigger_paths` | string list | `[]` | Git pathspecs for the user-facing surface whose changes warrant e2e coverage. Empty means unscoped. |
+| `e2e.test_dir` | string | `""` | Directory e2e specs live in. Blank uses the project's own convention. |
+| `e2e.run_scope` | string | `affected` | Local run breadth: `affected`, `full`, or `none` (CI owns the run). |
 | `pull_request.template.title` | string | `""` | Optional path or URL for a PR title template. Blank means generate the title normally. |
 | `pull_request.template.body` | string | `""` | Optional path or URL for a PR body template. Blank means generate the body normally. |
 | `git.commit.format` | string | `conventional` | Commit message convention used by bundled commit skills. |
@@ -430,6 +434,24 @@ Set `workflow.auxiliary.<key>.skill` to replace helper skills that can be invoke
 Set `workflow.design.enabled: true` to add design-team checkpoints around the core workflow without replacing it. Hook skills live under `workflow.design.hooks`: `discovery` after PRD intake or brainstorming, `spec_review` after spec creation, `plan_review` after planning, `implementation_review` after UI-affecting implementation, and `pre_pr` before PR creation. Leave a hook skill blank to skip it.
 
 Design reference material is repo-local. Put enforceable design principles, accessibility rules, content style, and interaction conventions in `docs/standards/` and index them in `docs/standards/index.yml`; keep feature-specific UX requirements in `docs/features/<feature>/spec.md`, durable tradeoffs in `docs/decisions/`, and corrections in `docs/learnings/`. Design hook skills should read `workflow.design.reference_paths` before reviewing artifacts or diffs.
+
+Set `e2e.enabled: true` and `workflow.auxiliary.e2e_tests.skill` to have agents author end-to-end tests during implementation. There is no bundled e2e skill — frameworks are stack-specific, so the workflow owns the slot and the contract while your repo supplies a Playwright, Cypress, XCUITest, or in-house skill. `aw-work` invokes it after acceptance criteria are mapped and before implementation edits, then runs the authored specs per `e2e.run_scope`; `aw-check-workflow-compliance` flags in-scope changes that ship without e2e coverage or a stated exception.
+
+```yaml
+workflow:
+  auxiliary:
+    e2e_tests:
+      skill: my-playwright-skill
+e2e:
+  enabled: true
+  trigger_paths:
+    - src/app
+    - src/components
+  test_dir: e2e
+  run_scope: affected
+```
+
+`e2e.trigger_paths` uses git pathspec semantics like `trace.*_paths`. The list is a positive allowlist, so paths matching nothing in it are already excluded; `:(exclude)` entries are only needed to carve holes inside a broader pattern such as `"."`. Framework conventions — selectors, fixtures, wait policy, auth-state reuse — belong in `docs/standards/`, and skills that onboard tests into an external test-management platform such as Jira Xray own that integration themselves. Full details are in the installed `docs/workflow/README.md`.
 
 Default workflow step keys:
 

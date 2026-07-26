@@ -1,4 +1,12 @@
 decisions:
+  - path: docs/decisions/2026-07-26-add-e2e-test-authoring-capability.md
+    title: Add a configurable end-to-end test authoring capability
+    date: 2026-07-26
+    status: active
+    tags:
+      - workflow
+      - testing
+      - configuration
   - path: docs/decisions/2026-07-24-rebrand-as-augmented-workflow.md
     title: Rebrand as Augmented Workflow
     date: 2026-07-24

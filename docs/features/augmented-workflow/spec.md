@@ -47,6 +47,7 @@ related_decisions:
   - docs/decisions/2026-07-16-add-workflow-execution-trace.md
   - docs/decisions/2026-07-16-add-behavior-pinning.md
   - docs/decisions/2026-07-21-add-design-team-hooks.md
+  - docs/decisions/2026-07-26-add-e2e-test-authoring-capability.md
 ---
 
 # Spec-Driven Augmented Workflow
@@ -82,6 +83,7 @@ The workflow routes:
 - the synthesized project wiki to `docs/context/wiki.md`
 - ticket creation, workflow step overrides, implementation test policy, PR templates, commit messages, post-PR CI monitoring, Slack research, human review, enforcement gates, telemetry, and org-shared knowledge routing to `docs/workflow/config.yml`
 - additive design-team hooks and design reference paths to `docs/workflow/config.yml`
+- optional end-to-end test authoring routing to `docs/workflow/config.yml`
 - optional spec traceability routing to `docs/workflow/config.yml`
 - optional workflow execution trace routing to `docs/workflow/config.yml`
 - repo initialization only through `aw-init`; upgrades through `skills/aw-init/scripts/upgrade.sh`
@@ -121,7 +123,10 @@ The workflow routes:
 - Repos can configure additive design-team hooks through `workflow.design` without replacing core lifecycle steps. Design hooks are disabled by default; when enabled, only hooks with a non-empty skill run. The hook keys are `discovery`, `spec_review`, `plan_review`, `implementation_review`, and `pre_pr`. Lifecycle skills invoke configured hooks at the matching checkpoints, and `aw-help` recommends configured hooks when they match the user's current workflow position.
 - Design hook skills read `workflow.design.reference_paths`, usually `docs/standards`, before reviewing artifacts or diffs. Repo-specific design principles, accessibility rules, content style, and interaction conventions live in `docs/standards/` when they should guide agents; feature-specific UX requirements live in feature specs, durable design tradeoffs in decisions, and corrections in learnings.
 - The default workflow step keys are `prd`, `brainstorm`, `create_spec`, `request_human_review`, `plan`, `review`, `create_tickets`, `work`, `check_workflow_compliance`, `commit`, `commit_push_pr`, and `monitor_pipeline` (config-only; no bundled monitor skill).
-- The default auxiliary skill keys are `refresh`, `debug`, `create_worktree`, `capture`, `discover_standards`, `research_slack` (config-only), `resolve_pr_feedback`, and `synthesize_memory`.
+- The default auxiliary skill keys are `refresh`, `debug`, `create_worktree`, `capture`, `discover_standards`, `research_slack` (config-only), `pin_behavior`, `e2e_tests` (config-only), `resolve_pr_feedback`, and `synthesize_memory`.
+- Repos can configure end-to-end test authoring through `workflow.auxiliary.e2e_tests.skill` and the disabled-by-default top-level `e2e` block (`enabled`, `trigger_paths`, `test_dir`, `run_scope`). There is no bundled e2e skill because e2e frameworks are stack-specific; the workflow owns the slot and the contract, and the repo supplies the tool. E2E authoring is neither a lifecycle step nor a freshness gate: it hangs off the implementation test policy, because e2e specs automate user-facing acceptance criteria.
+- `aw-work` invokes the configured e2e skill in Phase 1 after acceptance criteria are mapped and before implementation edits, when `e2e.enabled` is true, a skill is configured, and the change touches `e2e.trigger_paths`. Empty `trigger_paths` is unscoped, matching git pathspec semantics used by `gates.checks.<name>.paths` and `trace.*_paths`. In Phase 3 it runs the authored specs according to `e2e.run_scope` (`affected`, `full`, or `none`), keeping full-suite runs in CI.
+- Configured e2e skills accept the acceptance criteria, changed paths, and `e2e.*` config; they return the spec files written, the command that runs them, and which acceptance criterion each spec covers, and they state unsupported cases explicitly. Framework conventions and external test-management integration such as Jira Xray belong to the configured skill and `docs/standards/`, not to workflow config.
 - Installed `AGENTS.md` starts with task triage that routes trivial changes, small fixes, feature or behavior changes, and high-risk or cross-cutting changes to the smallest safe workflow path. Task triage lives in `AGENTS.md`, not `docs/workflow/config.yml`.
 - Implementation agents can pick up one ticket at a time with traceability back to the source plan and spec. Agents may also start from only a ticket after checkout; they read repo guidance, fetch the ticket through the configured tool when available, load linked source artifacts, and verify the ticket does not conflict with living specs or decisions before editing.
 - Repos configure implementation discipline through `workflow.implementation.test_policy`; blank or missing values use `acceptance-first`. Supported policies are `acceptance-first`, `tdd`, `bdd`, `characterization-first`, `test-after`, `manual-verification`, and `none`, with meanings documented in the installed `docs/workflow/README.md`.
@@ -220,6 +225,8 @@ The workflow routes:
 - `aw-brainstorm` can resolve ambiguous PRDs or raw ideas and create/update the living feature spec without requiring a separate `aw-create-spec` handoff; `aw-create-spec` remains available for direct spec creation.
 - Skill-backed workflow steps and auxiliary helpers can be overridden through `workflow.steps.<step>.skill` and `workflow.auxiliary.<key>.skill`; blank values preserve bundled defaults, and custom skills preserve the default step contract.
 - Additive design-team hooks can be configured through `workflow.design`; disabled or blank hooks skip cleanly, and configured hook skills preserve the design hook contract.
+- End-to-end test authoring can be configured through `workflow.auxiliary.e2e_tests.skill` and the `e2e` block; `e2e.enabled: false` or a blank skill skips the capability cleanly, and `e2e.run_scope` accepts only `affected`, `full`, or `none`. New installs write the `e2e` section disabled by default, and the config migrator adds the block with its defaults to existing installs.
+- `aw-work` invokes the configured e2e skill before implementation edits and runs authored specs per `e2e.run_scope`; `aw-check-workflow-compliance` reports a finding when an in-scope change carries neither e2e coverage nor a stated exception.
 - The installed `docs/workflow/README.md` defines the `docs/workflow/config.yml` schema — value types, defaults, workflow step keys, auxiliary keys, implementation test policies, the artifact handoff contract, and the legacy field migration mapping.
 - Implementation test policy is configurable through `workflow.implementation.test_policy`; missing or blank values default to `acceptance-first`; the supported policies are `acceptance-first`, `tdd`, `bdd`, `characterization-first`, `test-after`, `manual-verification`, and `none`.
 - `aw-work` and configured replacement work skills apply the configured implementation test policy and report tests, manual checks, acceptance coverage, and exceptions.
