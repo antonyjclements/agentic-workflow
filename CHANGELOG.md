@@ -10,7 +10,7 @@ Changes before 0.6.0 predate this changelog; see git history and `docs/decisions
 for that record. `scripts/test-install.sh` fails if the current `aw-version.txt`
 version has no entry here.
 
-## [Unreleased]
+## [0.10.0] - 2026-07-26
 
 ### Added
 
