@@ -379,6 +379,13 @@ with `suspect-e2e-marker` on near-misses such as `[E2E]` or `(e2e)`. With
 `e2e-paths-unset`. One e2e test may satisfy several requirements through a
 multi-ID anchor (`// @spec PAY-004, PAY-005`).
 
+`e2e.test_paths` is independent of `trace.test_paths` — e2e specs may live
+anywhere, including outside the trace globs. `trace` scans the two lists
+separately and merges the anchors, so an e2e spec is always discovered even when
+no trace glob reaches it, and an `:(exclude)` in one list never suppresses
+matches the other legitimately covers. A file can therefore be a valid anchor
+source for `untested-requirement` while still not counting as e2e coverage.
+
 The marker must be a suffix. Placed before the em-dash it does not match the
 requirement heading pattern and the requirement disappears from `trace` with no
 error. There is no override trailer — marked coverage is a whole-tree invariant,

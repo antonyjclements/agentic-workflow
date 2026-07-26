@@ -823,6 +823,20 @@ function sortedLocations(list) {
   });
 }
 
+// Merge two independent anchor scans into one, dropping anchors both scans
+// found (a file matched by trace.test_paths and e2e.test_paths is scanned twice).
+function mergeAnchorScans(a, b) {
+  const seen = new Set();
+  const anchors = [];
+  for (const anchor of [...a.anchors, ...b.anchors]) {
+    const key = `${anchor.id} ${anchor.file} ${anchor.line}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    anchors.push(anchor);
+  }
+  return { anchors: sortedLocations(anchors), findings: [...a.findings, ...b.findings] };
+}
+
 function splitIds(raw) {
   if (Array.isArray(raw)) return raw.flatMap((id) => splitIds(id));
   if (typeof raw !== 'string') return [];
@@ -964,8 +978,19 @@ function cmdTrace(args) {
     process.exit(0);
   }
 
+  const e2e = e2eConfig(config);
+  const scanE2ePaths = e2e.enabled && e2e.test_paths.length > 0;
+
   const specScan = scanSpecs(trace);
-  const testScan = scanAnchors(trace.test_paths, 'test');
+  // e2e.test_paths is independent of trace.test_paths: a repo may keep e2e specs
+  // somewhere the trace globs do not reach. Scan each list separately and merge
+  // the anchors — concatenating the pathspecs instead would let an `:(exclude)`
+  // in one list suppress matches the other list legitimately covers.
+  const traceTestScan = scanAnchors(trace.test_paths, 'test');
+  const e2eTestScan = scanE2ePaths
+    ? scanAnchors(e2e.test_paths, 'e2e')
+    : { anchors: [], findings: [] };
+  const testScan = mergeAnchorScans(traceTestScan, e2eTestScan);
   const codeScan = scanAnchors(trace.code_paths, 'code');
   const findings = [...specScan.findings, ...testScan.findings, ...codeScan.findings];
   const specs = specScan.specs;
@@ -1014,7 +1039,6 @@ function cmdTrace(args) {
   // Requirements marked `[e2e]` must carry a test anchor in an e2e spec, not
   // just any test. Anchors record no layer, so membership is resolved through
   // git's own pathspec matching over e2e.test_paths.
-  const e2e = e2eConfig(config);
   if (e2e.enabled) {
     for (const [id, spec] of specs.entries()) {
       if (!isE2eNearMiss(spec.title)) continue;
@@ -1061,6 +1085,13 @@ function cmdTrace(args) {
       });
     } else {
       const changedTests = changedFiles(flags.base, trace.test_paths);
+      const changedE2e = scanE2ePaths
+        ? changedFiles(flags.base, e2e.test_paths)
+        : { files: [] };
+      if (changedE2e.error) findings.push({ level: 'error', type: 'changed-e2e-error', message: changedE2e.error });
+      if (!changedTests.error && !changedE2e.error) {
+        changedTests.files = Array.from(new Set([...(changedTests.files || []), ...(changedE2e.files || [])]));
+      }
       const changedSpecs = changedFiles(flags.base, trace.spec_paths);
       if (changedTests.error) findings.push({ level: 'error', type: 'changed-tests-error', message: changedTests.error });
       if (changedSpecs.error) findings.push({ level: 'error', type: 'changed-specs-error', message: changedSpecs.error });
