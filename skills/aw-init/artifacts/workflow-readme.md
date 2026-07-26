@@ -346,9 +346,34 @@ config. Skills that onboard tests into an external test-management platform
 (Xray, TestRail, Zephyr) own that integration and its credentials themselves;
 the workflow does not model it.
 
-E2E specs matching `trace.test_paths` can carry `@spec` anchors, which makes
-"every user-facing acceptance criterion has e2e coverage" deterministically
-checkable through `trace` with no extra machinery.
+### Relationship to gates and traceability
+
+E2E authoring is **not** a freshness gate and must not be added under
+`gates.checks`. Gates exist for LLM-judgment steps that cannot run in CI; an e2e
+suite is a deterministic run, so CI owns enforcement. The coupling is indirect:
+`aw-check-workflow-compliance` reports e2e coverage, so the finding rides inside
+that gate's receipt.
+
+Note that a `mode: age` compliance gate is time-triggered, so it will not re-fire
+when new in-scope code lands inside its window. Repos that want the e2e finding
+to block on change should use `mode: commit-and-age` with `paths` mirroring
+`e2e.trigger_paths`.
+
+E2E specs are picked up by the default `trace.test_paths` — the `*.spec.ts`
+pathspec matches at any depth, so `e2e/login.spec.ts` needs no config change —
+and `@spec` anchors in them satisfy a requirement's test-anchor obligation.
+
+Trace records no test layer on an anchor, only its ID, file, and line, so
+`untested-requirement` is satisfied by a unit test just as well as by an e2e
+spec. Trace proves requirement-to-test linkage, not requirement-to-e2e linkage.
+Enforcing the stronger property belongs to `aw-check-workflow-compliance`, or to
+a repo-specific check over `trace --json --out`, whose matrix records the file of
+every test anchor.
+
+Keep external test-management identifiers out of `@spec` anchors. The anchor
+pattern accepts any `[A-Z][A-Z0-9]{1,7}-\d{3,}` ID, so a Jira or Xray key such as
+`PROJ-1234` parses as a requirement ID and `trace` reports `dangling-test-ref`
+when it is not in a living spec. Record platform keys in a separate annotation.
 
 ## Workflow Step Keys
 

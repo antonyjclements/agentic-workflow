@@ -78,6 +78,10 @@ workflow core. Skills that onboard tests into Xray, TestRail, or Zephyr own that
 integration and its credentials; the workflow does not model external test
 management.
 
-Because e2e specs commonly match `trace.test_paths`, they can carry `@spec`
-anchors, making user-facing acceptance coverage deterministically checkable
-through `trace` without new machinery.
+E2E specs are picked up by the default `trace.test_paths` and their `@spec`
+anchors satisfy a requirement's test-anchor obligation. Trace records no test
+layer on an anchor, so it proves requirement-to-test linkage rather than
+requirement-to-e2e linkage; enforcing the stronger property stays with
+`aw-check-workflow-compliance` or a repo-specific check over the `trace --json`
+matrix. External test-management keys must stay out of `@spec` anchors, because
+the anchor pattern would parse a Jira or Xray key as a requirement ID.
