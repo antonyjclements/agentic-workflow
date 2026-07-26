@@ -412,7 +412,7 @@ Schema:
 | `workflow.design.hooks.<hook>.skill` | string | `""` | Optional design skill for a design hook. Blank skips that hook. |
 | `e2e.enabled` | boolean | `false` | Master switch for end-to-end test authoring. |
 | `e2e.trigger_paths` | string list | `[]` | Git pathspecs for the user-facing surface whose changes warrant e2e coverage. Empty means unscoped. |
-| `e2e.test_dir` | string | `""` | Directory e2e specs live in. Blank uses the project's own convention. |
+| `e2e.test_paths` | string list | `[]` | Git pathspecs for files that count as e2e specs. Empty uses the project's own convention and skips the `trace` coverage check. |
 | `e2e.run_scope` | string | `affected` | Local run breadth: `affected`, `full`, or `none` (CI owns the run). |
 | `pull_request.template.title` | string | `""` | Optional path or URL for a PR title template. Blank means generate the title normally. |
 | `pull_request.template.body` | string | `""` | Optional path or URL for a PR body template. Blank means generate the body normally. |
@@ -447,7 +447,7 @@ e2e:
   trigger_paths:
     - src/app
     - src/components
-  test_dir: e2e
+  test_paths: [e2e]
   run_scope: affected
 ```
 

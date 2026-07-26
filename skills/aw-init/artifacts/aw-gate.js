@@ -778,6 +778,33 @@ function anchorRe() {
   return new RegExp(ANCHOR_PATTERN, 'g');
 }
 
+// A requirement heading opts into end-to-end coverage with an exact `[e2e]`
+// suffix on its title: `### PAY-004 — Checkout completes with a saved card [e2e]`.
+// The marker must follow the title, never precede the em-dash: the requirement
+// heading regex would not match and the requirement would vanish from trace
+// silently.
+const E2E_MARKER = /\[e2e\]$/;
+// Case and bracket variants that were probably meant as the marker but are not.
+// Reported as warnings so a typo fails loudly instead of silently uncovering.
+const E2E_MARKER_NEAR_MISS = /[[(]\s*e2e\s*[\])]$/i;
+
+function isE2eMarked(title) {
+  return E2E_MARKER.test(String(title || '').trim());
+}
+
+function isE2eNearMiss(title) {
+  const t = String(title || '').trim();
+  return !E2E_MARKER.test(t) && E2E_MARKER_NEAR_MISS.test(t);
+}
+
+function e2eConfig(config) {
+  const e2e = config.e2e || {};
+  return {
+    enabled: e2e.enabled === true,
+    test_paths: Array.isArray(e2e.test_paths) ? e2e.test_paths : [],
+  };
+}
+
 function traceConfig(config) {
   const trace = config.trace || {};
   return {
@@ -981,6 +1008,47 @@ function cmdTrace(args) {
         id,
         message: `${id} at ${spec.file}:${spec.line} has no code anchor`,
       });
+    }
+  }
+
+  // Requirements marked `[e2e]` must carry a test anchor in an e2e spec, not
+  // just any test. Anchors record no layer, so membership is resolved through
+  // git's own pathspec matching over e2e.test_paths.
+  const e2e = e2eConfig(config);
+  if (e2e.enabled) {
+    for (const [id, spec] of specs.entries()) {
+      if (!isE2eNearMiss(spec.title)) continue;
+      findings.push({
+        level: 'warning',
+        type: 'suspect-e2e-marker',
+        id,
+        message: `${id} at ${spec.file}:${spec.line} ends in something like the e2e marker but not exactly "[e2e]"; it is not treated as marked`,
+      });
+    }
+    const marked = Array.from(specs.keys()).filter((id) => isE2eMarked(specs.get(id).title));
+    if (marked.length && !e2e.test_paths.length) {
+      findings.push({
+        level: 'warning',
+        type: 'e2e-paths-unset',
+        message: `${marked.length} requirement(s) marked [e2e] but e2e.test_paths is empty — skipping the marked-coverage check`,
+      });
+    } else if (marked.length) {
+      const e2eFiles = listFiles(e2e.test_paths);
+      if (e2eFiles.error) {
+        findings.push({ level: 'error', type: 'e2e-path-error', message: e2eFiles.error });
+      } else {
+        const e2eSet = new Set(e2eFiles.files);
+        for (const id of marked) {
+          if (testScan.anchors.some((a) => a.id === id && e2eSet.has(a.file))) continue;
+          const spec = specs.get(id);
+          findings.push({
+            level: 'error',
+            type: 'missing-e2e-coverage',
+            id,
+            message: `${id} at ${spec.file}:${spec.line} is marked [e2e] but has no test anchor in ${e2e.test_paths.join(', ')}`,
+          });
+        }
+      }
     }
   }
 

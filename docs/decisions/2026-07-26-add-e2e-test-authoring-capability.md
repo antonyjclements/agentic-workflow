@@ -39,7 +39,7 @@ Three existing extension points were considered:
 
 Follow the `pin_behavior` precedent. Add `workflow.auxiliary.e2e_tests.skill`
 (blank by default, no bundled skill) and a disabled-by-default top-level `e2e`
-block with `enabled`, `trigger_paths`, `test_dir`, and `run_scope`.
+block with `enabled`, `trigger_paths`, `test_paths`, and `run_scope`.
 
 E2E authoring hangs off the implementation test policy rather than sitting beside
 it, because e2e specs are the automation of user-facing acceptance criteria. It

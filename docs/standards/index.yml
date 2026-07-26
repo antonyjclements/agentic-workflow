@@ -17,3 +17,9 @@ standards:
       - testing
       - workflow
       - characterization
+  - path: docs/standards/e2e-coverage.md
+    title: End-to-End Coverage
+    tags:
+      - testing
+      - specs
+      - workflow

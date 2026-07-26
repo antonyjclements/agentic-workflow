@@ -16,7 +16,7 @@ version has no entry here.
 
 - Configurable end-to-end test authoring. New `workflow.auxiliary.e2e_tests.skill`
   routing key and a disabled-by-default top-level `e2e` block (`enabled`,
-  `trigger_paths`, `test_dir`, `run_scope`). There is no bundled e2e skill —
+  `trigger_paths`, `test_paths`, `run_scope`). There is no bundled e2e skill —
   frameworks are stack-specific, so the workflow owns the slot and the contract
   while the repo supplies a Playwright, Cypress, XCUITest, or in-house skill.
   `aw-work` invokes it after acceptance criteria are mapped and before
@@ -25,6 +25,18 @@ version has no entry here.
   coverage or a stated exception. The config migrator adds the block with its
   defaults and rejects an invalid `e2e.run_scope`. See
   `docs/decisions/2026-07-26-add-e2e-test-authoring-capability.md`.
+- Deterministic e2e coverage checking in `aw-gate.js trace`. Living specs mark
+  requirements that need end-to-end proof with an exact `[e2e]` suffix on the
+  requirement heading; when `e2e.enabled` is true, `trace` fails with
+  `missing-e2e-coverage` if a marked requirement has no `@spec` anchor in a file
+  matching `e2e.test_paths`. Near-misses such as `[E2E]` or `(e2e)` warn as
+  `suspect-e2e-marker` instead of silently uncovering the requirement, and marks
+  with an empty `e2e.test_paths` warn as `e2e-paths-unset`. This closes the gap
+  where `untested-requirement` was satisfied by any test, e2e or not.
+- A new installed standard, `docs/standards/e2e-coverage.md`, covering what earns
+  an e2e test, keeping a ceiling on suite size, the marker convention and its
+  suffix-only placement rule, where the decision is made, and why there is no
+  override trailer.
 
 ### Changed
 

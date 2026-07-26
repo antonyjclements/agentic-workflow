@@ -107,7 +107,7 @@ human_review:
 | `pin.timeout_seconds` | number | `900` | Per-command timeout for setup and harness commands. |
 | `e2e.enabled` | boolean | `false` | Master switch for end-to-end test authoring. When false, the capability is skipped entirely. |
 | `e2e.trigger_paths` | string list | `[]` | Git pathspecs for the user-facing surface whose changes warrant e2e coverage. Empty means unscoped — every change is a candidate. |
-| `e2e.test_dir` | string | `""` | Directory e2e specs live in. Blank lets the configured skill use the project's own convention. |
+| `e2e.test_paths` | string list | `[]` | Git pathspecs for files that count as e2e specs. Empty means the configured skill uses the project's own convention and `trace` skips the marked-coverage check. |
 | `e2e.run_scope` | string | `affected` | How much of the suite runs during local verification: `affected`, `full`, or `none` (CI owns the run). |
 | `workflow_trace.enabled` | boolean | `false` | Master switch for deterministic workflow execution breadcrumbs. |
 | `workflow_trace.path` | string | `.aw/workflow-trace.jsonl` | Git-ignored JSONL file for local process events. |
@@ -325,7 +325,7 @@ e2e:
   trigger_paths:          # narrow positive: no exclude needed
     - src/app
     - src/components
-  test_dir: e2e
+  test_paths: [e2e]
   run_scope: affected
 ```
 
@@ -365,10 +365,26 @@ and `@spec` anchors in them satisfy a requirement's test-anchor obligation.
 
 Trace records no test layer on an anchor, only its ID, file, and line, so
 `untested-requirement` is satisfied by a unit test just as well as by an e2e
-spec. Trace proves requirement-to-test linkage, not requirement-to-e2e linkage.
-Enforcing the stronger property belongs to `aw-check-workflow-compliance`, or to
-a repo-specific check over `trace --json --out`, whose matrix records the file of
-every test anchor.
+spec. To express "this requirement specifically needs end-to-end proof", mark the
+requirement heading with an exact `[e2e]` suffix:
+
+```markdown
+### PAY-004 — Checkout completes with a saved card [e2e]
+```
+
+When `e2e.enabled` is true, `trace` then fails with `missing-e2e-coverage` if a
+marked requirement has no anchor in a file matching `e2e.test_paths`, and warns
+with `suspect-e2e-marker` on near-misses such as `[E2E]` or `(e2e)`. With
+`e2e.test_paths` empty the check is skipped and marked requirements raise
+`e2e-paths-unset`. One e2e test may satisfy several requirements through a
+multi-ID anchor (`// @spec PAY-004, PAY-005`).
+
+The marker must be a suffix. Placed before the em-dash it does not match the
+requirement heading pattern and the requirement disappears from `trace` with no
+error. There is no override trailer — marked coverage is a whole-tree invariant,
+so a per-commit escape hatch would clear once and fail on the next commit. The
+full rule for what earns a marker lives in the installed
+`docs/standards/e2e-coverage.md`.
 
 Keep external test-management identifiers out of `@spec` anchors. The anchor
 pattern accepts any `[A-Z][A-Z0-9]{1,7}-\d{3,}` ID, so a Jira or Xray key such as

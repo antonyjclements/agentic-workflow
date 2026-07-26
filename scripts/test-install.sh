@@ -21,6 +21,7 @@ for pair in \
   "docs/standards/coding-approach.md:skills/aw-init/artifacts/coding-approach.md" \
   "docs/standards/traceability.md:skills/aw-init/artifacts/traceability.md" \
   "docs/standards/behavior-pinning.md:skills/aw-init/artifacts/behavior-pinning.md" \
+  "docs/standards/e2e-coverage.md:skills/aw-init/artifacts/e2e-coverage.md" \
   ".scripts/aw-gate.js:skills/aw-init/artifacts/aw-gate.js" \
   ".claude/hooks/log-session.sh:skills/aw-init/hooks/log-session.sh"; do
   installed="${pair%%:*}"
@@ -211,6 +212,7 @@ assert_repo_install() {
   assert_file "$target_repo/docs/standards/index.yml"
   assert_file "$target_repo/docs/standards/traceability.md"
   assert_file "$target_repo/docs/standards/behavior-pinning.md"
+  assert_file "$target_repo/docs/standards/e2e-coverage.md"
   assert_file "$target_repo/docs/decisions/index.yml"
   assert_file "$target_repo/docs/learnings/index.yml"
   assert_file "$target_repo/docs/workflow/README.md"
@@ -261,6 +263,8 @@ assert_repo_install() {
   assert_contains "$target_repo/docs/workflow/config.yml" "e2e:"
   assert_contains "$target_repo/docs/workflow/config.yml" "e2e_tests:"
   assert_contains "$target_repo/docs/workflow/config.yml" "trigger_paths: []"
+  assert_contains "$target_repo/docs/workflow/config.yml" "test_paths: []"
+  assert_contains "$target_repo/docs/workflow/config.yml" "test_paths: []"
   assert_contains "$target_repo/docs/workflow/config.yml" "run_scope: affected"
   assert_contains "$target_repo/docs/workflow/README.md" "e2e.trigger_paths"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "monitor_circleci:"

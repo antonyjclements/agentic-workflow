@@ -88,6 +88,11 @@ the skill is unavailable or declines the case, record that as an explicit
 exception rather than dropping the coverage silently. When `e2e.enabled` is
 false or no skill is configured, skip this without comment.
 
+When the source spec marks requirements with an `[e2e]` suffix, treat those as
+the authoritative list of what needs end-to-end coverage and follow
+`docs/standards/e2e-coverage.md`. Do not add or remove a marker during
+implementation; marker changes are spec decisions made through the spec skills.
+
 If the effective policy is `characterization-first`, run
 `workflow.auxiliary.pin_behavior.skill` when configured, otherwise run
 `aw-pin-behavior` for the subject before Phase 2 edits. The skill returns a

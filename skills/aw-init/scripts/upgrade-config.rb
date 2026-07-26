@@ -37,7 +37,7 @@ DEFAULT_AUXILIARY = %w[
 DEFAULT_E2E = {
   "enabled" => false,
   "trigger_paths" => [],
-  "test_dir" => "",
+  "test_paths" => [],
   "run_scope" => "affected"
 }.freeze
 

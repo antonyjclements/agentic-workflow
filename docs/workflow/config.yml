@@ -142,7 +142,7 @@ pin:
 e2e:
   enabled: false
   trigger_paths: []
-  test_dir: ""
+  test_paths: []
   run_scope: affected
 workflow_trace:
   enabled: false

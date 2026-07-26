@@ -410,10 +410,17 @@ install_repo_files() {
     tags:
       - testing
       - workflow
-      - characterization"
+      - characterization
+  - path: docs/standards/e2e-coverage.md
+    title: End-to-End Coverage
+    tags:
+      - testing
+      - specs
+      - workflow"
   copy_prompted "$artifact_dir/coding-approach.md" "$repo_dir/docs/standards/coding-approach.md"
   copy_prompted "$artifact_dir/traceability.md" "$repo_dir/docs/standards/traceability.md"
   copy_prompted "$artifact_dir/behavior-pinning.md" "$repo_dir/docs/standards/behavior-pinning.md"
+  copy_prompted "$artifact_dir/e2e-coverage.md" "$repo_dir/docs/standards/e2e-coverage.md"
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
   copy_prompted "$artifact_dir/workflow-readme.md" "$repo_dir/docs/workflow/README.md"
@@ -563,7 +570,7 @@ pin:
 e2e:
   enabled: false
   trigger_paths: []
-  test_dir: \"\"
+  test_paths: []
   run_scope: affected
 workflow_trace:
   enabled: false
