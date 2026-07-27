@@ -296,6 +296,9 @@ ensure_standard_index_entry() {
 
 install_skills() {
   local source_skills_dir=""
+  local manifest_file="$skills_dir/.augmented-workflow-skills"
+  local current_manifest
+  current_manifest="$(mktemp "${TMPDIR:-/tmp}/augmented-workflow-skills.XXXXXX")"
 
   if [ -d "$source_dir/skills" ]; then
     source_skills_dir="$source_dir/skills"
@@ -307,13 +310,28 @@ install_skills() {
   cp "$source_dir/aw-version.txt" "$skills_dir/aw-version.txt"
   echo "version: $AUGMENTED_WORKFLOW_VERSION -> $skills_dir/aw-version.txt"
 
-  # Remove all existing aw-* skills so stale or removed skills never linger
-  # across upgrades. The current skill set is written fresh below.
-  for existing in "$skills_dir"/aw-*; do
-    [ -d "$existing" ] || continue
-    rm -rf "$existing"
-    echo "skill removed: $(basename "$existing")"
-  done
+  if [ -n "$source_skills_dir" ]; then
+    for skill_path in "$source_skills_dir"/aw-*; do
+      [ -d "$skill_path" ] || continue
+      [ -f "$skill_path/SKILL.md" ] || continue
+      basename "$skill_path"
+    done | sort > "$current_manifest"
+  fi
+
+  # Remove only skills previously installed by this workflow. User-owned aw-*
+  # skills can live beside the workflow bundle without being swept up.
+  if [ -s "$current_manifest" ] && [ -f "$manifest_file" ]; then
+    while IFS= read -r installed_skill; do
+      case "$installed_skill" in
+        aw-*)
+          if ! grep -Fxq "$installed_skill" "$current_manifest" && [ -e "$skills_dir/$installed_skill" ]; then
+            rm -rf "$skills_dir/$installed_skill"
+            echo "skill removed: $installed_skill"
+          fi
+          ;;
+      esac
+    done < "$manifest_file"
+  fi
 
   # Remove retired skills that carried a different prefix
   for deprecated_skill in \
@@ -377,11 +395,13 @@ install_skills() {
 
   if [ -z "$source_skills_dir" ]; then
     echo "skills preserve: no source skills directory found"
+    rm -f "$current_manifest"
     return 0
   fi
 
   if [ "$(cd "$source_skills_dir" && pwd)" = "$(cd "$skills_dir" && pwd)" ]; then
     echo "skills preserve: $skills_dir"
+    rm -f "$current_manifest"
     return 0
   fi
 
@@ -397,6 +417,10 @@ install_skills() {
     cp -R "$skill_path" "$dest"
     echo "skill: $skill_name -> $dest"
   done
+
+  cp "$current_manifest" "$manifest_file"
+  rm -f "$current_manifest"
+  echo "skills manifest: $manifest_file"
 }
 
 link_skill_dir() {

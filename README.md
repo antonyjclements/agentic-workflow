@@ -49,7 +49,7 @@ The installer:
 
 - installs all skills globally to `~/.agents/skills`
 - can fetch the latest workflow source from GitHub when run with `--remote` or `--source-url`
-- removes deprecated bundled skills such as `lfg`
+- removes deprecated bundled skills such as `lfg`; user-owned `aw-*` skills beside the workflow bundle are preserved
 - symlinks runtime skill directories to `~/.agents/skills` when safe:
   - `~/.claude/skills`
   - `~/.codeium/skills`

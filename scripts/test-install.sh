@@ -194,6 +194,14 @@ assert_file() {
   fi
 }
 
+assert_not_path() {
+  local path="$1"
+  if [ -e "$path" ]; then
+    echo "unexpected path exists: $path" >&2
+    exit 1
+  fi
+}
+
 assert_symlink() {
   local path="$1"
   if [ ! -L "$path" ]; then
@@ -414,9 +422,26 @@ assert_file "$aw_init_skills/aw-capture/SKILL.md"
 assert_file "$aw_init_skills/aw-refresh/SKILL.md"
 assert_file "$aw_init_skills/aw-pin-behavior/SKILL.md"
 assert_file "$aw_init_learnings/index.yml"
+assert_file "$aw_init_skills/.augmented-workflow-skills"
 assert_symlink "$HOME/.claude/skills"
 assert_symlink "$HOME/.codeium/skills"
 assert_symlink "$HOME/.windsurf/skills"
+
+mkdir -p "$aw_init_skills/aw-user-skill" "$aw_init_skills/aw-retired-workflow-skill"
+printf '%s\n' 'user owned skill' > "$aw_init_skills/aw-user-skill/SKILL.md"
+printf '%s\n' 'retired workflow skill' > "$aw_init_skills/aw-retired-workflow-skill/SKILL.md"
+printf '%s\n' 'aw-retired-workflow-skill' >> "$aw_init_skills/.augmented-workflow-skills"
+
+"$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$aw_init_target" \
+  --skills-dir "$aw_init_skills" \
+  --learnings-dir "$aw_init_learnings" \
+  --force
+
+assert_file "$aw_init_skills/aw-user-skill/SKILL.md"
+assert_not_path "$aw_init_skills/aw-retired-workflow-skill"
+assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-user-skill"
+assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-retired-workflow-skill"
 
 existing_standards_target="$tmp_root/existing-standards-target"
 mkdir -p "$existing_standards_target/docs/standards"
