@@ -25,7 +25,6 @@ sessions_synthesized: 6
 
 ## Top Learnings
 
-- **Prove a guard fails before trusting it** — a check that has only ever passed is not known to work; inject the violation and confirm it fires. `docs/learnings/2026-07-27-prove-a-guard-fails-before-trusting-it.md`
 - **Verify current repo state before evaluating** — read the actual code, config, and decision records before asserting what the repo does. `docs/learnings/2026-07-02-verify-repo-state-before-evaluating.md`
 - **Blank ticket skill is an opt-out** — blank `workflow.steps.create_tickets.skill` disables external ticketing; do not prompt for one. `docs/learnings/2026-05-24-blank-ticket-skill-is-opt-out.md`
 
@@ -54,6 +53,7 @@ Pending corroboration — surfaced for visibility, not authority.
 
 ## Useful Sources
 
+- `docs/standards/guard-verification.md` — enforceable: prove a guard fails before trusting it.
 - `scripts/test-install.sh` — smoke test, drift guards, word budgets, registry validation.
 - `.scripts/aw-gate.js` — gates, trace, pins, tracking; must match `skills/aw-init/artifacts/aw-gate.js`.
 - `docs/workflow/gates.md` — gate modes, CI wiring, retention, troubleshooting.

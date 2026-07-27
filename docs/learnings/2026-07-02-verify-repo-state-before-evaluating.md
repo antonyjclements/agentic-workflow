@@ -7,7 +7,6 @@ status: active
 evidence-count: 3
 unconfirmed-runs: 0
 derived-from:
-  - docs/sessions/2026-07-02-lightweight-agents-md-and-index-free-registries.md
   - docs/sessions/2026-07-26-e2e-testing-workflow-integration.md
   - docs/sessions/2026-07-27-augmented-workflow-evaluation-fixes.md
 tags:
@@ -34,4 +33,4 @@ An assessment grounded in a stale checkout or remembered structure produces conf
 
 ## Evidence
 
-- A full evaluation was delivered against a pre-consolidation skill set (~33 skills); the repo had already consolidated to 20 and added the field guide. The user had to correct: "I think you're looking at an older version?" (docs/sessions/2026-07-02-lightweight-agents-md-and-index-free-registries.md)
+- A full evaluation was delivered against a pre-consolidation skill set (~33 skills); the repo had already consolidated to 20 and added the field guide. The user had to correct: "I think you're looking at an older version?"

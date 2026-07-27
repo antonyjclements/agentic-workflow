@@ -1,11 +1,4 @@
 learnings:
-  - path: docs/learnings/2026-07-27-prove-a-guard-fails-before-trusting-it.md
-    title: Prove a guard fails before trusting it
-    scope: repo
-    tags:
-      - testing
-      - enforcement
-      - aw-gate
   - path: docs/learnings/2026-07-27-review-the-diff-before-stamping-the-gate.md
     title: Review the diff before stamping the gate, not after
     scope: repo
