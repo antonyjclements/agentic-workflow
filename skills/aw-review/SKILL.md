@@ -6,6 +6,8 @@ argument-hint: "[target: PR link, branch, file path, or blank for current diff] 
 
 # Review
 
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-review` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+
 Route to the right review mode based on what is being reviewed and what the user asked for.
 
 ## Mode Routing

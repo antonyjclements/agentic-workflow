@@ -6,6 +6,8 @@ allowed-tools: Bash(bash *worktree-manager.sh)
 
 # Worktree Creation
 
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-create-worktree` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+
 Create a worktree under `.worktrees/<branch>` with branch-specific setup that `git worktree add` alone does not handle:
 
 - Copies `.env`, `.env.local`, `.env.test`, etc. from the main repo (skips `.env.example`)

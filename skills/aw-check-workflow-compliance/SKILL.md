@@ -6,6 +6,8 @@ argument-hint: "[optional: plan/spec/ticket path or branch ref]"
 
 # Check Workflow Compliance
 
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-check-workflow-compliance` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+
 Review workflow-policy evidence after a branch has been pushed and before PR creation. This is an accountability check, not a security sandbox, and it does not replace CI or `aw-review`.
 
 ## Inputs

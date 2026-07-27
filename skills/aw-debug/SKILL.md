@@ -6,6 +6,8 @@ argument-hint: "[issue reference, error message, test path, or description of br
 
 # Debug and Fix
 
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-debug` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+
 Find the root cause before fixing. Input: `$ARGUMENTS`.
 
 ## Principles

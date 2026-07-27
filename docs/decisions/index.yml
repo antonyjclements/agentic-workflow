@@ -1,4 +1,13 @@
 decisions:
+  - path: docs/decisions/2026-07-27-add-opt-in-skill-tracking.md
+    title: Add opt-in skill invocation tracking as a git-tracked log
+    date: 2026-07-27
+    status: active
+    tags:
+      - workflow
+      - tracking
+      - telemetry
+      - metrics
   - path: docs/decisions/2026-07-26-add-e2e-test-authoring-capability.md
     title: Add a configurable end-to-end test authoring capability
     date: 2026-07-26

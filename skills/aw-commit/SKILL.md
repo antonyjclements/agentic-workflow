@@ -5,6 +5,8 @@ description: Create a git commit with a clear, value-communicating message. Use 
 
 # Git Commit
 
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-commit` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+
 Create a single, well-crafted git commit from the current working tree changes.
 
 ## Context

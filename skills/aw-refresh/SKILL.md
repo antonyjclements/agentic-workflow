@@ -6,6 +6,8 @@ argument-hint: "[decisions|solutions|features|cleanup|all] [scope, tag, or mode:
 
 # Refresh
 
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-refresh` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+
 Maintain navigable, accurate registries under `docs/` without rewriting source records.
 
 ## Mode Routing

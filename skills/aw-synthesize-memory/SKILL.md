@@ -6,6 +6,8 @@ argument-hint: "[optional focus area, tag filter, or date range]"
 
 # Synthesize Memory
 
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-synthesize-memory` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+
 Convert raw session logs into structured memory and refresh the project context wiki.
 
 ## Trigger Signals

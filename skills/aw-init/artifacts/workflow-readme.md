@@ -90,6 +90,12 @@ human_review:
 | `telemetry.path` | string | `docs/metrics/events.jsonl` | Base path of the git-tracked JSONL event log. With monthly rotation the month is inserted (`events-YYYY-MM.jsonl`). |
 | `telemetry.rotation` | string | `monthly` | `monthly` shards the log per month (bounds growth and cuts merge contention); `none` writes a single file. |
 | `telemetry.retention_months` | number | `12` | `prune-telemetry` deletes month shards older than this many months (git history is the archive). `0` keeps all. |
+| `tracking.enabled` | boolean | `false` | Per-repo kill switch for skill invocation tracking. When true, `aw-gate.js track <skill>` appends a JSONL line to the tracking log; when false, the command is a silent no-op. |
+| `tracking.path` | string | `docs/metrics/skills.jsonl` | Base path of the git-tracked skill invocation log. With monthly rotation the month is inserted (`skills-YYYY-MM.jsonl`). |
+| `tracking.rotation` | string | `monthly` | `monthly` shards the log per month (bounds growth and cuts merge contention); `none` writes a single file. Same semantics as `telemetry.rotation`. |
+| `tracking.retention_months` | number | `12` | `prune-telemetry` deletes tracking shards older than this many months alongside telemetry shards. `0` keeps all. |
+| `tracking.session_file` | string | `.aw/session` | Git-ignored file holding the current session UUID; reused while its mtime is within the TTL below. Group `aw-init --with-gates` gitignores this path. |
+| `tracking.session_ttl_hours` | number | `8` | Reuse the session UUID while the session file's mtime is within this window; mint a new one afterwards. |
 | `org_knowledge.source` | string | `""` | Git URL of the org-shared learnings/standards repo. Blank disables org sync. |
 | `org_knowledge.ref` | string | `main` | Branch or tag of the org knowledge repo to sync. |
 | `org_knowledge.cache_dir` | string | `.aw-org-cache` | Git-ignored local cache the org repo is cloned into. |
@@ -186,6 +192,18 @@ becoming a growth or merge-conflict problem:
   `aw-synthesize-memory` runs it as part of its retention pass.
 
 Schema and aggregation notes live in `docs/metrics/README.md`.
+
+### Skill tracking (`tracking`)
+
+When `tracking.enabled` is true, every skill emits `node .scripts/aw-gate.js track <skill>` at its first step, appending a JSONL line (`ts`, `session_id`, `skill`, optional `workflow_step`, `source: "skill"`) to `tracking.path` (`docs/metrics/skills.jsonl` by default, month-sharded → `skills-YYYY-MM.jsonl`). The workflow-step mapping is owned by `aw-gate.js`; per-repo `workflow.steps.<step>.skill` overrides win when present.
+
+The writer is deliberately fire-and-forget: silent when tracking is disabled, when the config file is missing, or when any internal error occurs — it never blocks the caller. Skills always emit through a guard so repos installed without `--with-gates` (no `.scripts/aw-gate.js`) also stay silent.
+
+Same shard/merge/retention story as telemetry: `aw-init --with-gates` registers `docs/metrics/skills*.jsonl merge=union` in `.gitattributes` alongside the telemetry entry, and `node .scripts/aw-gate.js prune-telemetry` deletes tracking shards older than `tracking.retention_months` in the same pass that prunes telemetry.
+
+Sessions are grouped through the gitignored `tracking.session_file` (default `.aw/session`), whose UUID is reused while its mtime is within `tracking.session_ttl_hours`. No hook required, so tracking works in environments where custom lifecycle hooks are forbidden.
+
+Design and analysis intent live in `docs/workflow/tracking.md`.
 
 ### Org-shared knowledge (`org_knowledge`)
 

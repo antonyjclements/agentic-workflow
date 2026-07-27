@@ -82,6 +82,19 @@ version has no entry here.
   same idempotent helper, so repos installed before `traceability.md` or
   `behavior-pinning.md` existed gain those entries on upgrade.
 
+### Added
+
+- Opt-in skill invocation tracking. New `tracking:` config block (disabled by
+  default) and `node .scripts/aw-gate.js track <skill>` subcommand write a
+  git-tracked JSONL line per skill invocation to
+  `docs/metrics/skills-YYYY-MM.jsonl`, grouped into sessions via a gitignored
+  `.aw/session` file. Fire-and-forget: no network calls, no keys, silent when
+  disabled. Enterprise-safe. `aw-init --with-gates` registers
+  `docs/metrics/skills*.jsonl merge=union` in `.gitattributes` and gitignores
+  `.aw/session`; `upgrade-config.rb` injects the `tracking` section; the shared
+  `prune-telemetry` command now prunes both `events*.jsonl` and
+  `skills*.jsonl` shards. Design: `docs/workflow/tracking.md`.
+
 ### Changed
 
 - `aw-check-workflow-compliance` reports missing e2e coverage whenever

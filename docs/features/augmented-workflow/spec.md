@@ -2,7 +2,7 @@
 title: Spec-Driven Augmented Workflow
 status: active
 created: 2026-05-24
-updated: 2026-07-21
+updated: 2026-07-27
 tags:
   - workflow
   - specs
@@ -47,6 +47,7 @@ related_decisions:
   - docs/decisions/2026-07-16-add-workflow-execution-trace.md
   - docs/decisions/2026-07-16-add-behavior-pinning.md
   - docs/decisions/2026-07-21-add-design-team-hooks.md
+  - docs/decisions/2026-07-27-add-opt-in-skill-tracking.md
   - docs/decisions/2026-07-26-add-e2e-test-authoring-capability.md
 ---
 
@@ -81,7 +82,7 @@ The workflow routes:
 - correction-driven learnings to `docs/learnings/` or `~/.agents/learnings/`
 - session logs to `docs/sessions/` (self-describing, no index)
 - the synthesized project wiki to `docs/context/wiki.md`
-- ticket creation, workflow step overrides, implementation test policy, PR templates, commit messages, post-PR CI monitoring, Slack research, human review, enforcement gates, telemetry, and org-shared knowledge routing to `docs/workflow/config.yml`
+- ticket creation, workflow step overrides, implementation test policy, PR templates, commit messages, post-PR CI monitoring, Slack research, human review, enforcement gates, telemetry, skill tracking, and org-shared knowledge routing to `docs/workflow/config.yml`
 - additive design-team hooks and design reference paths to `docs/workflow/config.yml`
 - optional end-to-end test authoring routing to `docs/workflow/config.yml`
 - optional spec traceability routing to `docs/workflow/config.yml`
@@ -142,15 +143,16 @@ The workflow routes:
 - There is no bundled pipeline monitor skill. After PR creation, `workflow.steps.monitor_pipeline.skill` is invoked with the PR URL when configured; when it is blank or `post_pr.ci_monitor.provider` is `manual` or missing, post-PR monitoring is skipped cleanly. Retry limits and polling cadence are owned by the configured monitor skill.
 - Workflow exhaust is committed separately from feature work: session logs as `chore(session): log <slug>` commits and synthesis output as one batched `chore(memory): synthesize N sessions` commit. `docs/sessions/` files are never staged into feature or fix commits.
 
-### Enforcement Gates, Telemetry, Org Knowledge, Traceability, Workflow Trace, and Behavior Pinning
+### Enforcement Gates, Telemetry, Skill Tracking, Org Knowledge, Traceability, Workflow Trace, and Behavior Pinning
 
 - Six opt-in capabilities, disabled by default, are backed by one dependency-free helper installed at `<repo>/.scripts/aw-gate.js` via `aw-init --with-gates`. The self-hosting augmented-workflow repo installs its own copy; `.scripts/aw-gate.js` must stay identical to `skills/aw-init/artifacts/aw-gate.js`, enforced by `scripts/test-install.sh`.
 - Freshness gates convert LLM-driven review, compliance, capture, and memory synthesis into a deterministic, agent-free CI/pre-push check. After a successful run, `aw-review`, `aw-capture`, and `aw-check-workflow-compliance` stamp a git-ignored `gates.state_file` (recording the current time and commit) via `node .scripts/aw-gate.js record <gate>`. `aw-synthesize-memory` records `synthesize` every time it is invoked, including no-op runs. Each gate under `gates.checks` picks a `mode`: `age` (fresh within `max_age_hours`), `commit` (fresh while the gate's `paths` are unchanged since the recorded commit, compared against `HEAD` or, with `--against worktree`, the working tree), or `commit-and-age` (both). `age` is the default. `node .scripts/aw-gate.js check` exits non-zero when any gate fails its mode, and exits zero when `gates.enabled` is false. The workflow ships the script and the freshness contract; the consumer wires `check` into a pre-commit/pre-push hook or CI job.
 - Proof-of-work receipts close the gap where an agent could stamp a gate with `record <gate>` without running the skill. When `gates.require_receipt` is true (a per-gate `checks.<name>.require_receipt` overrides it; the tool defaults to false for backward compatibility, and the installer ships it true), the skill writes a git-ignored receipt via `node .scripts/aw-gate.js receipt <gate> --summary "..."`, and `record <gate>` refuses to stamp unless a fresh (`gates.receipt_max_age_minutes`, default 180), gate-matching, non-empty-summary receipt exists under `gates.receipt_dir` (default `.aw/receipts`). On success `record` folds a digest into the state entry and deletes the receipt so it is single-use and cannot re-stamp a later commit. `--no-receipt` bypasses the check with a stderr warning for bootstrap only. Receipts raise the floor from "one command clears the gate" to "produce recent, substantive, single-use evidence" and leave an auditable trail; they remain accountability, not proof that the review was good.
 - Telemetry: when `telemetry.enabled` is true, the same `record` call appends a no-PII event (`ts`, `event`, `detail`, `source`) to the git-tracked JSONL log (schema in `docs/metrics/README.md`) so effectiveness reporting can aggregate the flywheel directly from version control. The log is month-sharded by default (`telemetry.rotation: monthly` → `events-YYYY-MM.jsonl`) to bound growth and reduce merge contention, `aw-init --with-gates` registers `docs/metrics/events*.jsonl merge=union` in `.gitattributes` so concurrent appends merge without conflict, and `node .scripts/aw-gate.js prune-telemetry` (run by `aw-synthesize-memory`) deletes shards older than `telemetry.retention_months` with git history as the archive.
+- Skill tracking: when `tracking.enabled` is true, every skill invokes `node .scripts/aw-gate.js track <skill>` at its first step, which appends a git-tracked JSONL line (`ts`, `session_id`, `skill`, optional `workflow_step`, `source: "skill"`) to `tracking.path` (`docs/metrics/skills.jsonl`, month-sharded by default → `skills-YYYY-MM.jsonl`). `aw-gate.js` owns the canonical skill→workflow-step mapping and honors per-repo `workflow.steps.<step>.skill` overrides, so skills pass only their own name and auxiliary/meta skills are recorded with `workflow_step` omitted. Sessions are grouped through a git-ignored `tracking.session_file` (default `.aw/session`) whose UUID is reused while its mtime is within `tracking.session_ttl_hours`, so no hook or harness is required. The call is fire-and-forget: silent when tracking is disabled, the config is missing, or the writer errors — never blocks the caller. `aw-init --with-gates` registers `docs/metrics/skills*.jsonl merge=union` in `.gitattributes` alongside the telemetry entry, gitignores `.aw/session`, and copies `docs/workflow/tracking.md`; `prune-telemetry` also prunes tracking shards past `tracking.retention_months`. Tracking exists so cross-repo analysis can answer where the workflow breaks down, whether AW is making things faster (paired with GitHub PR data), and which parts of the workflow are used most; the emitter is enterprise-safe because it makes no network calls and requires no keys.
 - Org-shared knowledge: setting `org_knowledge.source` to a git URL adds an org-wide learnings/standards tier alongside repo-local `docs/learnings/` and `docs/standards/`, replacing the per-machine `~/.agents/learnings/` fallback as the second tier. `node .scripts/aw-gate.js org-sync` shallow-clones or updates that repo into the git-ignored `org_knowledge.cache_dir`. `aw-capture`, `aw-synthesize-memory`, and `aw-discover-standards` consult the org tier (read-only) before writing repo-local knowledge; precedence is repo-local first, then org-shared.
 - Org knowledge is governed content, not just a synced folder: it has one accountable owner (a senior lead or distinguished engineer named in the org repo's `CODEOWNERS`), PR-reviewed changes, and self-describing entries (`authority`, `applies_to`, `owner`, `reviewed`/`review_by`, `source`). Agents treat org entries as advisory unless marked `authority: required`, always let repo-local guidance win, surface stale (past `review_by`) or conflicting `required` entries to a human, and never write to the org tier — promotion of a repo-local learning to org-wide status is a human-gated PR. The governance model and templates live in `docs/workflow/org-knowledge.md`; a summary is in the installed `docs/workflow/README.md`.
-- The config migrator (`upgrade-config.rb`) adds the `gates`, `telemetry`, and `org_knowledge` default sections to older configs while preserving existing overrides.
+- The config migrator (`upgrade-config.rb`) adds the `gates`, `telemetry`, `tracking`, and `org_knowledge` default sections to older configs while preserving existing overrides.
 
 ### Spec Traceability
 
@@ -245,6 +247,7 @@ The workflow routes:
 - New installs write the `trace` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` gitignores `.aw/tmp/` for transient trace annotation batches.
 - New installs write the `workflow_trace` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` gitignores `.aw/workflow-trace.jsonl` for local workflow breadcrumbs.
 - New installs write the `pin` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` gitignores `.aw/pin/` for temporary pin worktrees and logs.
+- New installs write the `tracking` section to `docs/workflow/config.yml`, disabled by default. `aw-init --with-gates` registers `docs/metrics/skills*.jsonl merge=union` in `.gitattributes`, gitignores `.aw/session`, and copies `docs/workflow/tracking.md`. `upgrade-config.rb` injects the `tracking` section into older configs. With tracking enabled, `node .scripts/aw-gate.js track <skill>` appends a session-grouped JSONL line to `tracking.path` (`docs/metrics/skills-YYYY-MM.jsonl` by default), and `prune-telemetry` deletes shards older than `tracking.retention_months`.
 - New installs write the `workflow.design` section to `docs/workflow/config.yml`, disabled by default, with `reference_paths: [docs/standards]` and blank design hook skills.
 - With telemetry enabled, `record` appends to a month-sharded log (`events-YYYY-MM.jsonl`) by default, and `node .scripts/aw-gate.js prune-telemetry` deletes shards older than `telemetry.retention_months` (no-op when rotation or retention is unset).
 - `.scripts/aw-gate.js check` exits zero when `gates.enabled` is false, and exits non-zero when any gate under `gates.checks` fails its `mode` (`age` staleness, `commit` path changes since the recorded commit, or both); `record <gate>` stamps the git-ignored state file with the current time and commit and, when `telemetry.enabled`, appends a no-PII event to `telemetry.path`.

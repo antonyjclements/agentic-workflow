@@ -17,8 +17,11 @@
 //                   Wire it into a pre-commit/pre-push hook or a CI job.
 //   org-sync        Shallow clone/update the org-shared knowledge repo into a
 //                   git-ignored cache dir so skills can read it as a second tier.
-//   prune-telemetry Delete telemetry month shards older than
-//                   telemetry.retention_months (git history is the archive).
+//   prune-telemetry Delete telemetry and tracking month shards older than
+//                   their configured retention_months (git history is the archive).
+//   track <skill>   Append one JSONL line recording a skill invocation to
+//                   docs/metrics/skills-YYYY-MM.jsonl. No-op unless
+//                   tracking.enabled is true. Fire-and-forget, never fails.
 //   trace           Deterministically check spec/test/code traceability.
 //   trace-annotate  Deterministically insert explicit spec annotations for skills.
 //   workflow-record Deterministically append process breadcrumbs for workflow use.
@@ -584,9 +587,9 @@ function monthStamp(date) {
 // current month is inserted before the extension so each file stays bounded and
 // concurrent branches usually touch different files, e.g.
 // docs/metrics/events.jsonl -> docs/metrics/events-2026-07.jsonl.
-function telemetryShardPath(telemetry, date) {
-  const base = telemetry.path || 'docs/metrics/events.jsonl';
-  const rotation = telemetry.rotation || 'monthly';
+function shardPath(section, defaultBase, date) {
+  const base = section.path || defaultBase;
+  const rotation = section.rotation || 'monthly';
   if (rotation !== 'monthly') return base;
   const ext = path.extname(base);
   const stem = base.slice(0, base.length - ext.length);
@@ -597,23 +600,21 @@ function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Delete month shards older than telemetry.retention_months. Git history is the
+// Delete month shards older than <config>.retention_months. Git history is the
 // archive. No-op unless rotation is monthly and retention_months is a positive
-// number. Invoked by aw-synthesize-memory, not on the hot `record` path.
-function cmdPruneTelemetry() {
-  const config = loadConfig();
-  const telemetry = config.telemetry || {};
-  const base = telemetry.path || 'docs/metrics/events.jsonl';
-  const rotation = telemetry.rotation || 'monthly';
-  const retention = Number(telemetry.retention_months);
+// number. Returns `{ skipped: <reason> }` when nothing was inspected, or
+// `{ retention, removed[] }` when a pass ran. The caller renders both shapes.
+function pruneShardFamily(section, defaultBase) {
+  const base = section.path || defaultBase;
+  const rotation = section.rotation || 'monthly';
+  const retention = Number(section.retention_months);
   if (rotation !== 'monthly' || !Number.isFinite(retention) || retention <= 0) {
-    process.stdout.write('aw-gate: telemetry retention not configured — keeping all shards\n');
-    process.exit(0);
+    return { skipped: 'retention not configured' };
   }
   const ext = path.extname(base);
   const stem = path.basename(base, ext);
   const baseAbs = resolveRepoPath(base);
-  if (!baseAbs) fail(`telemetry.path must be repo-relative: ${base}`);
+  if (!baseAbs) fail(`shard path must be repo-relative: ${base}`);
   const dir = path.dirname(baseAbs);
   const now = new Date();
   // Keep the current month plus (retention - 1) prior months; drop anything older.
@@ -624,8 +625,7 @@ function cmdPruneTelemetry() {
   try {
     entries = fs.readdirSync(dir);
   } catch (_) {
-    process.stdout.write('aw-gate: no telemetry directory — nothing to prune\n');
-    process.exit(0);
+    return { skipped: 'directory does not exist' };
   }
   for (const f of entries) {
     const m = f.match(re);
@@ -636,13 +636,110 @@ function cmdPruneTelemetry() {
       removed.push(f);
     }
   }
-  if (removed.length === 0) {
-    process.stdout.write(`aw-gate: no telemetry shards older than ${retention} month(s)\n`);
-  } else {
-    process.stdout.write(`aw-gate: pruned ${removed.length} telemetry shard(s) older than ${retention} month(s):\n`);
-    for (const f of removed) process.stdout.write(`  - ${f}\n`);
-    process.stdout.write('  (git history retains the removed data)\n');
+  return { retention, removed };
+}
+
+// Prune both the telemetry log (events*.jsonl) and the skill tracking log
+// (skills*.jsonl). Both use the same shard/retention model. Invoked by
+// aw-synthesize-memory, not on the hot write path.
+function cmdPruneTelemetry() {
+  const config = loadConfig();
+  const families = [
+    { label: 'telemetry', section: config.telemetry || {}, defaultBase: 'docs/metrics/events.jsonl' },
+    { label: 'tracking', section: config.tracking || {}, defaultBase: 'docs/metrics/skills.jsonl' },
+  ];
+  for (const { label, section, defaultBase } of families) {
+    const result = pruneShardFamily(section, defaultBase);
+    if (result.skipped) {
+      process.stdout.write(`aw-gate: ${label} ${result.skipped} — keeping all shards\n`);
+      continue;
+    }
+    if (result.removed.length === 0) {
+      process.stdout.write(`aw-gate: no ${label} shards older than ${result.retention} month(s)\n`);
+    } else {
+      process.stdout.write(`aw-gate: pruned ${result.removed.length} ${label} shard(s) older than ${result.retention} month(s):\n`);
+      for (const f of result.removed) process.stdout.write(`  - ${f}\n`);
+      process.stdout.write('  (git history retains the removed data)\n');
+    }
   }
+}
+
+// --- Skill tracking (git-tracked skill-invocation log) -------------------
+// Silent fire-and-forget writer skills invoke at start. Records one JSONL line
+// per invocation to docs/metrics/skills-YYYY-MM.jsonl so cross-repo analysis
+// can answer workflow-drop-off, entry-point, and adoption questions. Design
+// notes: docs/workflow/tracking.md.
+function readOrMintSession(tracking) {
+  const rel = tracking.session_file || '.aw/session';
+  const ttlHours = Number(tracking.session_ttl_hours);
+  const ttlMs = Number.isFinite(ttlHours) && ttlHours > 0 ? ttlHours * 3600 * 1000 : 8 * 3600 * 1000;
+  const abs = path.resolve(repoRoot, rel);
+  try {
+    const stat = fs.statSync(abs);
+    if (Date.now() - stat.mtimeMs < ttlMs) {
+      const id = fs.readFileSync(abs, 'utf8').trim();
+      if (id) return id;
+    }
+  } catch (_) { /* missing or unreadable — mint below */ }
+  const id = crypto.randomUUID();
+  try {
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.writeFileSync(abs, id + '\n');
+  } catch (_) { /* best-effort; if we can't persist, we still return an id */ }
+  return id;
+}
+
+// Canonical mapping from bundled skill name to workflow step key. Same
+// convention as this file's other bundled defaults (`.aw-gate-state.json`,
+// `docs/metrics/events.jsonl`) — aw-gate.js owns AW's built-in identifiers.
+// A per-repo `workflow.steps.<step>.skill` override wins when present.
+const DEFAULT_SKILL_TO_STEP = {
+  'aw-prd': 'prd',
+  'aw-brainstorm': 'brainstorm',
+  'aw-create-spec': 'create_spec',
+  'aw-request-human-review': 'request_human_review',
+  'aw-plan': 'plan',
+  'aw-review': 'review',
+  'aw-create-tickets': 'create_tickets',
+  'aw-work': 'work',
+  'aw-check-workflow-compliance': 'check_workflow_compliance',
+  'aw-commit': 'commit',
+  'aw-commit-push-pr': 'commit_push_pr',
+};
+
+function workflowStepForSkill(config, skill) {
+  const steps = (config.workflow && config.workflow.steps) || {};
+  for (const key of Object.keys(steps)) {
+    const entry = steps[key];
+    if (entry && entry.skill && entry.skill === skill) return key;
+  }
+  return DEFAULT_SKILL_TO_STEP[skill] || null;
+}
+
+function cmdTrack(args) {
+  // Never fail the caller. Wrap the whole thing and swallow everything.
+  try {
+    const { positional } = parseFlags(args);
+    const skill = positional[0];
+    if (!skill) return; // no skill name — nothing to record, silent exit
+    const config = loadConfig();
+    const tracking = config.tracking || {};
+    if (tracking.enabled !== true) return; // per-repo kill switch
+    const rel = shardPath(tracking, 'docs/metrics/skills.jsonl', new Date());
+    const abs = resolveRepoPath(rel);
+    if (!abs) return; // misconfigured path; stay silent
+    const sessionId = readOrMintSession(tracking);
+    const workflowStep = workflowStepForSkill(config, skill);
+    const record = {
+      ts: new Date().toISOString(),
+      session_id: sessionId,
+      skill,
+      source: 'skill',
+    };
+    if (workflowStep) record.workflow_step = workflowStep;
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.appendFileSync(abs, JSON.stringify(record) + '\n');
+  } catch (_) { /* fire-and-forget */ }
 }
 
 function cmdRecord(args) {
@@ -684,7 +781,7 @@ function cmdRecord(args) {
 
   const telemetry = config.telemetry || {};
   if (telemetry.enabled === true) {
-    const rel = telemetryShardPath(telemetry, new Date());
+    const rel = shardPath(telemetry, 'docs/metrics/events.jsonl', new Date());
     const abs = resolveRepoPath(rel);
     if (!abs) fail(`telemetry.path must be repo-relative: ${telemetry.path || 'docs/metrics/events.jsonl'}`);
     fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -2298,9 +2395,10 @@ function usage() {
       '  node .scripts/aw-gate.js pin check [--base <ref>] [--json]',
       '  node .scripts/aw-gate.js org-sync',
       '  node .scripts/aw-gate.js prune-telemetry',
+      '  node .scripts/aw-gate.js track <skill>',
       '',
-      'Config: docs/workflow/config.yml (gates, telemetry, org_knowledge, trace, e2e, workflow_trace, pin).',
-      'All six are opt-in and disabled by default.',
+      'Config: docs/workflow/config.yml (gates, telemetry, tracking, org_knowledge, trace, e2e, workflow_trace, pin).',
+      'All are opt-in and disabled by default.',
       '',
     ].join('\n')
   );
@@ -2329,6 +2427,8 @@ function main() {
       return cmdOrgSync();
     case 'prune-telemetry':
       return cmdPruneTelemetry();
+    case 'track':
+      return cmdTrack(rest);
     case 'help':
     case '--help':
     case '-h':

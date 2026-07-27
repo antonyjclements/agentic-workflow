@@ -8,6 +8,8 @@ argument-hint: "[optional: feature description, spec path, plan path to deepen, 
 
 Current year: 2026. `aw-brainstorm` defines what; `aw-plan` defines how; `aw-work` executes. Direct invocation always produces or updates a plan. Do not implement code here.
 
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-plan` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+
 ## Interaction
 
 Ask one blocking question at a time using the platform question tool. Fall back to numbered chat options only when no blocking tool exists or it fails. If input is empty, ask what to plan. If unclear, ask only what is needed to proceed.
