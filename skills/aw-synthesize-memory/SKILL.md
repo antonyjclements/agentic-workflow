@@ -111,7 +111,7 @@ tags:
 ## Evidence
 
 <Direct quotes or summaries from the source session logs that support this learning.
-Reference each source by path.>
+Reference each source by session identifier (YYYY-MM-DD-<slug>), never by path.>
 ```
 
 - `status: tentative` — promoted from one or two sessions, not yet confirmed. Excluded from the main wiki context.

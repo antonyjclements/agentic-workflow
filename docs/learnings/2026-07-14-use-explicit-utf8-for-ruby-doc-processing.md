@@ -6,7 +6,9 @@ trigger: dead-end
 status: tentative
 evidence-count: 2
 unconfirmed-runs: 1
-derived-from: []
+derived-from:
+  - 2026-07-02-spec-drift-refresh
+  - 2026-07-03-self-host-install-verification
 tags:
   - tooling
   - ruby
@@ -31,9 +33,9 @@ Ruby one-liners that read repo markdown can fail under the default US-ASCII enco
 
 ## Evidence
 
-- A spec frontmatter check failed on the repo's em-dashes under Ruby's default US-ASCII encoding.
-- The wiki path validator hit the same Ruby US-ASCII em-dash failure and was fixed with an explicit UTF-8 read.
+- A spec frontmatter check failed on the repo's em-dashes under Ruby's default US-ASCII encoding. (`2026-07-02-spec-drift-refresh`)
+- The wiki path validator hit the same Ruby US-ASCII em-dash failure and was fixed with an explicit UTF-8 read. (`2026-07-03-self-host-install-verification`)
 
-Source session logs were removed by the 14-day retention window on 2026-07-27;
-`derived-from` is empty rather than pointing at paths that no longer resolve. The
-original logs remain in git history.
+The source session logs were removed by the 14-day retention window on 2026-07-27.
+The identifiers above stay resolvable through
+`git log --diff-filter=D -- docs/sessions/`.

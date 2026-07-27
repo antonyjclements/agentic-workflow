@@ -51,7 +51,9 @@ version has no entry here.
   citing a path it also required deleting, making dangling references inevitable.
   `aw-capture` and `aw-synthesize-memory` learning formats updated, existing learnings
   migrated, and `scripts/test-install.sh` now fails when a session path appears in
-  `docs/learnings/`, `docs/standards/`, or `docs/context/wiki.md`.
+  `docs/learnings/`, `docs/standards/`, or `docs/context/wiki.md`. A learning keeps an
+  identifier for every corroborating session even after its log ages out, and
+  `evidence-count` must equal the number of identifiers cited — both enforced.
 
 ### Changed
 

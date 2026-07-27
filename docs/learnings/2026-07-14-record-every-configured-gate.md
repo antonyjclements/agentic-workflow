@@ -7,6 +7,7 @@ status: tentative
 evidence-count: 2
 unconfirmed-runs: 0
 derived-from:
+  - 2026-07-03-enforcement-gates-telemetry-org-knowledge
   - 2026-07-27-augmented-workflow-evaluation-fixes
 tags:
   - workflow
@@ -33,4 +34,4 @@ tags:
 
 ## Evidence
 
-- The first gate functional test recorded only `review`, but the default config enforced three gates, so `check` still failed until every configured gate was recorded.
+- The first gate functional test recorded only `review`, but the default config enforced three gates, so `check` still failed until every configured gate was recorded. (`2026-07-03-enforcement-gates-telemetry-org-knowledge`)

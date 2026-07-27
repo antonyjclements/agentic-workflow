@@ -133,6 +133,37 @@ if [ "$session_refs" -ne 0 ]; then
   exit 1
 fi
 
+# A learning with no derived-from has no audit trail at all, which is the failure
+# the identifier scheme exists to avoid — blanking the list is not the fix for a
+# source log that aged out, since identifiers stay resolvable through git history.
+# Two learnings were blanked this way before the identifier scheme existed.
+# Learnings predating the memory loop (2026-07-02) have no session to cite; they are
+# listed here explicitly so an addition to this list has to be justified in the diff.
+learning_grandfathered="2026-05-24-blank-ticket-skill-is-opt-out.md"
+empty_derived=0
+while IFS= read -r learning; do
+  case " $learning_grandfathered " in *" $(basename "$learning") "*) continue ;; esac
+  count="$(awk '/^derived-from:/{f=1; if ($0 ~ /\[\]/) exit; next} f && /^  - /{c++; next} f && !/^  - /{exit} END{print c+0}' "$learning")"
+  if [ "${count:-0}" -eq 0 ]; then
+    echo "learning without audit trail: ${learning#"$repo_root/"} has an empty derived-from" >&2
+    empty_derived=1
+    continue
+  fi
+  # evidence-count is the number of sessions that corroborated the learning, so it
+  # must equal the number of identifiers cited. A mismatch means an identifier was
+  # dropped without decrementing the count — which is exactly how two learnings
+  # silently lost sources during the path-to-identifier migration.
+  evidence="$(awk '/^evidence-count:/{print $2; exit}' "$learning")"
+  if [ "${evidence:-0}" != "$count" ]; then
+    echo "audit trail mismatch: ${learning#"$repo_root/"} has evidence-count $evidence but $count derived-from identifier(s)" >&2
+    empty_derived=1
+  fi
+done <<< "$(find "$repo_root/docs/learnings" -name '*.md' 2>/dev/null)"
+if [ "$empty_derived" -ne 0 ]; then
+  echo "cite at least one session identifier (YYYY-MM-DD-<slug>); aged-out logs keep theirs" >&2
+  exit 1
+fi
+
 # Skill bodies are loaded in full the moment the skill is invoked, so they carry
 # the same "keep it lightweight" pressure as AGENTS.md. Detail belongs in
 # references/, which loads only when actually needed. The budget is a ratchet:
