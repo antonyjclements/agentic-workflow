@@ -443,6 +443,22 @@ assert_not_path "$aw_init_skills/aw-retired-workflow-skill"
 assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-user-skill"
 assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-retired-workflow-skill"
 
+mkdir -p "$aw_init_skills/aw-import-prd"
+printf '%s\n' 'legacy bundled workflow skill' > "$aw_init_skills/aw-import-prd/SKILL.md"
+rm "$aw_init_skills/.augmented-workflow-skills"
+
+"$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$aw_init_target" \
+  --skills-dir "$aw_init_skills" \
+  --learnings-dir "$aw_init_learnings" \
+  --force
+
+assert_file "$aw_init_skills/aw-user-skill/SKILL.md"
+assert_not_path "$aw_init_skills/aw-import-prd"
+assert_file "$aw_init_skills/.augmented-workflow-skills"
+assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-user-skill"
+assert_not_contains "$aw_init_skills/.augmented-workflow-skills" "aw-import-prd"
+
 existing_standards_target="$tmp_root/existing-standards-target"
 mkdir -p "$existing_standards_target/docs/standards"
 cat > "$existing_standards_target/docs/standards/index.yml" <<'YAML'
