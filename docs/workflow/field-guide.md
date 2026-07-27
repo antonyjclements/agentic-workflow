@@ -138,6 +138,7 @@ The full chain pays off here because context loss and cross-session continuity b
 | Just capture decisions | `aw-capture decision` ad hoc |
 | Standardize code conventions | `aw-discover-standards` once, then reference `docs/standards/` |
 | Add design-team checkpoints | configure `workflow.design` hooks and put design references in `docs/standards/` |
+| Author e2e tests during implementation | set `e2e.enabled: true` and point `workflow.auxiliary.e2e_tests.skill` at your framework's skill |
 | Keep AI sessions continuous | `aw-capture session` at session end; `aw-synthesize-memory` monthly |
 | Structured feature development | brainstorm → spec → work → review → PR |
 | Team onboarding / cross-session wiki | `aw-synthesize-memory` → `docs/context/wiki.md` |

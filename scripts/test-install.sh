@@ -21,6 +21,7 @@ for pair in \
   "docs/standards/coding-approach.md:skills/aw-init/artifacts/coding-approach.md" \
   "docs/standards/traceability.md:skills/aw-init/artifacts/traceability.md" \
   "docs/standards/behavior-pinning.md:skills/aw-init/artifacts/behavior-pinning.md" \
+  "docs/standards/e2e-coverage.md:skills/aw-init/artifacts/e2e-coverage.md" \
   ".scripts/aw-gate.js:skills/aw-init/artifacts/aw-gate.js" \
   ".claude/hooks/log-session.sh:skills/aw-init/hooks/log-session.sh"; do
   installed="${pair%%:*}"
@@ -47,6 +48,17 @@ if [ "$self_host_version" != "$workflow_version" ]; then
   echo "self-hosted install drift: .augmented-workflow-version ($self_host_version) does not match aw-version.txt ($workflow_version)" >&2
   exit 1
 fi
+
+# The AGENTS.md version stamp is rewritten on install, so it only rots in this
+# repo's own tree — where it is what an agent reads. It sat three minor versions
+# behind before this guard existed.
+for stamped in "$repo_root/AGENTS.md" "$repo_root/skills/aw-init/artifacts/AGENTS.md"; do
+  stamp_version="$(sed -n 's/.*AUGMENTED_WORKFLOW_VERSION=\([^ ]*\) -->.*/\1/p' "$stamped" | head -n 1)"
+  if [ "$stamp_version" != "$workflow_version" ]; then
+    echo "self-hosted install drift: $stamped stamp ($stamp_version) does not match aw-version.txt ($workflow_version)" >&2
+    exit 1
+  fi
+done
 
 # A version bump must ship a changelog entry: the current aw-version.txt version
 # must have a heading in CHANGELOG.md. This keeps CHANGELOG.md from drifting behind
@@ -211,6 +223,8 @@ assert_repo_install() {
   assert_file "$target_repo/docs/standards/index.yml"
   assert_file "$target_repo/docs/standards/traceability.md"
   assert_file "$target_repo/docs/standards/behavior-pinning.md"
+  assert_file "$target_repo/docs/standards/e2e-coverage.md"
+  assert_contains "$target_repo/docs/standards/index.yml" "docs/standards/e2e-coverage.md"
   assert_file "$target_repo/docs/decisions/index.yml"
   assert_file "$target_repo/docs/learnings/index.yml"
   assert_file "$target_repo/docs/workflow/README.md"
@@ -258,6 +272,21 @@ assert_repo_install() {
   assert_contains "$target_repo/docs/workflow/config.yml" "pin:"
   assert_contains "$target_repo/docs/workflow/config.yml" "manifest_paths:"
   assert_contains "$target_repo/docs/workflow/config.yml" "timeout_seconds: 900"
+  assert_contains "$target_repo/docs/workflow/config.yml" "e2e:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "e2e_tests:"
+  assert_contains "$target_repo/docs/workflow/config.yml" "trigger_paths: []"
+  assert_contains "$target_repo/docs/workflow/config.yml" "test_paths: []"
+  assert_contains "$target_repo/docs/workflow/config.yml" "run_scope: affected"
+  # Block-scoped, not a whole-file grep: the keys above would still pass if they
+  # drifted out of the `e2e:` mapping, and disabled-by-default is the contract.
+  e2e_block="$(awk '/^e2e:/{f=1;next}/^[^ ]/{f=0}f' "$target_repo/docs/workflow/config.yml")"
+  for e2e_key in "enabled: false" "trigger_paths: []" "test_paths: []" "run_scope: affected"; do
+    if ! printf '%s\n' "$e2e_block" | grep -Fq "  $e2e_key"; then
+      echo "config.yml e2e block is missing '$e2e_key'" >&2
+      exit 1
+    fi
+  done
+  assert_contains "$target_repo/docs/workflow/README.md" "e2e.trigger_paths"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "monitor_circleci:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "import_prd:"
   assert_not_contains "$target_repo/docs/workflow/config.yml" "log_decision:"
@@ -296,6 +325,72 @@ assert_file "$aw_init_learnings/index.yml"
 assert_symlink "$HOME/.claude/skills"
 assert_symlink "$HOME/.codeium/skills"
 assert_symlink "$HOME/.windsurf/skills"
+
+existing_standards_target="$tmp_root/existing-standards-target"
+mkdir -p "$existing_standards_target/docs/standards"
+cat > "$existing_standards_target/docs/standards/index.yml" <<'YAML'
+standards:
+  - path: docs/standards/coding-approach.md
+    title: Coding Approach
+YAML
+
+"$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$existing_standards_target" \
+  --skip-skills \
+  --skip-skill-links \
+  --learnings-dir "$tmp_root/existing-standards-learnings"
+
+assert_file "$existing_standards_target/docs/standards/e2e-coverage.md"
+assert_contains "$existing_standards_target/docs/standards/index.yml" "docs/standards/coding-approach.md"
+assert_contains "$existing_standards_target/docs/standards/index.yml" "docs/standards/e2e-coverage.md"
+# A repo installed before traceability/behavior-pinning existed gains their
+# entries too: every bundled standard goes through the same idempotent helper.
+assert_contains "$existing_standards_target/docs/standards/index.yml" "docs/standards/traceability.md"
+assert_contains "$existing_standards_target/docs/standards/index.yml" "docs/standards/behavior-pinning.md"
+
+# Re-running must not duplicate entries.
+"$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$existing_standards_target" \
+  --skip-skills \
+  --skip-skill-links \
+  --learnings-dir "$tmp_root/existing-standards-learnings"
+duplicate_entries="$(grep -c "path: docs/standards/e2e-coverage.md" "$existing_standards_target/docs/standards/index.yml")"
+if [ "$duplicate_entries" != "1" ]; then
+  echo "re-running install duplicated the e2e-coverage index entry ($duplicate_entries copies)" >&2
+  exit 1
+fi
+
+# An index.yml with no trailing newline must not have its first appended line
+# spliced onto the last existing one, and shapes the helper cannot append to
+# safely must be left intact rather than corrupted.
+newline_target="$tmp_root/standards-newline-target"
+mkdir -p "$newline_target/docs/standards"
+printf 'standards:\n  - path: docs/standards/coding-approach.md\n    title: Coding Approach' \
+  > "$newline_target/docs/standards/index.yml"
+"$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$newline_target" \
+  --skip-skills \
+  --skip-skill-links \
+  --learnings-dir "$tmp_root/standards-newline-learnings"
+assert_contains "$newline_target/docs/standards/index.yml" "docs/standards/e2e-coverage.md"
+assert_not_contains "$newline_target/docs/standards/index.yml" "Coding Approach  - path"
+validate_docs_indexes "$newline_target"
+
+unknown_shape_target="$tmp_root/standards-unknown-shape-target"
+mkdir -p "$unknown_shape_target/docs/standards"
+cat > "$unknown_shape_target/docs/standards/index.yml" <<'YAML'
+standards:
+  - path: docs/standards/coding-approach.md
+    title: Coding Approach
+last_reviewed: 2026-01-01
+YAML
+"$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$unknown_shape_target" \
+  --skip-skills \
+  --skip-skill-links \
+  --learnings-dir "$tmp_root/standards-unknown-shape-learnings"
+assert_not_contains "$unknown_shape_target/docs/standards/index.yml" "docs/standards/e2e-coverage.md"
+validate_docs_indexes "$unknown_shape_target"
 
 # --with-gates installs the deterministic gate helper and gitignores its state.
 gates_target="$tmp_root/gates-target"
@@ -1157,6 +1252,32 @@ assert_contains "$migration_target/docs/workflow/config.yml" "required_gates:"
 assert_contains "$migration_target/docs/workflow/config.yml" "pin:"
 assert_contains "$migration_target/docs/workflow/config.yml" "behavior-pin.yml"
 assert_contains "$migration_target/docs/workflow/config.yml" "timeout_seconds: 900"
+# The e2e block and its auxiliary key must reach repos that predate them; the
+# fresh-install assertions above would not catch a broken migration path.
+assert_contains "$migration_target/docs/workflow/config.yml" "e2e:"
+assert_contains "$migration_target/docs/workflow/config.yml" "e2e_tests:"
+assert_contains "$migration_target/docs/workflow/config.yml" "run_scope: affected"
+# A migrated config must still parse the way aw-gate.js reads it. upgrade-config
+# emits sequences flush with their key, so a parser that only accepts indented
+# items would silently read `trace`/`e2e` as empty and disable both gates.
+REPO_ROOT_FOR_TEST="$repo_root" node - "$migration_target/docs/workflow/config.yml" <<'NODE'
+const fs = require('fs');
+const src = fs.readFileSync(`${process.env.REPO_ROOT_FOR_TEST}/.scripts/aw-gate.js`, 'utf8');
+const start = src.indexOf('function stripYamlInlineComment');
+const end = src.indexOf('function loadConfig');
+const mod = {};
+new Function('module', 'exports', src.slice(start, end) + '\nmodule.exports = { parseYaml };')(mod, {});
+const cfg = mod.exports.parseYaml(fs.readFileSync(process.argv[2], 'utf8'));
+const problems = [];
+if (!cfg.trace || typeof cfg.trace !== 'object' || Array.isArray(cfg.trace)) problems.push('trace is not a mapping');
+if (!Array.isArray(cfg.trace && cfg.trace.spec_paths)) problems.push('trace.spec_paths is not a list');
+if (!cfg.e2e || typeof cfg.e2e !== 'object' || Array.isArray(cfg.e2e)) problems.push('e2e is not a mapping');
+if (cfg.e2e && cfg.e2e.run_scope !== 'affected') problems.push(`e2e.run_scope is ${JSON.stringify(cfg.e2e && cfg.e2e.run_scope)}`);
+if (problems.length) {
+  console.error(`migrated config does not round-trip through aw-gate parseYaml: ${problems.join('; ')}`);
+  process.exit(1);
+}
+NODE
 assert_not_contains "$migration_target/docs/workflow/config.yml" "monitor_circleci:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "ticket_creation:"
 assert_not_contains "$migration_target/docs/workflow/config.yml" "research:"

@@ -61,6 +61,8 @@ Ask one question at a time. Prefer concise single-select choices; use multi-sele
 
 For normal software/product work, create or update `docs/features/<feature>/spec.md` and update `docs/features/index.yml` without disrupting its existing schema.
 
+If standards exist at `docs/standards/index.yml`, load applicable standards before writing. Spec-time annotations such as the `[e2e]` coverage marker are defined there, and this is one of the two places they can be applied.
+
 Use the repo's existing spec format if present. Otherwise:
 
 ```markdown

@@ -111,6 +111,10 @@ human_review:
 | `pin.worktree_dir` | string | `.aw/pin` | Git-ignored worktree root used for old-tree runs. |
 | `pin.out` | string | `.aw/pin/equivalence.json` | JSON result path for `pin run`. |
 | `pin.timeout_seconds` | number | `900` | Per-command timeout for setup and harness commands. |
+| `e2e.enabled` | boolean | `false` | Master switch for end-to-end test authoring. When false, the capability is skipped entirely. |
+| `e2e.trigger_paths` | string list | `[]` | Git pathspecs for the user-facing surface whose changes warrant e2e coverage. Empty means unscoped — every change is a candidate. |
+| `e2e.test_paths` | string list | `[]` | Git pathspecs for files that count as e2e specs. Empty means the configured skill uses the project's own convention and `trace` skips the marked-coverage check. |
+| `e2e.run_scope` | string | `affected` | How much of the suite runs during local verification: `affected`, `full`, or `none` (CI owns the run). |
 | `workflow_trace.enabled` | boolean | `false` | Master switch for deterministic workflow execution breadcrumbs. |
 | `workflow_trace.path` | string | `.aw/workflow-trace.jsonl` | Git-ignored JSONL file for local process events. |
 | `workflow_trace.max_events` | number | `10000` | Maximum events retained after each append. Older events are dropped first. |
@@ -118,9 +122,9 @@ human_review:
 | `workflow_trace.require_tier` | boolean | `false` | When true, `workflow-check` fails unless a tier event exists. The installer writes `true` in its sample config. |
 | `workflow_trace.required_gates` | string list | `[]` | Gate events that must appear in the workflow trace when enabled. The installer writes review/compliance defaults in its sample config. |
 
-## Enforcement Gates, Telemetry, Org Knowledge, Traceability, Workflow Trace, and Behavior Pinning
+## Enforcement Gates, Telemetry, Org Knowledge, Traceability, End-to-End Coverage, Workflow Trace, and Behavior Pinning
 
-These six capabilities are opt-in, disabled by default, and all powered by one
+These seven capabilities are opt-in, disabled by default, and all powered by one
 dependency-free helper, `.scripts/aw-gate.js`, installed with
 `aw-init --with-gates` (or by re-running the installer with that flag). None of
 them require an agent to run in CI — the enforcement path is fully deterministic.
@@ -246,6 +250,13 @@ a changed anchored test is not paired with a changed owning spec or a
 `Spec-Override:` commit trailer. It is deterministic and is **not** a freshness
 gate, so do not add it under `gates.checks`.
 
+`trace --suggest-e2e` is a separate read-only mode that reports which
+requirements an existing e2e suite already covers, for repos adopting the `[e2e]`
+marker retrospectively. It enforces nothing: it exits 0 even when the enforcing
+`trace` run is failing, reporting pre-existing errors without acting on them, and
+exits 2 only when `trace.enabled` is false — see
+[Adopting the marker in a repo that already has e2e tests](#adopting-the-marker-in-a-repo-that-already-has-e2e-tests).
+
 Skills write annotations through the deterministic proxy:
 
 ```sh
@@ -303,6 +314,166 @@ current-tree Node harness receives `AW_PIN_REFERENCE_ROOT`,
 `golden` metadata records fixture provenance without replacing live reference
 execution.
 
+## End-to-End Test Authoring (`e2e`)
+
+End-to-end frameworks are stack-specific, so this workflow ships no bundled e2e
+skill. It defines the slot and the contract; the repo supplies the tool. Point
+`workflow.auxiliary.e2e_tests.skill` at a Playwright, Cypress, XCUITest, or
+in-house skill and set `e2e.enabled: true`.
+
+E2E authoring is **not** a lifecycle step and **not** a freshness gate. It hangs
+off the implementation test policy, because e2e specs are the automation of
+user-facing acceptance criteria. The invocation pattern mirrors
+`pin_behavior`: routing lives in `workflow.auxiliary`, enablement and scope live
+in this top-level block, and `aw-work` invokes it at a documented checkpoint.
+
+Checkpoints:
+
+- **`aw-work` Phase 1**, after acceptance criteria are mapped and before Phase 2
+  edits, when `e2e.enabled` is true, the skill is configured, and the change
+  touches `e2e.trigger_paths`. Under `acceptance-first`, `tdd`, or `bdd` the
+  specs are authored before feature code.
+- **`aw-work` Phase 3**, run the suite according to `e2e.run_scope`. Local runs
+  stay narrow; `full` belongs to CI via `workflow.steps.monitor_pipeline.skill`.
+- **`aw-check-workflow-compliance`**, which reports a finding when a change
+  touches `e2e.trigger_paths` with the capability enabled but carries neither
+  e2e coverage nor a stated exception.
+
+`e2e.trigger_paths` uses git pathspec semantics, like `gates.checks.<name>.paths`
+and `trace.*_paths`. The list is a positive allowlist — paths matching nothing in
+it are already out, so `:(exclude)` entries are only needed to carve holes inside
+a broader positive pattern:
+
+```yaml
+e2e:
+  enabled: true
+  trigger_paths:          # narrow positive: no exclude needed
+    - src/app
+    - src/components
+  test_paths: [e2e]
+  run_scope: affected
+```
+
+Configured skills must preserve a small contract:
+
+- **Accept** the acceptance criteria (or spec/plan/ticket path), the changed
+  paths, and the `e2e.*` config.
+- **Return** the spec files written, the command that runs them, and **which
+  acceptance criterion each spec covers** — that mapping is what feeds compliance
+  reporting and the PR body.
+- **State unsupported cases explicitly** rather than silently producing nothing.
+
+Because the contract names the capability rather than the tool, swapping
+frameworks is a config change. Tool-specific conventions — selector strategy,
+fixtures, wait policy, auth-state reuse, external test-management identifiers —
+belong in `docs/standards/` indexed in `docs/standards/index.yml`, not in this
+config. Skills that onboard tests into an external test-management platform
+(Xray, TestRail, Zephyr) own that integration and its credentials themselves;
+the workflow does not model it.
+
+### Relationship to gates and traceability
+
+E2E authoring is **not** a freshness gate and must not be added under
+`gates.checks`. Gates exist for LLM-judgment steps that cannot run in CI; an e2e
+suite is a deterministic run, so CI owns enforcement. The coupling is indirect:
+`aw-check-workflow-compliance` reports e2e coverage, so the finding rides inside
+that gate's receipt.
+
+Note that a `mode: age` compliance gate is time-triggered, so it will not re-fire
+when new in-scope code lands inside its window. Repos that want the e2e finding
+to block on change should use `mode: commit-and-age` with `paths` mirroring
+`e2e.trigger_paths`.
+
+E2E specs are picked up by the default `trace.test_paths` — the `*.spec.ts`
+pathspec matches at any depth, so `e2e/login.spec.ts` needs no config change —
+and `@spec` anchors in them satisfy a requirement's test-anchor obligation.
+
+Trace records no test layer on an anchor, only its ID, file, and line, so
+`untested-requirement` is satisfied by a unit test just as well as by an e2e
+spec. To express "this requirement specifically needs end-to-end proof", mark the
+requirement heading with an exact `[e2e]` suffix:
+
+```markdown
+### PAY-004 — Checkout completes with a saved card [e2e]
+```
+
+When `e2e.enabled` is true, `trace` then fails with `missing-e2e-coverage` if a
+marked requirement has no anchor in a file matching `e2e.test_paths`, and warns
+with `suspect-e2e-marker` on near-misses such as `[E2E]`, `(e2e)`, `**[e2e]**`,
+a backticked `` `[e2e]` ``, or a trailing `[e2e].`. With `e2e.test_paths` empty
+the check is skipped and marked requirements raise `e2e-paths-unset`; a list of
+nothing but `:(exclude)` pathspecs fails with `e2e-paths-exclude-only`, since it
+would match the whole repository and satisfy every marker from any test. One e2e
+test may satisfy several requirements through a multi-ID anchor
+(`// @spec PAY-004, PAY-005`).
+
+`e2e.test_paths` is independent of `trace.test_paths` — e2e specs may live
+anywhere, including outside the trace globs. `trace` scans the two lists
+separately and merges the anchors, so an e2e spec is always discovered even when
+no trace glob reaches it, and an `:(exclude)` in one list never suppresses
+matches the other legitimately covers. A file can therefore be a valid anchor
+source for `untested-requirement` while still not counting as e2e coverage.
+
+The marker must be a suffix. Placed before the em-dash it does not match the
+requirement heading pattern and the requirement disappears from `trace` with no
+error. There is no override trailer for marked coverage — it is a whole-tree
+invariant, so a per-commit escape hatch would clear once and fail on the next
+commit. Marking a requirement and adding its test may still be separate commits:
+anchors found only through `e2e.test_paths` are exempt from
+`uncoupled-test-change`, so the commit answering a marker needs no
+`Spec-Override:` trailer. Anchors in `trace.test_paths` keep the coupling rule.
+The full rule for what earns a marker lives in the installed
+`docs/standards/e2e-coverage.md`.
+
+Keep external test-management identifiers out of `@spec` anchors. The anchor
+pattern accepts any `[A-Z][A-Z0-9]{1,7}-\d{3,}` ID, so a Jira or Xray key such as
+`PROJ-1234` parses as a requirement ID and `trace` reports `dangling-test-ref`
+when it is not in a living spec. Record platform keys in a separate annotation.
+
+### Adopting the marker in a repo that already has e2e tests
+
+Marking requirements one by one is the wrong first move when a suite already
+exists — the repo has already made most of those calls, it just never wrote them
+into the specs. `trace --suggest-e2e` prints the candidates and changes nothing:
+
+```bash
+node .scripts/aw-gate.js trace --suggest-e2e            # human-readable
+node .scripts/aw-gate.js trace --suggest-e2e --json     # or --out <path>
+```
+
+It reports two candidate classes, both derived from evidence rather than from
+requirement prose:
+
+| Candidate | Meaning | `gate_effect` |
+| --- | --- | --- |
+| `covered-unmarked` | Unmarked, but already anchored in a file matching `e2e.test_paths` | `none` |
+| `near-miss-marker` | Title ends in a variant such as `[E2E]`, `(e2e)`, or `**[e2e]**`, which `trace` does not honor | `none` if covered, else `enforces` |
+
+The survey also warns about what the flip would break before you make it:
+`would-become-dangling` lists anchors in `e2e.test_paths` with no living spec —
+retired IDs or external tracker keys — which turn into `dangling-test-ref` errors
+the moment `e2e.enabled` is true. Clear those before flipping. If
+`e2e.test_paths` is non-empty but matches no tracked files, the survey reports
+that rather than "no candidates".
+
+Each candidate carries the heading's current text and the proposed replacement,
+so applying the set is a mechanical edit. `gate_effect: none` means the
+requirement already has the coverage the marker would demand, so marking it
+cannot turn `trace` red; `enforces` means the marker starts being checked on the
+next run and the test still has to be written.
+
+Requirements with no e2e anchor and no marker variant are never suggested. Which
+requirements *deserve* end-to-end proof is a judgment the standard puts with a
+human at spec time, and a keyword guess dressed up as a finding would quietly
+move that bar into a script.
+
+The mode is advisory: it exits 0 even when it has suggestions, and it does not
+run the coverage gate, so it stays readable while `trace` is failing for other
+reasons. It needs `trace.enabled: true` but deliberately not `e2e.enabled`, which
+is what makes the adoption order work — point `e2e.test_paths` at the existing
+suite, survey the candidates, apply the markers, then set `e2e.enabled: true` on
+a tree that is already green.
+
 ## Workflow Step Keys
 
 ```text
@@ -330,6 +501,7 @@ capture -> aw-capture
 discover_standards -> aw-discover-standards
 research_slack -> (no bundled skill; set workflow.auxiliary.research_slack.skill for enterprise routing)
 pin_behavior -> aw-pin-behavior
+e2e_tests -> (no bundled skill; set workflow.auxiliary.e2e_tests.skill)
 resolve_pr_feedback -> aw-resolve-pr-feedback
 synthesize_memory -> aw-synthesize-memory
 ```
