@@ -98,6 +98,14 @@ DEFAULT_CONFIG = {
     "rotation" => "monthly",
     "retention_months" => 12
   },
+  "tracking" => {
+    "enabled" => false,
+    "path" => "docs/metrics/skills.jsonl",
+    "rotation" => "monthly",
+    "retention_months" => 12,
+    "session_file" => ".aw/session",
+    "session_ttl_hours" => 8
+  },
   "org_knowledge" => {
     "source" => "",
     "ref" => "main",

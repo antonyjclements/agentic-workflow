@@ -420,6 +420,7 @@ install_repo_files() {
   copy_prompted "$artifact_dir/field-guide.md" "$repo_dir/docs/workflow/field-guide.md"
   copy_prompted "$artifact_dir/gates.md" "$repo_dir/docs/workflow/gates.md"
   copy_prompted "$artifact_dir/org-knowledge.md" "$repo_dir/docs/workflow/org-knowledge.md"
+  copy_prompted "$artifact_dir/tracking.md" "$repo_dir/docs/workflow/tracking.md"
   copy_prompted "$artifact_dir/metrics-readme.md" "$repo_dir/docs/metrics/README.md"
   write_file_if_missing "$repo_dir/docs/workflow/config.yml" "workflow:
   implementation:

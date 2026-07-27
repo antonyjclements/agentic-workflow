@@ -587,17 +587,14 @@ function shardPath(section, defaultBase, date) {
   return `${stem}-${monthStamp(date)}${ext}`;
 }
 
-function telemetryShardPath(telemetry, date) {
-  return shardPath(telemetry, 'docs/metrics/events.jsonl', date);
-}
-
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // Delete month shards older than <config>.retention_months. Git history is the
 // archive. No-op unless rotation is monthly and retention_months is a positive
-// number. Returns { skipped, kept, removed[] } for the caller to report.
+// number. Returns `{ skipped: <reason> }` when nothing was inspected, or
+// `{ retention, removed[] }` when a pass ran. The caller renders both shapes.
 function pruneShardFamily(section, defaultBase) {
   const base = section.path || defaultBase;
   const rotation = section.rotation || 'monthly';
@@ -683,10 +680,37 @@ function readOrMintSession(tracking) {
   return id;
 }
 
+// Canonical mapping from bundled skill name to workflow step key. Same
+// convention as this file's other bundled defaults (`.aw-gate-state.json`,
+// `docs/metrics/events.jsonl`) — aw-gate.js owns AW's built-in identifiers.
+// A per-repo `workflow.steps.<step>.skill` override wins when present.
+const DEFAULT_SKILL_TO_STEP = {
+  'aw-prd': 'prd',
+  'aw-brainstorm': 'brainstorm',
+  'aw-create-spec': 'create_spec',
+  'aw-request-human-review': 'request_human_review',
+  'aw-plan': 'plan',
+  'aw-review': 'review',
+  'aw-create-tickets': 'create_tickets',
+  'aw-work': 'work',
+  'aw-check-workflow-compliance': 'check_workflow_compliance',
+  'aw-commit': 'commit',
+  'aw-commit-push-pr': 'commit_push_pr',
+};
+
+function workflowStepForSkill(config, skill) {
+  const steps = (config.workflow && config.workflow.steps) || {};
+  for (const key of Object.keys(steps)) {
+    const entry = steps[key];
+    if (entry && entry.skill && entry.skill === skill) return key;
+  }
+  return DEFAULT_SKILL_TO_STEP[skill] || null;
+}
+
 function cmdTrack(args) {
   // Never fail the caller. Wrap the whole thing and swallow everything.
   try {
-    const { positional, flags } = parseFlags(args);
+    const { positional } = parseFlags(args);
     const skill = positional[0];
     if (!skill) return; // no skill name — nothing to record, silent exit
     const config = loadConfig();
@@ -696,7 +720,7 @@ function cmdTrack(args) {
     const abs = resolveRepoPath(rel);
     if (!abs) return; // misconfigured path; stay silent
     const sessionId = readOrMintSession(tracking);
-    const workflowStep = typeof flags['workflow-step'] === 'string' ? flags['workflow-step'] : null;
+    const workflowStep = workflowStepForSkill(config, skill);
     const record = {
       ts: new Date().toISOString(),
       session_id: sessionId,
@@ -748,7 +772,7 @@ function cmdRecord(args) {
 
   const telemetry = config.telemetry || {};
   if (telemetry.enabled === true) {
-    const rel = telemetryShardPath(telemetry, new Date());
+    const rel = shardPath(telemetry, 'docs/metrics/events.jsonl', new Date());
     const abs = resolveRepoPath(rel);
     if (!abs) fail(`telemetry.path must be repo-relative: ${telemetry.path || 'docs/metrics/events.jsonl'}`);
     fs.mkdirSync(path.dirname(abs), { recursive: true });
