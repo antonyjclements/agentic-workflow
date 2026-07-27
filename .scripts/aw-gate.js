@@ -1098,7 +1098,10 @@ function cmdTrace(args) {
   const config = loadConfig();
   const trace = traceConfig(config);
   const jsonMode = flags.json === true;
-  const suggestE2e = flags['suggest-e2e'] === true;
+  // Presence, not value: parseFlags swallows a following positional as the
+  // flag's value, and `=== true` would silently fall through to the enforcing
+  // run — a different command than the one that was asked for.
+  const suggestE2e = Object.prototype.hasOwnProperty.call(flags, 'suggest-e2e');
   if (!trace.enabled) {
     // Suggestion mode reads spec headings and @spec anchors, so it needs the
     // same trace config the gate does. Reported separately from the disabled

@@ -206,7 +206,19 @@ const idsOf = (out) => out.suggestions.map((s) => s.id).sort();
   ok('trace-disabled reports clearly and leaves the pinned payload alone');
 }
 
-// 9. --out for agents that would rather read a file than parse stdout.
+// 9. The flag is presence-based: parseFlags swallows a following positional as
+// the flag's value, and testing for `true` would silently run the enforcing
+// gate instead — the opposite of what was asked for.
+{
+  const root = makeRepo(config());
+  const r = run(root, ['trace', '--suggest-e2e', 'stray-positional']);
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.ok(r.stdout.includes('e2e marker suggestions'),
+    `a stray positional silenced the flag: ${r.stdout}`);
+  ok('a trailing positional does not silently switch back to the gate');
+}
+
+// 10. --out for agents that would rather read a file than parse stdout.
 {
   const root = makeRepo(config());
   assert.strictEqual(run(root, ['trace', '--suggest-e2e', '--out', '.aw/suggest.json']).status, 0);
