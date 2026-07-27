@@ -298,7 +298,9 @@ install_skills() {
   local source_skills_dir=""
   local manifest_file="$skills_dir/.augmented-workflow-skills"
   local current_manifest
+  local cleanup_manifest
   current_manifest="$(mktemp "${TMPDIR:-/tmp}/augmented-workflow-skills.XXXXXX")"
+  cleanup_manifest="$(mktemp "${TMPDIR:-/tmp}/augmented-workflow-cleanup-skills.XXXXXX")"
 
   if [ -d "$source_dir/skills" ]; then
     source_skills_dir="$source_dir/skills"
@@ -318,9 +320,45 @@ install_skills() {
     done | sort > "$current_manifest"
   fi
 
+  if [ -f "$manifest_file" ]; then
+    cp "$manifest_file" "$cleanup_manifest"
+  else
+    # Older installs predate the ownership manifest. Seed cleanup with only
+    # historical bundled aw-* entrypoints so custom user skills remain safe.
+    for legacy_skill in \
+      aw-capture-solution \
+      aw-clean-artifacts \
+      aw-code-review \
+      aw-compound \
+      aw-compound-refresh \
+      aw-create-prd \
+      aw-decision-log \
+      aw-decisions-refresh \
+      aw-doc-review \
+      aw-import-prd \
+      aw-log-decision \
+      aw-monitor-circleci \
+      aw-monitor-pipeline \
+      aw-record-retrospective \
+      aw-refresh-decisions \
+      aw-refresh-solutions \
+      aw-research-slack \
+      aw-retrospective \
+      aw-review-code \
+      aw-review-doc \
+      aw-review-spec \
+      aw-slack-research \
+      aw-spec-create \
+      aw-spec-review \
+      aw-upgrade \
+      aw-worktree; do
+      printf '%s\n' "$legacy_skill"
+    done > "$cleanup_manifest"
+  fi
+
   # Remove only skills previously installed by this workflow. User-owned aw-*
   # skills can live beside the workflow bundle without being swept up.
-  if [ -s "$current_manifest" ] && [ -f "$manifest_file" ]; then
+  if [ -s "$current_manifest" ] && [ -s "$cleanup_manifest" ]; then
     while IFS= read -r installed_skill; do
       case "$installed_skill" in
         aw-*)
@@ -330,7 +368,7 @@ install_skills() {
           fi
           ;;
       esac
-    done < "$manifest_file"
+    done < "$cleanup_manifest"
   fi
 
   # Remove retired skills that carried a different prefix
@@ -396,12 +434,14 @@ install_skills() {
   if [ -z "$source_skills_dir" ]; then
     echo "skills preserve: no source skills directory found"
     rm -f "$current_manifest"
+    rm -f "$cleanup_manifest"
     return 0
   fi
 
   if [ "$(cd "$source_skills_dir" && pwd)" = "$(cd "$skills_dir" && pwd)" ]; then
     echo "skills preserve: $skills_dir"
     rm -f "$current_manifest"
+    rm -f "$cleanup_manifest"
     return 0
   fi
 
@@ -420,6 +460,7 @@ install_skills() {
 
   cp "$current_manifest" "$manifest_file"
   rm -f "$current_manifest"
+  rm -f "$cleanup_manifest"
   echo "skills manifest: $manifest_file"
 }
 

@@ -67,7 +67,7 @@ Augmented Workflow should make spec-driven development portable across repositor
 
 The workflow uses `AGENTS.md` as the portable orientation and routing file. The installer copies that file into a target repo, installs skills globally under `~/.agents/skills`, symlinks supported agent runtime skill directories to that canonical location when safe, writes `.augmented-workflow-version`, creates repo-local indexes for PRDs, features, standards, decisions, and learnings, and installs an editable PRD template at `docs/product/prds/template.md`. Brainstorms and session logs are self-describing files without an index.
 
-The global skill install writes `.augmented-workflow-skills` to record which `aw-*` skills are workflow-owned. Upgrade cleanup removes retired workflow-owned skills from that manifest, but preserves user-owned `aw-*` skills that live beside the bundled workflow skills.
+The global skill install writes `.augmented-workflow-skills` to record which `aw-*` skills are workflow-owned. Upgrade cleanup removes retired workflow-owned skills from that manifest, but preserves user-owned `aw-*` skills that live beside the bundled workflow skills. Older installs that predate the manifest seed cleanup from a conservative list of historical bundled `aw-*` entrypoints.
 
 The repository root `aw-version.txt` is the single source for installer-owned workflow version markers. Installed `AGENTS.md` carries the same version stamp, and installers or migrators use `aw-version.txt` when running from a full source tree.
 
