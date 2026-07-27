@@ -28,7 +28,7 @@ Read `docs/workflow/config.yml` first.
 - Read `workflow.steps.*.skill` to understand configured replacement steps. Do not use removed legacy skill-selector fields such as `ticket_creation.skill`, `git.commit.skill`, `post_pr.ci_monitor.skill`, and `research.slack.skill` for routing if they appear in older repos; report the migration path instead.
 - Read `workflow.auxiliary.*.skill` to understand configured helper skill replacements such as Slack research.
 - Read `workflow.design`; when enabled, configured non-empty design hooks are expected process checkpoints at discovery, spec review, plan review, implementation review, and pre-PR.
-- Read the `e2e` block. When `e2e.enabled` is true and `workflow.auxiliary.e2e_tests.skill` is configured, changes touching `e2e.trigger_paths` (empty means unscoped) are expected to carry e2e coverage or a stated exception.
+- Read the `e2e` block. When `e2e.enabled` is true, changes touching `e2e.trigger_paths` (empty means unscoped) are expected to carry e2e coverage or a stated exception. A configured `workflow.auxiliary.e2e_tests.skill` says who authors the tests, not whether coverage is expected — a repo that writes e2e tests by hand is still in scope.
 - Treat non-skill configuration fields as authoritative, including `git.commit.*`, `pull_request.template.*`, `post_pr.ci_monitor.provider`, and `human_review.*.reviewers`.
 
 ## Evidence To Gather
@@ -53,7 +53,7 @@ Report findings when:
 - A removed legacy skill-selector field is used as the active routing source.
 - The effective implementation test policy is missing from the work summary, PR inputs, or handoff evidence.
 - Acceptance criteria from the linked spec, plan, or ticket are not mapped to automated tests or explicit manual checks.
-- `e2e.enabled` is true with a configured `workflow.auxiliary.e2e_tests.skill`, the diff touches `e2e.trigger_paths`, and the change carries neither e2e coverage nor a stated exception.
+- `e2e.enabled` is true, the diff touches `e2e.trigger_paths`, and the change carries neither e2e coverage nor a stated exception.
 - Workflow/setup/configuration behavior changed but `README.md` was not updated or consciously skipped.
 - Required spec/code review gates are missing for non-trivial behavior or workflow changes.
 - The branch has not been pushed when this skill is invoked as part of the shipping flow.

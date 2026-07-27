@@ -122,12 +122,21 @@ function parseYaml(text) {
     const stripped = raw.replace(/^\s+/, '');
     const indent = raw.length - stripped.length;
 
-    while (stack.length > 1 && indent <= stack[stack.length - 1].indent) {
+    // A `- item` at the same indent as the key that owns it is valid YAML and
+    // is what Ruby's YAML.dump emits, so a list line only closes frames that
+    // are strictly deeper. Popping on `<=` here would reattach the item to the
+    // grandparent and turn the owning map into an array — silently emptying
+    // `trace`/`e2e` after `upgrade-config.rb --apply` rewrites a config.
+    const isListItem = stripped.startsWith('- ');
+    while (
+      stack.length > 1 &&
+      (isListItem ? indent < stack[stack.length - 1].indent : indent <= stack[stack.length - 1].indent)
+    ) {
       stack.pop();
     }
     const frame = stack[stack.length - 1];
 
-    if (stripped.startsWith('- ')) {
+    if (isListItem) {
       if (!frame.parent) continue; // list at document root: unsupported, ignore
       if (!Array.isArray(frame.parent[frame.key])) frame.parent[frame.key] = [];
       frame.parent[frame.key].push(parseScalar(stripped.slice(2)));
@@ -784,9 +793,12 @@ function anchorRe() {
 // heading regex would not match and the requirement would vanish from trace
 // silently.
 const E2E_MARKER = /\[e2e\]$/;
-// Case and bracket variants that were probably meant as the marker but are not.
-// Reported as warnings so a typo fails loudly instead of silently uncovering.
-const E2E_MARKER_NEAR_MISS = /[[(]\s*e2e\s*[\])]$/i;
+// Variants that were probably meant as the marker but are not: wrong case,
+// round or fullwidth brackets, markdown emphasis or code ticks around it, and
+// trailing punctuation. Reported as warnings so a typo fails loudly instead of
+// silently uncovering. Backticks matter most — the standard renders the marker
+// as `[e2e]` in prose, so copying that phrasing into a heading is a near miss.
+const E2E_MARKER_NEAR_MISS = /[*_`]*[[(［]\s*e2e\s*[\])］][*_`]*[\s.,;:!#]*$/i;
 
 function isE2eMarked(title) {
   return E2E_MARKER.test(String(title || '').trim());
@@ -805,6 +817,14 @@ function e2eConfig(config) {
   };
 }
 
+// A list of nothing but `:(exclude)` pathspecs makes `git ls-files` return the
+// whole repository, which would satisfy every `[e2e]` marker from any test
+// anywhere — the check would pass while enforcing nothing. Exclusions only
+// carve holes inside a positive pattern, so this is always a config error.
+function isExcludeOnly(paths) {
+  return paths.length > 0 && paths.every((p) => /^\s*(:\(exclude\)|:!)/.test(String(p)));
+}
+
 function traceConfig(config) {
   const trace = config.trace || {};
   return {
@@ -814,6 +834,26 @@ function traceConfig(config) {
     code_paths: Array.isArray(trace.code_paths) ? trace.code_paths : ['src'],
     require_code_anchor: trace.require_code_anchor === true,
   };
+}
+
+// Shared by the enforcing and advisory trace modes: same --out contract, same
+// --json payload, same error listing. Only `enforce` differs — the advisory
+// mode reports errors it will not act on.
+function emitTraceReport(output, flags, jsonMode, label, enforce) {
+  if (typeof flags.out === 'string') {
+    const out = resolveRepoPath(flags.out);
+    if (!out) fail(`trace --out must be a repo-relative path: ${flags.out}`);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, JSON.stringify(output, null, 2) + '\n');
+  }
+  if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+
+  const errors = output.findings.filter((item) => item.level === 'error');
+  if (errors.length) {
+    process.stderr.write(`${label}\n`);
+    for (const f of errors) process.stderr.write(`  - ${f.type}: ${f.message}\n`);
+    if (enforce) process.exit(1);
+  }
 }
 
 function sortedLocations(list) {
@@ -887,7 +927,7 @@ function scanAnchors(paths, type) {
   const anchors = [];
   if (result.error) {
     findings.push({ level: 'error', type: `${type}-path-error`, message: result.error });
-    return { anchors, findings };
+    return { anchors, findings, files: [], error: result.error };
   }
   for (const file of result.files) {
     const abs = resolveRepoPath(file);
@@ -903,12 +943,15 @@ function scanAnchors(paths, type) {
       let m;
       while ((m = re.exec(lines[i])) !== null) {
         for (const id of splitIds(m[1])) {
-          anchors.push({ id, file, line: i + 1 });
+          // `source` records which pathspec list found the anchor. Only
+          // trace.test_paths anchors are subject to commit coupling; see the
+          // uncoupled-test-change loop in cmdTrace.
+          anchors.push({ id, file, line: i + 1, source: type });
         }
       }
     }
   }
-  return { anchors: sortedLocations(anchors), findings };
+  return { anchors: sortedLocations(anchors), findings, files: result.files };
 }
 
 function buildMatrix(specs, testAnchors, codeAnchors) {
@@ -983,7 +1026,7 @@ function specHeadingLine(file, line) {
 function markedHeading(raw) {
   const trimmed = raw.replace(/\s+$/, '');
   return E2E_MARKER_NEAR_MISS.test(trimmed)
-    ? trimmed.replace(E2E_MARKER_NEAR_MISS, '[e2e]')
+    ? trimmed.replace(E2E_MARKER_NEAR_MISS, '[e2e]').replace(/\s+$/, '')
     : `${trimmed} [e2e]`;
 }
 
@@ -998,10 +1041,38 @@ function cmdTraceSuggestE2e(config, trace, flags) {
   // the gate on is the migration sequence this mode exists to serve.
   const havePaths = e2e.test_paths.length > 0;
   let anchors = [];
+  let e2eFileCount = 0;
   if (havePaths) {
     const scan = scanAnchors(e2e.test_paths, 'e2e');
     findings.push(...scan.findings);
     anchors = scan.anchors;
+    e2eFileCount = (scan.files || []).length;
+    if (isExcludeOnly(e2e.test_paths)) {
+      findings.push({
+        level: 'warning',
+        type: 'e2e-paths-exclude-only',
+        message: `e2e.test_paths contains only exclusions (${e2e.test_paths.join(', ')}) — it matches the whole repository; add a positive pathspec before enabling the gate`,
+      });
+    } else if (!scan.error && e2eFileCount === 0) {
+      findings.push({
+        level: 'warning',
+        type: 'e2e-paths-match-nothing',
+        message: `e2e.test_paths (${e2e.test_paths.join(', ')}) matched 0 tracked files — check the pathspec before marking requirements`,
+      });
+    }
+  }
+
+  // What flipping e2e.enabled: true would cost. The survey is the step that is
+  // supposed to de-risk that flip, so it has to name the errors waiting on the
+  // other side rather than reporting a clean tree.
+  const wouldDangle = anchors.filter((a) => !specs.has(a.id));
+  for (const anchor of wouldDangle) {
+    findings.push({
+      level: 'warning',
+      type: 'would-become-dangling',
+      id: anchor.id,
+      message: `${anchor.id} in ${anchor.file}:${anchor.line} has no living spec — it becomes a dangling-test-ref error once e2e.enabled is true`,
+    });
   }
 
   const suggestions = [];
@@ -1036,32 +1107,36 @@ function cmdTraceSuggestE2e(config, trace, flags) {
     covered_unmarked: suggestions.filter((s) => s.kind === 'covered-unmarked').length,
     near_miss_markers: suggestions.filter((s) => s.kind === 'near-miss-marker').length,
     e2e_paths_set: havePaths,
+    e2e_files: e2eFileCount,
+    would_become_dangling: wouldDangle.length,
     errors: findings.filter((f) => f.level === 'error').length,
     warnings: findings.filter((f) => f.level === 'warning').length,
   };
 
   sortFindings(findings);
   const output = { summary, suggestions, findings };
-  if (typeof flags.out === 'string') {
-    const out = resolveRepoPath(flags.out);
-    if (!out) fail(`trace --out must be a repo-relative path: ${flags.out}`);
-    fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, JSON.stringify(output, null, 2) + '\n');
-  }
-  if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
-
-  if (summary.errors > 0) {
-    process.stderr.write('aw-gate: trace --suggest-e2e FAILED\n');
-    for (const f of findings.filter((item) => item.level === 'error')) {
-      process.stderr.write(`  - ${f.type}: ${f.message}\n`);
-    }
-    process.exit(1);
-  }
+  // Advisory by contract: pre-existing spec problems (a duplicate id, a bad
+  // pathspec) are exactly what a repo adopting the marker retrospectively has,
+  // and aborting on them would deny it the survey. Reported, never fatal.
+  emitTraceReport(
+    output,
+    flags,
+    jsonMode,
+    'aw-gate: trace --suggest-e2e — pre-existing trace errors, reported but not enforced here',
+    false
+  );
 
   if (!jsonMode) {
     const lines = ['aw-gate: e2e marker suggestions — advisory, nothing was modified'];
     if (!havePaths) {
       lines.push('  e2e.test_paths is empty — coverage-derived candidates skipped; only marker typos are detectable');
+    }
+    for (const f of findings.filter((item) => item.level === 'warning' && item.type !== 'would-become-dangling')) {
+      lines.push(`  ${f.type}: ${f.message}`);
+    }
+    if (wouldDangle.length) {
+      lines.push('', `  would-become-dangling (${wouldDangle.length}) — no living spec; these fail once e2e.enabled is true`);
+      for (const a of wouldDangle) lines.push(`    ${a.id}  ${a.file}:${a.line}`);
     }
     if (!suggestions.length) {
       lines.push(`  no candidates (${summary.requirements} requirement(s) scanned)`);
@@ -1146,7 +1221,10 @@ function cmdTrace(args) {
   const e2eTestScan = scanE2ePaths
     ? scanAnchors(e2e.test_paths, 'e2e')
     : { anchors: [], findings: [] };
-  const testScan = mergeAnchorScans(traceTestScan, e2eTestScan);
+  // Only merge when an e2e scan actually ran. Merging unconditionally would
+  // apply the de-duplication to the trace scan alone, changing test_anchors
+  // counts in the --json payload for repos that never configured e2e.
+  const testScan = scanE2ePaths ? mergeAnchorScans(traceTestScan, e2eTestScan) : traceTestScan;
   const codeScan = scanAnchors(trace.code_paths, 'code');
   const findings = [...specScan.findings, ...testScan.findings, ...codeScan.findings];
   const specs = specScan.specs;
@@ -1205,6 +1283,13 @@ function cmdTrace(args) {
         message: `${id} at ${spec.file}:${spec.line} ends in something like the e2e marker but not exactly "[e2e]"; it is not treated as marked`,
       });
     }
+    if (isExcludeOnly(e2e.test_paths)) {
+      findings.push({
+        level: 'error',
+        type: 'e2e-paths-exclude-only',
+        message: `e2e.test_paths contains only exclusions (${e2e.test_paths.join(', ')}) — it would match the whole repository; add a positive pathspec`,
+      });
+    }
     const marked = Array.from(specs.keys()).filter((id) => isE2eMarked(specs.get(id).title));
     if (marked.length && !e2e.test_paths.length) {
       findings.push({
@@ -1212,22 +1297,19 @@ function cmdTrace(args) {
         type: 'e2e-paths-unset',
         message: `${marked.length} requirement(s) marked [e2e] but e2e.test_paths is empty — skipping the marked-coverage check`,
       });
-    } else if (marked.length) {
-      const e2eFiles = listFiles(e2e.test_paths);
-      if (e2eFiles.error) {
-        findings.push({ level: 'error', type: 'e2e-path-error', message: e2eFiles.error });
-      } else {
-        const e2eSet = new Set(e2eFiles.files);
-        for (const id of marked) {
-          if (testScan.anchors.some((a) => a.id === id && e2eSet.has(a.file))) continue;
-          const spec = specs.get(id);
-          findings.push({
-            level: 'error',
-            type: 'missing-e2e-coverage',
-            id,
-            message: `${id} at ${spec.file}:${spec.line} is marked [e2e] but has no test anchor in ${e2e.test_paths.join(', ')}`,
-          });
-        }
+    } else if (marked.length && !e2eTestScan.error && !isExcludeOnly(e2e.test_paths)) {
+      // e2eTestScan already scanned exactly the files e2e.test_paths matches,
+      // so an anchor it found is by definition an anchor in an e2e spec. Its
+      // own path error was already reported by scanAnchors.
+      for (const id of marked) {
+        if (e2eTestScan.anchors.some((a) => a.id === id)) continue;
+        const spec = specs.get(id);
+        findings.push({
+          level: 'error',
+          type: 'missing-e2e-coverage',
+          id,
+          message: `${id} at ${spec.file}:${spec.line} is marked [e2e] but has no test anchor in ${e2e.test_paths.join(', ')}`,
+        });
       }
     }
   }
@@ -1264,7 +1346,11 @@ function cmdTrace(args) {
         const fileSet = new Set(files.files);
         const changedSpecsInCommit = new Set((changedSpecs.files || []).filter((file) => fileSet.has(file)));
         const overrides = commitSpecOverrideIds(commit);
-        for (const anchor of testScan.anchors.filter((a) => fileSet.has(a.file))) {
+        // e2e-only anchors are exempt: the marked-coverage check above demands
+        // an e2e test for a marker that lands in a spec-only commit, and
+        // coupling the answering commit back to a spec change would make the
+        // two-commit sequence the standard prescribes unsatisfiable.
+        for (const anchor of testScan.anchors.filter((a) => fileSet.has(a.file) && a.source !== 'e2e')) {
           const spec = specs.get(anchor.id);
           if (spec && !changedSpecsInCommit.has(spec.file) && !overrides.has(anchor.id)) {
             findings.push({
@@ -1294,21 +1380,8 @@ function cmdTrace(args) {
   const matrix = buildMatrix(specs, testScan.anchors, codeScan.anchors);
   const summary = traceSummary(specs, testScan.anchors, codeScan.anchors, findings);
   const output = { summary, matrix, findings };
-  if (typeof flags.out === 'string') {
-    const out = resolveRepoPath(flags.out);
-    if (!out) fail(`trace --out must be a repo-relative path: ${flags.out}`);
-    fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, JSON.stringify(output, null, 2) + '\n');
-  }
-  if (jsonMode) process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+  emitTraceReport(output, flags, jsonMode, 'aw-gate: trace FAILED', true);
 
-  if (summary.errors > 0) {
-    process.stderr.write('aw-gate: trace FAILED\n');
-    for (const f of findings.filter((item) => item.level === 'error')) {
-      process.stderr.write(`  - ${f.type}: ${f.message}\n`);
-    }
-    process.exit(1);
-  }
   if (summary.warnings > 0) {
     if (!jsonMode) {
       process.stdout.write('aw-gate: trace clean with warnings\n');
@@ -2226,7 +2299,7 @@ function usage() {
       '  node .scripts/aw-gate.js org-sync',
       '  node .scripts/aw-gate.js prune-telemetry',
       '',
-      'Config: docs/workflow/config.yml (gates, telemetry, org_knowledge, trace, workflow_trace, pin).',
+      'Config: docs/workflow/config.yml (gates, telemetry, org_knowledge, trace, e2e, workflow_trace, pin).',
       'All six are opt-in and disabled by default.',
       '',
     ].join('\n')

@@ -49,8 +49,45 @@ version has no entry here.
   it enforces nothing and exits 0 even while the enforcing `trace` run is red.
   Supports `--json` and `--out <path>`.
 
+### Fixed
+
+- `aw-gate.js` now reads YAML sequences written flush with their key, the form
+  `upgrade-config.rb --apply` emits. Previously a migrated config parsed `trace`
+  and `e2e` as arrays, leaving `trace.enabled` undefined — so `trace` reported
+  "disabled" and skipped every check after an upgrade, a gate that looked green
+  because it never ran. Predates this release; the round-trip is now covered by
+  `scripts/test-install.sh` and `test/gate/e2e-coverage.test.js`.
+- Marking a requirement `[e2e]` and adding the test it demands can be separate
+  commits. Anchors found only through `e2e.test_paths` are exempt from
+  `uncoupled-test-change`, which previously failed the commit answering a marker
+  unless it also touched the spec or carried a `Spec-Override:` trailer.
+- `e2e.test_paths` holding nothing but `:(exclude)` pathspecs now fails with
+  `e2e-paths-exclude-only` instead of matching the whole repository and letting
+  any test satisfy every marker.
+- `suspect-e2e-marker` now catches markdown-decorated variants — `**[e2e]**`, a
+  backticked `` `[e2e]` ``, and a trailing `[e2e].` — which previously read as
+  marked to a human while enforcing nothing.
+- `trace --suggest-e2e` exits 0 on pre-existing trace errors such as a duplicate
+  requirement ID, matching its documented advisory contract; it previously
+  aborted before printing a single suggestion, on exactly the repos it exists to
+  serve. It also now reports `would-become-dangling` anchors and an
+  `e2e.test_paths` that matches no tracked files, so the survey names what
+  enabling the capability would break instead of reporting a clean tree.
+- An invalid `e2e.test_paths` pathspec reports one `e2e-path-error` instead of
+  two, and `trace --json` anchor counts no longer shift for repos that never
+  configured `e2e`.
+- The installer no longer corrupts an existing `docs/standards/index.yml` that
+  lacks a trailing newline, and leaves index shapes it cannot safely append to
+  intact with a `skip:` notice. Every bundled standard is now indexed through the
+  same idempotent helper, so repos installed before `traceability.md` or
+  `behavior-pinning.md` existed gain those entries on upgrade.
+
 ### Changed
 
+- `aw-check-workflow-compliance` reports missing e2e coverage whenever
+  `e2e.enabled` is true. A configured `workflow.auxiliary.e2e_tests.skill` says
+  who authors the tests, not whether coverage is expected, so repos writing e2e
+  tests by hand are in scope.
 - Rebranded the project and install surface as Augmented Workflow, including
   docs, package metadata, default remote source URLs, PR badge examples, and
   generated installer output.

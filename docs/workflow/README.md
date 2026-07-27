@@ -116,9 +116,9 @@ human_review:
 | `workflow_trace.require_tier` | boolean | `false` | When true, `workflow-check` fails unless a tier event exists. The installer writes `true` in its sample config. |
 | `workflow_trace.required_gates` | string list | `[]` | Gate events that must appear in the workflow trace when enabled. The installer writes review/compliance defaults in its sample config. |
 
-## Enforcement Gates, Telemetry, Org Knowledge, Traceability, Workflow Trace, and Behavior Pinning
+## Enforcement Gates, Telemetry, Org Knowledge, Traceability, End-to-End Coverage, Workflow Trace, and Behavior Pinning
 
-These six capabilities are opt-in, disabled by default, and all powered by one
+These seven capabilities are opt-in, disabled by default, and all powered by one
 dependency-free helper, `.scripts/aw-gate.js`, installed with
 `aw-init --with-gates` (or by re-running the installer with that flag). None of
 them require an agent to run in CI — the enforcement path is fully deterministic.
@@ -234,7 +234,9 @@ gate, so do not add it under `gates.checks`.
 
 `trace --suggest-e2e` is a separate read-only mode that reports which
 requirements an existing e2e suite already covers, for repos adopting the `[e2e]`
-marker retrospectively. It enforces nothing and always exits 0 — see
+marker retrospectively. It enforces nothing: it exits 0 even when the enforcing
+`trace` run is failing, reporting pre-existing errors without acting on them, and
+exits 2 only when `trace.enabled` is false — see
 [Adopting the marker in a repo that already has e2e tests](#adopting-the-marker-in-a-repo-that-already-has-e2e-tests).
 
 Skills write annotations through the deterministic proxy:
@@ -379,10 +381,13 @@ requirement heading with an exact `[e2e]` suffix:
 
 When `e2e.enabled` is true, `trace` then fails with `missing-e2e-coverage` if a
 marked requirement has no anchor in a file matching `e2e.test_paths`, and warns
-with `suspect-e2e-marker` on near-misses such as `[E2E]` or `(e2e)`. With
-`e2e.test_paths` empty the check is skipped and marked requirements raise
-`e2e-paths-unset`. One e2e test may satisfy several requirements through a
-multi-ID anchor (`// @spec PAY-004, PAY-005`).
+with `suspect-e2e-marker` on near-misses such as `[E2E]`, `(e2e)`, `**[e2e]**`,
+a backticked `` `[e2e]` ``, or a trailing `[e2e].`. With `e2e.test_paths` empty
+the check is skipped and marked requirements raise `e2e-paths-unset`; a list of
+nothing but `:(exclude)` pathspecs fails with `e2e-paths-exclude-only`, since it
+would match the whole repository and satisfy every marker from any test. One e2e
+test may satisfy several requirements through a multi-ID anchor
+(`// @spec PAY-004, PAY-005`).
 
 `e2e.test_paths` is independent of `trace.test_paths` — e2e specs may live
 anywhere, including outside the trace globs. `trace` scans the two lists
@@ -393,9 +398,13 @@ source for `untested-requirement` while still not counting as e2e coverage.
 
 The marker must be a suffix. Placed before the em-dash it does not match the
 requirement heading pattern and the requirement disappears from `trace` with no
-error. There is no override trailer — marked coverage is a whole-tree invariant,
-so a per-commit escape hatch would clear once and fail on the next commit. The
-full rule for what earns a marker lives in the installed
+error. There is no override trailer for marked coverage — it is a whole-tree
+invariant, so a per-commit escape hatch would clear once and fail on the next
+commit. Marking a requirement and adding its test may still be separate commits:
+anchors found only through `e2e.test_paths` are exempt from
+`uncoupled-test-change`, so the commit answering a marker needs no
+`Spec-Override:` trailer. Anchors in `trace.test_paths` keep the coupling rule.
+The full rule for what earns a marker lives in the installed
 `docs/standards/e2e-coverage.md`.
 
 Keep external test-management identifiers out of `@spec` anchors. The anchor
@@ -420,7 +429,14 @@ requirement prose:
 | Candidate | Meaning | `gate_effect` |
 | --- | --- | --- |
 | `covered-unmarked` | Unmarked, but already anchored in a file matching `e2e.test_paths` | `none` |
-| `near-miss-marker` | Title ends in a variant such as `[E2E]` or `(e2e)`, which `trace` does not honor | `none` if covered, else `enforces` |
+| `near-miss-marker` | Title ends in a variant such as `[E2E]`, `(e2e)`, or `**[e2e]**`, which `trace` does not honor | `none` if covered, else `enforces` |
+
+The survey also warns about what the flip would break before you make it:
+`would-become-dangling` lists anchors in `e2e.test_paths` with no living spec —
+retired IDs or external tracker keys — which turn into `dangling-test-ref` errors
+the moment `e2e.enabled` is true. Clear those before flipping. If
+`e2e.test_paths` is non-empty but matches no tracked files, the survey reports
+that rather than "no candidates".
 
 Each candidate carries the heading's current text and the proposed replacement,
 so applying the set is a mechanical edit. `gate_effect: none` means the

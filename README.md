@@ -451,7 +451,7 @@ e2e:
   run_scope: affected
 ```
 
-`e2e.trigger_paths` uses git pathspec semantics like `trace.*_paths`. The list is a positive allowlist, so paths matching nothing in it are already excluded; `:(exclude)` entries are only needed to carve holes inside a broader pattern such as `"."`. Framework conventions — selectors, fixtures, wait policy, auth-state reuse — belong in `docs/standards/`, and skills that onboard tests into an external test-management platform such as Jira Xray own that integration themselves. Full details are in the installed `docs/workflow/README.md`.
+`e2e.trigger_paths` uses git pathspec semantics like `trace.*_paths`. The list is a positive allowlist, so paths matching nothing in it are already excluded; `:(exclude)` entries are only needed to carve holes inside a broader pattern such as `"."`. A list of nothing but exclusions matches the whole repository — for `e2e.test_paths` that would let any test satisfy any `[e2e]` marker, so `trace` rejects it with `e2e-paths-exclude-only`. Framework conventions — selectors, fixtures, wait policy, auth-state reuse — belong in `docs/standards/`, and skills that onboard tests into an external test-management platform such as Jira Xray own that integration themselves. Full details are in the installed `docs/workflow/README.md`.
 
 Default workflow step keys:
 
@@ -478,11 +478,12 @@ debug -> aw-debug
 create_worktree -> aw-create-worktree
 capture -> aw-capture
 discover_standards -> aw-discover-standards
+pin_behavior -> aw-pin-behavior
 resolve_pr_feedback -> aw-resolve-pr-feedback
 synthesize_memory -> aw-synthesize-memory
 ```
 
-`research_slack`, `log_session`, `monitor_pipeline`, and `clean_artifacts` are no longer bundled keys. For Slack research, agents use available tools directly; set `workflow.auxiliary.research_slack.skill` for enterprise routing. Session logging is now `aw-capture session`. Post-PR CI monitoring requires a custom skill via `workflow.steps.monitor_pipeline.skill`. Archived artifact cleanup is now `aw-refresh cleanup`.
+`e2e_tests` is a config-only key with no bundled skill: e2e frameworks are stack-specific, so the repo supplies the skill. `research_slack`, `log_session`, `monitor_pipeline`, and `clean_artifacts` are no longer bundled keys. For Slack research, agents use available tools directly; set `workflow.auxiliary.research_slack.skill` for enterprise routing. Session logging is now `aw-capture session`. Post-PR CI monitoring requires a custom skill via `workflow.steps.monitor_pipeline.skill`. Archived artifact cleanup is now `aw-refresh cleanup`.
 
 Old step-specific skill selector fields such as `ticket_creation.skill`, `git.commit.skill`, and `post_pr.ci_monitor.skill` are replaced by `workflow.steps`. Old step keys `import_prd`, `create_prd`, `review_spec`, `review_plan`, `review_code` are now `prd` and `review`; old auxiliary keys `index_features`, `simplify_code`, `log_decision`, `record_retrospective`, `capture_solution`, `refresh_solutions`, `refresh_decisions`, `clean_artifacts`, and `log_session` are now `refresh` and `capture`. Migrate old values to the matching current keys.
 
@@ -769,7 +770,7 @@ The org base is **governed content**: one accountable owner (a senior lead or di
 
 **Behavior pins.** With `pin.enabled: true`, `node .scripts/aw-gate.js pin run` checks that a committed characterization harness passes on both the manifest's old `base` and the current checkout. `mode: reference-repo` supports migration pins by checking out a pinned old repo/ref and passing its path to the current-tree harness through `AW_PIN_REFERENCE_ROOT`; golden fixture metadata can record cache provenance without replacing live reference runs. Manifest commands are limited to empty values or `node <repo-relative .js path>`. `pin check` enforces that oracle/support files and the judged subject are not changed in the same commit unless a manifest-scoped `Pin-Override:` trailer explains why. A green pin proves equivalence, not correctness.
 
-Full schema for all six is in [docs/workflow/README.md](docs/workflow/README.md).
+Full schema for all seven is in [docs/workflow/README.md](docs/workflow/README.md).
 
 ### 11. Keep README.md current
 

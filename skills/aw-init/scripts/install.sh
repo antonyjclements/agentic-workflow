@@ -264,6 +264,25 @@ ensure_standard_index_entry() {
     mv "$temp_file" "$index_file"
   fi
 
+  # Appending is only valid when the file is a block sequence under a top-level
+  # `standards:` key and that list runs to the end of the file. A flow sequence
+  # or another top-level key after the list would turn into invalid YAML, and
+  # this index is what routes every agent to the applicable standards — so an
+  # unrecognized shape is left alone and reported rather than appended to.
+  local last_line
+  last_line="$(grep -v '^[[:space:]]*$' "$index_file" | tail -n 1)"
+  if ! grep -q '^standards:[[:space:]]*$' "$index_file" ||
+    ! printf '%s\n' "$last_line" | grep -q '^\([[:space:]]\|standards:[[:space:]]*$\)'; then
+    echo "skip: $index_file (unrecognized shape — add $standard_path manually)"
+    return 0
+  fi
+
+  # Without this a file that does not end in a newline splices the first
+  # appended line onto the last existing one.
+  if [ -s "$index_file" ] && [ -n "$(tail -c 1 "$index_file")" ]; then
+    printf '\n' >> "$index_file"
+  fi
+
   {
     printf '  - path: %s\n' "$standard_path"
     printf '    title: %s\n' "$title"
@@ -427,34 +446,17 @@ install_repo_files() {
   write_file_if_missing "$repo_dir/docs/product/prds/index.yml" "prds: []"
   copy_prompted "$artifact_dir/prd-template.md" "$repo_dir/docs/product/prds/template.md"
   write_file_if_missing "$repo_dir/docs/features/index.yml" "features: []"
-  write_file_if_missing "$repo_dir/docs/standards/index.yml" "standards:
-  - path: docs/standards/coding-approach.md
-    title: Coding Approach
-    tags:
-      - implementation
-      - simplicity
-      - code-quality
-  - path: docs/standards/traceability.md
-    title: Spec Traceability
-    tags:
-      - specs
-      - tests
-      - workflow
-  - path: docs/standards/behavior-pinning.md
-    title: Behavior Pinning
-    tags:
-      - testing
-      - workflow
-      - characterization
-  - path: docs/standards/e2e-coverage.md
-    title: End-to-End Coverage
-    tags:
-      - testing
-      - specs
-      - workflow"
+  # Every bundled standard is indexed through the same idempotent helper, so a
+  # repo installed before a standard existed gains its entry on upgrade. A
+  # hand-written index keeps its own entries; the helper only adds what is
+  # missing.
+  write_file_if_missing "$repo_dir/docs/standards/index.yml" "standards: []"
   copy_prompted "$artifact_dir/coding-approach.md" "$repo_dir/docs/standards/coding-approach.md"
+  ensure_standard_index_entry "docs/standards/coding-approach.md" "Coding Approach" implementation simplicity code-quality
   copy_prompted "$artifact_dir/traceability.md" "$repo_dir/docs/standards/traceability.md"
+  ensure_standard_index_entry "docs/standards/traceability.md" "Spec Traceability" specs tests workflow
   copy_prompted "$artifact_dir/behavior-pinning.md" "$repo_dir/docs/standards/behavior-pinning.md"
+  ensure_standard_index_entry "docs/standards/behavior-pinning.md" "Behavior Pinning" testing workflow characterization
   copy_prompted "$artifact_dir/e2e-coverage.md" "$repo_dir/docs/standards/e2e-coverage.md"
   ensure_standard_index_entry "docs/standards/e2e-coverage.md" "End-to-End Coverage" testing specs workflow
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"

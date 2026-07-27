@@ -43,9 +43,18 @@ block with `enabled`, `trigger_paths`, `test_paths`, and `run_scope`.
 
 E2E authoring hangs off the implementation test policy rather than sitting beside
 it, because e2e specs are the automation of user-facing acceptance criteria. It
-is invoked at three points: `aw-work` Phase 1 after acceptance criteria are
+is invoked at four points: `aw-work` Phase 1 after acceptance criteria are
 mapped and before implementation edits, `aw-work` Phase 3 for a `run_scope`-bound
-local run, and `aw-check-workflow-compliance` as a coverage finding.
+local run, `aw-check-workflow-compliance` as a coverage finding, and `trace` as a
+deterministic check over requirements that opted in.
+
+A requirement opts in with an exact `[e2e]` suffix on its heading, applied at
+spec time by a human. The marker is the mechanism that makes the stronger
+property checkable: `trace` resolves e2e membership by matching an anchor's file
+against `e2e.test_paths`, so a marked requirement must carry a `@spec` anchor
+inside the e2e suite, not merely somewhere in the test tree. The rule for what
+earns a marker lives in `docs/standards/e2e-coverage.md`, deliberately outside
+this workflow contract.
 
 `e2e.trigger_paths` uses git pathspec semantics, matching `gates.checks.<name>.paths`
 and `trace.*_paths`. The `<noun>_paths` name follows the config's existing naming
@@ -79,9 +88,23 @@ integration and its credentials; the workflow does not model external test
 management.
 
 E2E specs are picked up by the default `trace.test_paths` and their `@spec`
-anchors satisfy a requirement's test-anchor obligation. Trace records no test
-layer on an anchor, so it proves requirement-to-test linkage rather than
-requirement-to-e2e linkage; enforcing the stronger property stays with
-`aw-check-workflow-compliance` or a repo-specific check over the `trace --json`
-matrix. External test-management keys must stay out of `@spec` anchors, because
-the anchor pattern would parse a Jira or Xray key as a requirement ID.
+anchors satisfy a requirement's test-anchor obligation. Anchors record no test
+layer, so requirement-to-e2e linkage is proved through pathspec membership
+instead: `trace` scans `e2e.test_paths` separately from `trace.test_paths` and
+fails a marked requirement with `missing-e2e-coverage` when none of its anchors
+land in an e2e file. Unmarked requirements are unaffected, and a repo that leaves
+`e2e.enabled: false` sees no change at all.
+
+Making `trace` the enforcement point has two costs, both accepted. Enabling the
+capability puts the existing e2e suite under the rest of the trace contract, so
+retired IDs in that suite become `dangling-test-ref` errors — `trace --suggest-e2e`
+reports them as `would-become-dangling` before the flip. And anchors found only
+through `e2e.test_paths` had to be exempted from `uncoupled-test-change`:
+marking a requirement is a spec-only commit and adding its test is a test-only
+commit, so coupling both would make the prescribed sequence unsatisfiable.
+`aw-check-workflow-compliance` keeps the process-evidence half — whether an
+in-scope change shipped with coverage or a stated exception — which is judgment
+rather than a deterministic check.
+
+External test-management keys must stay out of `@spec` anchors, because the
+anchor pattern would parse a Jira or Xray key as a requirement ID.

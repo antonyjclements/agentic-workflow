@@ -48,7 +48,7 @@ A requirement opts in with an exact `[e2e]` suffix on its heading:
 Rules:
 
 - **Suffix only.** The marker goes at the end of the title, after the em-dash. A marker placed before the em-dash — `### PAY-004 [e2e] — Checkout completes` — does not match the requirement heading pattern, and the requirement disappears from `trace` entirely with no error.
-- **Exact `[e2e]`, lowercase.** `[E2E]`, `(e2e)`, and `[ e2e ]` are not the marker. `trace` reports them as `suspect-e2e-marker` warnings rather than treating them as marked.
+- **Exact `[e2e]`, lowercase, undecorated.** `[E2E]`, `(e2e)`, `[ e2e ]`, `**[e2e]**`, a backticked `` `[e2e]` ``, and a trailing `[e2e].` are not the marker. `trace` reports them as `suspect-e2e-marker` warnings rather than treating them as marked. Markdown emphasis around the marker is the easiest mistake to make, because this document renders it in backticks when discussing it — in a heading, write it bare.
 - **One marker per requirement.** The marker is a boolean, not a level. If you need "planned but not yet covered", that is a backlog item, not a spec annotation.
 
 ## Where the Decision Is Made
@@ -65,7 +65,9 @@ A repo that already has an e2e suite has already made most of these calls; the s
 node .scripts/aw-gate.js trace --suggest-e2e
 ```
 
-This reports unmarked requirements that already carry an anchor in `e2e.test_paths`, plus headings ending in a marker variant, with the exact heading edit for each. It changes nothing and enforces nothing.
+This reports unmarked requirements that already carry an anchor in `e2e.test_paths`, plus headings ending in a marker variant, with the exact heading edit for each. It changes nothing, and it exits 0 even when the enforcing `trace` run is failing — pre-existing errors such as a duplicate requirement ID are printed but never fatal, since those are exactly what a repo adopting the marker retrospectively has. It exits 2 only when `trace.enabled` is false, because it reads the same spec configuration the gate does.
+
+It also names what the flip will cost before you make it: `would-become-dangling` lists `@spec` anchors in `e2e.test_paths` with no living spec — retired IDs, or external tracker keys such as `PROJ-1234` — which become `dangling-test-ref` errors the moment `e2e.enabled` is true. Clear those first. If `e2e.test_paths` matches no tracked files at all, the survey says so rather than reporting a clean tree.
 
 Apply the `gate_effect: none` candidates freely — they already have the coverage the marker demands. Treat `enforces` candidates as a real decision: the marker starts being checked immediately and the test still has to exist.
 
@@ -85,7 +87,9 @@ This also means: mark a requirement when you are ready to cover it. Marking a ba
 
 One e2e test may cover several requirements — anchor it with each ID (`// @spec PAY-004, PAY-005`) and each is satisfied.
 
-When `e2e.test_paths` is empty, the check is skipped and marked requirements raise an `e2e-paths-unset` warning.
+When `e2e.test_paths` is empty, the check is skipped and marked requirements raise an `e2e-paths-unset` warning. A list of nothing but `:(exclude)` pathspecs is a config error (`e2e-paths-exclude-only`), not a narrow filter: it would match the whole repository and let any test anywhere satisfy every marker. Exclusions only carve holes inside a positive pattern.
+
+Marking a requirement and writing its e2e test are allowed to be separate commits. Anchors found only through `e2e.test_paths` are exempt from `uncoupled-test-change`, so the commit that adds the test the marker demands does not need a `Spec-Override:` trailer. Anchors in `trace.test_paths` keep the coupling rule.
 
 ## Boundary
 
