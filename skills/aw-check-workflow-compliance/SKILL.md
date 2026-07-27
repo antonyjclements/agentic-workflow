@@ -6,6 +6,8 @@ argument-hint: "[optional: plan/spec/ticket path or branch ref]"
 
 # Check Workflow Compliance
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Review workflow-policy evidence after a branch has been pushed and before PR creation. This is an accountability check, not a security sandbox, and it does not replace CI or `aw-review`.
 
 ## Inputs

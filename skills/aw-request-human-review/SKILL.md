@@ -6,6 +6,8 @@ argument-hint: "[spec|plan] [artifact path]"
 
 # Request Human Review
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Create a small PR for product/engineering sign-off on a spec or plan artifact.
 
 ## Configuration

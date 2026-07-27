@@ -6,6 +6,8 @@ argument-hint: "[decisions|solutions|features|cleanup|all] [scope, tag, or mode:
 
 # Refresh
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Maintain navigable, accurate registries under `docs/` without rewriting source records.
 
 ## Mode Routing

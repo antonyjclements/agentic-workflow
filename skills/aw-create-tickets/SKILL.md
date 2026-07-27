@@ -6,6 +6,8 @@ argument-hint: "[plan path, spec path, or feature scope]"
 
 # Create Tickets
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Turn a plan into implementation tickets using the ticket system configured by the repo.
 
 ## Configuration

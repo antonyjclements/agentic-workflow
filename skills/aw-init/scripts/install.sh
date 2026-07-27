@@ -585,21 +585,22 @@ install_gate_script() {
 
   # The freshness state file and org cache are per-checkout, never committed.
   local gitignore="$repo_dir/.gitignore"
-  for entry in ".aw-gate-state.json" ".aw/receipts/" ".aw-org-cache/" ".aw/tmp/" ".aw/workflow-trace.jsonl" ".aw/pin/"; do
+  for entry in ".aw-gate-state.json" ".aw/receipts/" ".aw-org-cache/" ".aw/tmp/" ".aw/workflow-trace.jsonl" ".aw/pin/" ".aw/session"; do
     if [ ! -f "$gitignore" ] || ! grep -Fqx "$entry" "$gitignore"; then
       printf '%s\n' "$entry" >> "$gitignore"
       echo "gitignore: $entry"
     fi
   done
 
-  # Telemetry logs are append-only and git-tracked; the union merge driver keeps
-  # both sides' lines instead of conflicting when branches merge.
+  # Telemetry and tracking logs are append-only and git-tracked; the union merge
+  # driver keeps both sides' lines instead of conflicting when branches merge.
   local gitattributes="$repo_dir/.gitattributes"
-  local attr_line="docs/metrics/events*.jsonl merge=union"
-  if [ ! -f "$gitattributes" ] || ! grep -Fqx "$attr_line" "$gitattributes"; then
-    printf '%s\n' "$attr_line" >> "$gitattributes"
-    echo "gitattributes: $attr_line"
-  fi
+  for attr_line in "docs/metrics/events*.jsonl merge=union" "docs/metrics/skills*.jsonl merge=union"; do
+    if [ ! -f "$gitattributes" ] || ! grep -Fqx "$attr_line" "$gitattributes"; then
+      printf '%s\n' "$attr_line" >> "$gitattributes"
+      echo "gitattributes: $attr_line"
+    fi
+  done
 }
 
 install_global_learnings() {

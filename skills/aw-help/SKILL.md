@@ -6,6 +6,8 @@ argument-hint: "[optional: what you're trying to do, or where you are in the wor
 
 # Workflow Help
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Read context. Recommend the right next skill. Input: `$ARGUMENTS`.
 
 ## Step 1: Read Available Context

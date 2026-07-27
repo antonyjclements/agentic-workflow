@@ -6,6 +6,8 @@ argument-hint: "[feature idea or problem to explore]"
 
 # Brainstorm a Feature or Improvement
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Current year: 2026. Brainstorming defines what to build; `aw-plan` defines how. Output is not code. Use repo-relative paths only.
 
 PRDs and raw ideas usually contain implicit ambiguity and open questions. Treat PRD and idea intake as a discovery step that resolves enough product behavior to write durable intent. If the PRD is pasted or linked, use `aw-prd` first so the historical source artifact is preserved, then continue from the imported PRD path. Once product behavior is explicit enough, create or update the living feature spec in the same run. If the user wants a PRD as the output, route to `aw-prd`.

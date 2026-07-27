@@ -6,6 +6,8 @@ argument-hint: "[PRD path, feature request, existing feature path, or scope]"
 
 # Create Living Spec
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Create durable feature intent that stays current with the code. A spec describes what the feature is now, not the implementation plan.
 
 ## Storage

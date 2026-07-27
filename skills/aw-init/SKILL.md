@@ -6,6 +6,8 @@ argument-hint: "[optional target repo path]"
 
 # Initialize Augmented Workflow
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Install repo-local augmented-workflow files into a target repository.
 
 ## Bundled Files

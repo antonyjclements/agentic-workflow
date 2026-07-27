@@ -6,6 +6,8 @@ argument-hint: "[decision|learning|solution|session] [context, correction, or de
 
 # Capture
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Route to the right capture mode based on what happened.
 
 ## Mode Routing

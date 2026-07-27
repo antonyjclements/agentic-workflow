@@ -6,6 +6,8 @@ argument-hint: "[optional focus area, path, domain, or standard idea]"
 
 # Discover Standards
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Extract durable project standards from real code. Write concise markdown standards under `docs/standards/` and keep `docs/standards/index.yml` as the registry.
 
 ## Principles

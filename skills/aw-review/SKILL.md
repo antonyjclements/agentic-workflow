@@ -6,6 +6,8 @@ argument-hint: "[target: PR link, branch, file path, or blank for current diff] 
 
 # Review
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Route to the right review mode based on what is being reviewed and what the user asked for.
 
 ## Mode Routing

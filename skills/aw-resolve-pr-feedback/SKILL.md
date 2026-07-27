@@ -7,6 +7,8 @@ allowed-tools: Bash(gh *), Bash(git *), Read
 
 # Resolve PR Review Feedback
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Evaluate and fix PR review feedback, then reply and resolve threads. Spawns parallel agents for each thread.
 
 > **Agent time is cheap. Tech debt is expensive.**

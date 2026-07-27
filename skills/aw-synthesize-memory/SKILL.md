@@ -6,6 +6,8 @@ argument-hint: "[optional focus area, tag filter, or date range]"
 
 # Synthesize Memory
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Convert raw session logs into structured memory and refresh the project context wiki.
 
 ## Trigger Signals

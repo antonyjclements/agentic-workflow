@@ -8,6 +8,8 @@ argument-hint: "[Plan doc path or description of work. Blank to auto use latest 
 
 Execute a plan, spec, or bare work request through implementation, verification, review, and shipping readiness.
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 ## Input
 
 `$ARGUMENTS` may be:

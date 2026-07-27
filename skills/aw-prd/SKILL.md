@@ -6,6 +6,8 @@ argument-hint: "[create|import] [idea, notes, file path, URL, or pasted content]
 
 # PRD
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Create or import a product requirements document and store it under `docs/product/prds/`.
 
 ## Mode Routing

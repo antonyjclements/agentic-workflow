@@ -5,6 +5,8 @@ description: Create a git commit with a clear, value-communicating message. Use 
 
 # Git Commit
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Create a single, well-crafted git commit from the current working tree changes.
 
 ## Context

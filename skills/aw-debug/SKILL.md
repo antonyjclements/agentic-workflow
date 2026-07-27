@@ -6,6 +6,8 @@ argument-hint: "[issue reference, error message, test path, or description of br
 
 # Debug and Fix
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Find the root cause before fixing. Input: `$ARGUMENTS`.
 
 ## Principles

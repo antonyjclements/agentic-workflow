@@ -6,6 +6,8 @@ allowed-tools: Bash(bash *worktree-manager.sh)
 
 # Worktree Creation
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Create a worktree under `.worktrees/<branch>` with branch-specific setup that `git worktree add` alone does not handle:
 
 - Copies `.env`, `.env.local`, `.env.test`, etc. from the main repo (skips `.env.example`)

@@ -6,6 +6,8 @@ argument-hint: "[feature key, subject path, or plan/spec path]"
 
 # Pin Behavior
 
+Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+
 Create an equivalence oracle before changing legacy or unclear behavior.
 
 ## Inputs
