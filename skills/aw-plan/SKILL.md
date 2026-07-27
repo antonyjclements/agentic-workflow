@@ -6,7 +6,7 @@ argument-hint: "[optional: feature description, spec path, plan path to deepen, 
 
 # Create Technical Plan
 
-Current year: 2026. `aw-brainstorm` defines what; `aw-plan` defines how; `aw-work` executes. Direct invocation always produces or updates a plan. Do not implement code here.
+Use the current runtime date for dated artifacts; if no current date is available, ask instead of hard-coding one. `aw-brainstorm` defines what; `aw-plan` defines how; `aw-work` executes. Direct invocation always produces or updates a plan. Do not implement code here.
 
 First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-plan` (silent no-op otherwise).
 

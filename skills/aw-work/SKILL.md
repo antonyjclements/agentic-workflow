@@ -78,29 +78,14 @@ Set up branch/worktree:
 
 Create/update task tracker from units, preserving unit IDs when present.
 
-Read the `e2e` block in `docs/workflow/config.yml`. When `e2e.enabled` is true,
-`workflow.auxiliary.e2e_tests.skill` is non-empty, and the change touches
-`e2e.trigger_paths` (empty means unscoped, so every change qualifies), invoke
-that skill after acceptance criteria are mapped and before Phase 2 edits. Pass
-the acceptance criteria, the changed paths, and the `e2e.*` config; expect back
-the spec files written, the command that runs them, and which acceptance
-criterion each spec covers. Under `acceptance-first`, `tdd`, or `bdd`, author the
-e2e specs before feature code. When the capability is enabled and in scope but
-the skill is unavailable or declines the case, record that as an explicit
-exception rather than dropping the coverage silently. When `e2e.enabled` is
-false or no skill is configured, skip this without comment.
+Keep optional verification capabilities lazy:
 
-When the source spec marks requirements with an `[e2e]` suffix, treat those as
-the authoritative list of what needs end-to-end coverage and follow
-`docs/standards/e2e-coverage.md`. Do not add or remove a marker during
-implementation; marker changes are spec decisions made through the spec skills.
-
-If the effective policy is `characterization-first`, run
-`workflow.auxiliary.pin_behavior.skill` when configured, otherwise run
-`aw-pin-behavior` for the subject before Phase 2 edits. The skill returns a
-`docs/features/<feature>/behavior-pin.yml` manifest. Confirm `pin.enabled: true`
-and at least one matching manifest before implementation; otherwise stop because
-the policy would not be enforced.
+- If the effective policy is `characterization-first`, read
+  `references/characterization-in-work.md` before Phase 2 edits and follow it.
+- If `docs/workflow/config.yml` has `e2e.enabled: true`, read
+  `references/e2e-in-work.md` after acceptance criteria are mapped. When
+  `e2e.enabled` is false or missing, do not inspect e2e triggers, markers, or
+  coverage details in the default path.
 
 ## Phase 2: Implement
 
@@ -124,17 +109,10 @@ For frontend work, run/inspect the app when practical. For iOS work, prefer Xcod
 
 ## Phase 3: Test and Verify
 
-Run the narrowest meaningful verification first, then broaden with risk — tests
+Run the narrowest meaningful verification first, then broaden with risk: tests
 for changed behavior, then lint/typecheck/build, migrations, and manual or
-browser checks as the change warrants. Workflow-specific runs:
-
-- for `characterization-first`, `node .scripts/aw-gate.js pin run`; fix
-  `equivalence-broken` by changing implementation, and stop on
-  `pin-not-characterizing` because the oracle is invalid
-- when e2e specs were authored this session, run them per `e2e.run_scope`:
-  `affected` runs only the specs covering changed behavior, `full` runs the
-  suite, and `none` defers the run to CI. Keep local runs narrow; a full suite
-  belongs to `workflow.steps.monitor_pipeline.skill` after PR creation
+browser checks as the change warrants. If optional e2e or characterization
+references were loaded in Phase 1, follow their Phase 3 verification notes.
 
 If tests cannot run, record why. Fix failures caused by the change. Do not hide unrelated pre-existing failures; summarize them separately.
 
