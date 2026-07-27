@@ -19,7 +19,7 @@ Find the root cause before fixing. Input: `$ARGUMENTS`.
 
 ## Phase 0: Triage
 
-If an issue tracker is referenced, fetch full title/body/comments/latest updates. For GitHub use `gh issue view ... --json title,body,comments,labels`, or the `issue_read` GitHub MCP tool where `gh` is unavailable (MCP-first harnesses, sandboxed runners); MCP tools need `owner` and `repo` explicitly, derived from `git remote get-url origin`. Use available tools for Linear/Jira/URLs. If the issue cannot be fetched, debug from what the user provided and say the issue body was not read. Extract symptoms, expected behavior, reproduction, environment, prior attempts.
+If an issue tracker is referenced, fetch full title/body/comments/latest updates. For GitHub prefer the `issue_read` GitHub MCP tool (it honors the harness's permission and repo scoping; needs `owner` and `repo` explicitly, derived from `git remote get-url origin`), falling back to `gh issue view ... --json title,body,comments,labels` where MCP GitHub tools are unavailable. Use available tools for Linear/Jira/URLs. If the issue cannot be fetched, debug from what the user provided and say the issue body was not read. Extract symptoms, expected behavior, reproduction, environment, prior attempts.
 
 If the cause is immediately obvious and the fix is one-line/simple, present cause and ask Fix now vs Diagnosis only before editing. If fixing, run workspace/branch safety checks, apply fix, verify, summarize.
 

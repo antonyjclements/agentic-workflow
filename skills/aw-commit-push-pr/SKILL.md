@@ -7,12 +7,13 @@ description: Commit, push, and open a PR with an adaptive, value-first descripti
 
 First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-commit-push-pr` (silent no-op otherwise).
 
-**Reaching GitHub:** this skill is written against the `gh` CLI, but `gh` is absent in
-MCP-first harnesses (Claude Code on the web, sandboxed runners, many enterprise
-setups). Before the first GitHub step, establish which path is available and use it
-for every GitHub action in the run: `gh` when it works, otherwise the GitHub MCP
-tools (`mcp__github__*` — load schemas with `ToolSearch` if they are not yet
-available). See [references/github-access.md](references/github-access.md) for the
+**Reaching GitHub:** the `gh` commands below are the fallback, not the default.
+Before the first GitHub step, establish the path and use it for every GitHub action
+in the run: **GitHub MCP tools (`mcp__github__*`) when available** — load schemas with
+`ToolSearch` if needed — otherwise `gh`. Prefer MCP because it honors the harness's
+permission and repo scoping, takes structured parameters, and returns JSON; `gh` uses
+whatever token is on the machine, which may be a different identity than this session
+is scoped to. See [references/github-access.md](references/github-access.md) for the
 command mapping. Git operations (`status`, `diff`, `commit`, `push`) are unaffected —
 they are plain git, not `gh`. If neither path reaches GitHub, do the local work,
 then say plainly that the PR was not created and why; never report a PR that does

@@ -39,17 +39,27 @@ After determining mode, read the matching reference and follow it. Each referenc
 
 Every script below shells out to `gh api graphql`, so all of them fail where `gh` is
 absent — MCP-first harnesses (Claude Code on the web), sandboxed runners, and many
-enterprise setups. Establish the path once, before fetching threads, and stay on it:
+enterprise setups. Establish the path once, before fetching threads, and stay on it.
 
-| Need | `gh` path | GitHub MCP path |
+**Prefer the GitHub MCP tools when available**; they honor the harness's permission
+and repo scoping, while `gh` uses whatever token is on the machine. Fall back to the
+scripts when MCP GitHub tools are not present.
+
+| Need | GitHub MCP path (preferred) | `gh` fallback |
 | --- | --- | --- |
-| Unresolved review threads | `scripts/get-pr-comments` | `pull_request_read` (review comments), grouping by thread |
-| Thread for a comment ID | `scripts/get-thread-for-comment` | `pull_request_read`, matching the comment ID |
-| Reply within a thread | `scripts/reply-to-pr-thread` | `add_reply_to_pull_request_comment` |
-| Resolve a thread | `scripts/resolve-pr-thread` | `resolve_review_thread` |
+| Unresolved review threads | `pull_request_read` (review comments), grouped by thread | `scripts/get-pr-comments` |
+| Thread for a comment ID | `pull_request_read`, matching the comment ID | `scripts/get-thread-for-comment` |
+| Reply within a thread | `add_reply_to_pull_request_comment` | `scripts/reply-to-pr-thread` |
+| Resolve a thread | `resolve_review_thread` | `scripts/resolve-pr-thread` |
 
 Load MCP schemas with `ToolSearch` if they are not yet available. MCP tools need
 `owner` and `repo` explicitly; derive them from `git remote get-url origin`.
+
+One exception worth knowing: mapping a comment to its parent thread ID is a direct
+GraphQL query in `scripts/get-thread-for-comment`, and reconstructing it from
+`pull_request_read` can be ambiguous when a file has several threads on nearby lines.
+If the MCP path cannot identify the thread unambiguously and `gh` is available, use
+the script for that one step rather than guessing at a thread ID.
 
 If neither path reaches GitHub, still evaluate and fix the feedback you were given,
 then state which threads could not be replied to or resolved. Never claim a thread
@@ -57,8 +67,8 @@ was resolved when the call did not run.
 
 ## Scripts
 
-`gh` path only. Each is a thin GraphQL wrapper; see the table above for the MCP
-equivalent.
+The `gh` fallback path. Each is a thin GraphQL wrapper; see the table above for the
+preferred MCP equivalent.
 
 - [scripts/get-pr-comments](scripts/get-pr-comments) -- GraphQL query for unresolved review threads
 - [scripts/get-thread-for-comment](scripts/get-thread-for-comment) -- Map a comment node ID to its parent thread (for targeted mode)
