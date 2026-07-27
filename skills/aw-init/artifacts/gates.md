@@ -5,7 +5,7 @@ the workflow's advisory review/capture/compliance steps into a deterministic,
 enforceable contract, records lightweight telemetry, and syncs an org-shared
 knowledge tier.
 
-All six capabilities are **opt-in and disabled by default**. This guide covers
+All seven capabilities are **opt-in and disabled by default**. This guide covers
 what they are, how to configure them, and how to wire enforcement into a Git hook
 or CI. For the terse schema, see [README.md](README.md); this file is the how-to.
 

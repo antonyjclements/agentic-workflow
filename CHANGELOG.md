@@ -10,10 +10,84 @@ Changes before 0.6.0 predate this changelog; see git history and `docs/decisions
 for that record. `scripts/test-install.sh` fails if the current `aw-version.txt`
 version has no entry here.
 
-## [Unreleased]
+## [0.10.0] - 2026-07-26
+
+### Added
+
+- Configurable end-to-end test authoring. New `workflow.auxiliary.e2e_tests.skill`
+  routing key and a disabled-by-default top-level `e2e` block (`enabled`,
+  `trigger_paths`, `test_paths`, `run_scope`). There is no bundled e2e skill —
+  frameworks are stack-specific, so the workflow owns the slot and the contract
+  while the repo supplies a Playwright, Cypress, XCUITest, or in-house skill.
+  `aw-work` invokes it after acceptance criteria are mapped and before
+  implementation edits, then runs authored specs per `e2e.run_scope`;
+  `aw-check-workflow-compliance` reports in-scope changes shipping without e2e
+  coverage or a stated exception. The config migrator adds the block with its
+  defaults and rejects an invalid `e2e.run_scope`. See
+  `docs/decisions/2026-07-26-add-e2e-test-authoring-capability.md`.
+- Deterministic e2e coverage checking in `aw-gate.js trace`. Living specs mark
+  requirements that need end-to-end proof with an exact `[e2e]` suffix on the
+  requirement heading; when `e2e.enabled` is true, `trace` fails with
+  `missing-e2e-coverage` if a marked requirement has no `@spec` anchor in a file
+  matching `e2e.test_paths`. Near-misses such as `[E2E]` or `(e2e)` warn as
+  `suspect-e2e-marker` instead of silently uncovering the requirement, and marks
+  with an empty `e2e.test_paths` warn as `e2e-paths-unset`. This closes the gap
+  where `untested-requirement` was satisfied by any test, e2e or not.
+- A new installed standard, `docs/standards/e2e-coverage.md`, covering what earns
+  an e2e test, keeping a ceiling on suite size, the marker convention and its
+  suffix-only placement rule, where the decision is made, and why there is no
+  override trailer.
+- `node .scripts/aw-gate.js trace --suggest-e2e`, a read-only mode for repos
+  adopting the `[e2e]` marker after an e2e suite already exists. It reports
+  unmarked requirements already anchored in `e2e.test_paths` (`covered-unmarked`,
+  safe to apply because the coverage is already there) and headings ending in an
+  unhonored variant such as `[E2E]` (`near-miss-marker`), each with the current
+  and proposed heading text and whether marking it starts enforcing coverage.
+  Requirement prose is never inspected — what deserves end-to-end proof stays a
+  human judgment made at spec time. Requires `trace.enabled` but deliberately not
+  `e2e.enabled`, so candidates can be surveyed before the gate is switched on;
+  it enforces nothing and exits 0 even while the enforcing `trace` run is red.
+  Supports `--json` and `--out <path>`.
+
+### Fixed
+
+- `aw-gate.js` now reads YAML sequences written flush with their key, the form
+  `upgrade-config.rb --apply` emits. Previously a migrated config parsed `trace`
+  and `e2e` as arrays, leaving `trace.enabled` undefined — so `trace` reported
+  "disabled" and skipped every check after an upgrade, a gate that looked green
+  because it never ran. Predates this release; the round-trip is now covered by
+  `scripts/test-install.sh` and `test/gate/e2e-coverage.test.js`.
+- Marking a requirement `[e2e]` and adding the test it demands can be separate
+  commits. Anchors found only through `e2e.test_paths` are exempt from
+  `uncoupled-test-change`, which previously failed the commit answering a marker
+  unless it also touched the spec or carried a `Spec-Override:` trailer.
+- `e2e.test_paths` holding nothing but `:(exclude)` pathspecs now fails with
+  `e2e-paths-exclude-only` instead of matching the whole repository and letting
+  any test satisfy every marker.
+- `suspect-e2e-marker` now catches markdown-decorated variants — `**[e2e]**`, a
+  backticked `` `[e2e]` ``, and a trailing `[e2e].` — which previously read as
+  marked to a human while enforcing nothing.
+- `trace --suggest-e2e` exits 0 on pre-existing trace errors such as a duplicate
+  requirement ID, matching its documented advisory contract; it previously
+  aborted before printing a single suggestion, on exactly the repos it exists to
+  serve. It also now reports `would-become-dangling` anchors and an
+  `e2e.test_paths` that matches no tracked files, so the survey names what
+  enabling the capability would break instead of reporting a clean tree.
+- An invalid `e2e.test_paths` pathspec reports one `e2e-path-error` instead of
+  two, and `trace --json` anchor counts no longer shift for repos that never
+  configured `e2e`.
+- The installer no longer corrupts an existing `docs/standards/index.yml` that
+  lacks a trailing newline, and leaves index shapes it cannot safely append to
+  intact with a `skip:` notice. Every bundled standard is now indexed through the
+  same idempotent helper, so repos installed before `traceability.md` or
+  `behavior-pinning.md` existed gain those entries on upgrade.
 
 ### Changed
 
+- `aw-check-workflow-compliance` reports missing e2e coverage whenever
+  `e2e.enabled` is true. A configured `workflow.auxiliary.e2e_tests.skill` says
+  who authors the tests, not whether coverage is expected, so repos writing e2e
+  tests by hand are in scope.
 - Rebranded the project and install surface as Augmented Workflow, including
   docs, package metadata, default remote source URLs, PR badge examples, and
   generated installer output.
