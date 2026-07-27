@@ -7,7 +7,7 @@ allowed-tools: Bash(gh *), Bash(git *), Read
 
 # Resolve PR Review Feedback
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-resolve-pr-feedback` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-resolve-pr-feedback` (silent no-op otherwise).
 
 Evaluate and fix PR review feedback, then reply and resolve threads. Spawns parallel agents for each thread.
 

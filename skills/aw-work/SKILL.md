@@ -1,6 +1,6 @@
 ---
 name: aw-work
-description: Execute work efficiently while maintaining quality and finishing features
+description: "Implement a plan, spec, ticket, or bare work request through to verified, ship-ready code, applying the repo's configured test policy and standards. Use when the user says 'implement this', 'build it', 'work on this', 'pick up this ticket', 'start on the plan', or hands over a plan/spec/ticket path or ID. For diagnosing a bug first, use aw-debug; for deciding what to build, use aw-brainstorm or aw-plan."
 argument-hint: "[Plan doc path or description of work. Blank to auto use latest plan doc]"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "[Plan doc path or description of work. Blank to auto use latest 
 
 Execute a plan, spec, or bare work request through implementation, verification, review, and shipping readiness.
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-work` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-work` (silent no-op otherwise).
 
 ## Input
 
@@ -104,15 +104,12 @@ the policy would not be enforced.
 
 ## Phase 2: Implement
 
-Work unit by unit:
+Work unit by unit, applying ordinary implementation craft. What this repo adds on
+top of it:
 
-- read nearby code before editing
-- follow existing patterns and named references
 - follow applicable `docs/standards/` guidance
-- apply the effective implementation test policy
-- honor stronger TDD/test-first/characterization notes when present
-- resolve implementation-time unknowns locally when possible; ask only for product/scope decisions
-- keep changes scoped; defer tangential cleanup
+- apply the effective implementation test policy, honoring stronger
+  TDD/test-first/characterization notes in the plan when present
 - update task status as work completes
 - Preserve spec traceability through the deterministic helper. Subagents return
   annotation intents to the parent; they do not call `trace-annotate` directly.
@@ -127,15 +124,13 @@ For frontend work, run/inspect the app when practical. For iOS work, prefer Xcod
 
 ## Phase 3: Test and Verify
 
-Run the narrowest meaningful verification first, then broader checks as risk warrants:
+Run the narrowest meaningful verification first, then broaden with risk — tests
+for changed behavior, then lint/typecheck/build, migrations, and manual or
+browser checks as the change warrants. Workflow-specific runs:
 
-- unit/integration tests for changed behavior
 - for `characterization-first`, `node .scripts/aw-gate.js pin run`; fix
   `equivalence-broken` by changing implementation, and stop on
   `pin-not-characterizing` because the oracle is invalid
-- lint/typecheck/build if affected
-- migrations/schema checks when relevant
-- browser/simulator/manual checks for UI flows
 - when e2e specs were authored this session, run them per `e2e.run_scope`:
   `affected` runs only the specs covering changed behavior, `full` runs the
   suite, and `none` defers the run to CI. Keep local runs narrow; a full suite
@@ -145,16 +140,14 @@ If tests cannot run, record why. Fix failures caused by the change. Do not hide 
 
 ## Phase 4: Review and Polish
 
-Before finishing:
+Inspect `git diff` and clean up debug code, dead code, and accidental churn before
+running the workflow-specific checks below:
 
-- inspect `git diff`
-- remove debug code, dead code, and accidental churn
 - ensure docs/config/tests match behavior
 - update `README.md` when user-facing setup, commands, configuration, architecture, or workflow behavior changed
 - check the diff against applicable standards from `docs/standards/index.yml`
 - if the work affects UI or UX and `workflow.design.enabled` is true with `workflow.design.hooks.implementation_review.skill` non-empty, invoke that design hook with the changed artifact, plan/spec path, or current diff
-- run `aw-review` for non-trivial or risky changes when time/context allows
-- address safe findings; surface judgment calls
+- run `aw-review` for non-trivial or risky changes when time/context allows; address safe findings and surface judgment calls
 - record ship-readiness evidence needed by `aw-check-workflow-compliance`: effective test policy, tests/checks run, acceptance coverage, e2e coverage or exception when `e2e` is enabled and in scope, README status, review gates run/skipped, and justified exceptions
 
 ## Phase 5: Ship Readiness

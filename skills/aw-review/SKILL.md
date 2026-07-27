@@ -6,7 +6,7 @@ argument-hint: "[target: PR link, branch, file path, or blank for current diff] 
 
 # Review
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-review` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-review` (silent no-op otherwise).
 
 Route to the right review mode based on what is being reviewed and what the user asked for.
 
@@ -34,9 +34,13 @@ Simplify recently changed code for clarity, reuse, and efficiency while preservi
 3. Otherwise: staged + unstaged changes (`git diff HEAD`).
 4. If none, ask what to simplify.
 
-### Reviewers — spawn in parallel
+### Concerns to cover
 
-Pass each agent the full diff and applicable standards excerpts. Use the platform's mid-tier model.
+Every concern below must be covered against the full diff and applicable standards
+excerpts. Fanning out to parallel subagents is one way to do that and helps when
+the diff is large or the concerns are independent; a single careful pass is
+equally valid on a small diff. Choose based on the diff, not by default. Do not
+select models by tier — the harness owns that.
 
 **Reuse**: search for existing utilities that replace new code; flag functions that duplicate existing ones; flag inline logic that could use existing helpers.
 
@@ -65,13 +69,17 @@ Strip recognized tokens from arguments before resolving target:
 
 Resolve diff from `base:<ref>`, PR target, or current branch vs upstream/main. Collect files, diff (`-U10`), and untracked files. Protect plan/brainstorm/solution artifacts from deletion findings.
 
-### Reviewers
+### Concerns to cover
 
-Always run: correctness · testing · maintainability · project standards · agent-native · learnings researcher
+Always cover: correctness · testing · maintainability · project standards · agent-native · learnings researcher
 
-Add when relevant: security (auth/input/permissions) · performance (DB/caching/async) · API contract · data migration · reliability · adversarial (≥50 changed non-test lines, auth, payments, mutations) · previous PR comments · frontend races · Swift iOS · deployment verification
+Cover when relevant: security (auth/input/permissions) · performance (DB/caching/async) · API contract · data migration · reliability · adversarial (≥50 changed non-test lines, auth, payments, mutations) · previous PR comments · frontend races · Swift iOS · deployment verification
 
-Use stronger models for adversarial/security/API/migration and synthesis; lower-cost models for simple reviewers.
+These are the concerns the review must account for, not a required agent roster.
+Parallel subagents suit a large diff or independent concerns; one pass suits a
+small one. Give the deeper concerns — adversarial, security, API contract, data
+migration — proportionate attention and evidence regardless of how the work is
+split. Do not select models by tier; the harness owns that.
 
 ### Findings Schema
 

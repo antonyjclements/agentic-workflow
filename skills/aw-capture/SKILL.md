@@ -6,7 +6,7 @@ argument-hint: "[decision|learning|solution|session] [context, correction, or de
 
 # Capture
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-capture` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-capture` (silent no-op otherwise).
 
 Route to the right capture mode based on what happened.
 
@@ -190,11 +190,9 @@ Strip `mode:headless` from arguments before using the remainder as context.
 
 ### Support Files
 
-Read only when needed:
+Read only when writing or validating the doc:
 
-- `references/schema.yaml` — frontmatter schema/enums
-- `references/yaml-schema.md` — category/directory mapping
-- `assets/resolution-template.md` — document body template
+- `references/solution-doc.md` — frontmatter schema, category/directory mapping, and body template
 
 ### Workflow
 
@@ -202,10 +200,10 @@ Read only when needed:
 2. Interactive only: choose Full or Lightweight.
    - **Full**: context analysis, solution extraction, related-doc search, optional session history, duplicate/overlap checks.
    - **Lightweight**: single-pass doc from current context and code diff; skip duplicate/cross-reference work.
-3. Research: identify changed files, commands run, errors, root cause, fix, verification, and prevention; find related `docs/solutions/` docs and possible duplicates; classify problem type/category/module/component using schema references.
-4. Assemble doc from template with YAML frontmatter: title, status, created date, problem_type/category/module/component/tags, problem, symptoms, root cause, solution, files changed, verification, prevention, related docs.
-5. Validate: YAML parses and matches schema; file path/category matches mapping; doc is specific enough to be useful; no unsupported claims; distinguish evidence from inference.
-6. Write to `docs/solutions/<category>/YYYY-MM-DD-<slug>.md`.
+3. Research: identify changed files, commands run, errors, root cause, fix, verification, and prevention; find related `docs/solutions/` docs and possible duplicates.
+4. Read `references/solution-doc.md`, then classify problem type/category/module/component and assemble the doc from its template.
+5. Validate against the checklist in `references/solution-doc.md`.
+6. Write to `docs/solutions/<category>/YYYY-MM-DD-<slug>.md`, creating the category directory if missing. `docs/solutions/` is index-free; do not create or update an index.
 7. Discoverability check: if future agents would not know to search this knowledge store, propose or apply a minimal instruction-file edit.
 
 ### Rules

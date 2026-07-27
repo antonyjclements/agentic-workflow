@@ -6,7 +6,7 @@ argument-hint: "[PRD path, feature request, existing feature path, or scope]"
 
 # Create Living Spec
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-create-spec` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-create-spec` (silent no-op otherwise).
 
 Create durable feature intent that stays current with the code. A spec describes what the feature is now, not the implementation plan.
 

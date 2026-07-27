@@ -6,7 +6,7 @@ argument-hint: "[plan path, spec path, or feature scope]"
 
 # Create Tickets
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-create-tickets` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-create-tickets` (silent no-op otherwise).
 
 Turn a plan into implementation tickets using the ticket system configured by the repo.
 

@@ -10,6 +10,48 @@ Changes before 0.6.0 predate this changelog; see git history and `docs/decisions
 for that record. `scripts/test-install.sh` fails if the current `aw-version.txt`
 version has no entry here.
 
+## [0.11.0] - 2026-07-27
+
+### Added
+
+- `docs/solutions/` is now installed. `aw-capture solution` wrote there and
+  `aw-refresh solutions` maintained it, but the directory was never created by the
+  installer. New repos get `docs/solutions/README.md` describing the category
+  layout. The tree is index-free and self-describing, like `docs/brainstorms/` and
+  `docs/sessions/`.
+- `skills/aw-capture/references/solution-doc.md` — the frontmatter schema, category
+  mapping, and body template `aw-capture solution` had been pointing at through
+  three reference paths that did not exist.
+- `skills/aw-prd/references/prd-template.md` — the bundled PRD template
+  `aw-prd` falls back to when a repo defines no `docs/product/prds/template.md`.
+  Kept identical to the installed artifact by a drift guard.
+- Two guards in `scripts/test-install.sh`: every `references/` or `assets/` path
+  named in a `SKILL.md` must exist, and every `SKILL.md` must stay within a 2,200
+  word budget. The first would have caught the four broken pointers above; the
+  second applies the existing `AGENTS.md` budget discipline to skill bodies.
+
+### Changed
+
+- `aw-work` now has a description with trigger phrases and disambiguation from
+  `aw-debug` / `aw-brainstorm` / `aw-plan`. The old one — "Execute work efficiently
+  while maintaining quality and finishing features" — carried no trigger cues on
+  the workflow's most central skill.
+- `aw-review` states the concerns a review must cover instead of prescribing a
+  fixed roster of parallel subagents, and no longer directs which model tier to
+  use for which reviewer. Fan-out is now an explicit choice based on diff size and
+  concern independence; model selection belongs to the harness.
+- `aw-work` phases 2–4 drop generic implementation advice already covered by
+  `AGENTS.md` or by ordinary competence, keeping the workflow-specific content
+  (test policy, standards, trace annotation, pins, e2e, ship-readiness evidence).
+- The skill tracking preamble in all 21 skills is one line instead of two
+  sentences. The in-skill emit is unchanged — see
+  `docs/decisions/2026-07-27-keep-tracking-emit-in-skills.md` for why it stays out
+  of a lifecycle hook.
+- `docs/features/augmented-workflow/spec.md` states the durable contract for gates,
+  telemetry, tracking, traceability, workflow trace, and pins, and points at
+  `docs/workflow/gates.md` for CLI surface, flags, and config keys instead of
+  restating them. All acceptance criteria are unchanged.
+
 ## [0.10.0] - 2026-07-26
 
 ### Added

@@ -6,7 +6,7 @@ argument-hint: "[create|import] [idea, notes, file path, URL, or pasted content]
 
 # PRD
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-prd` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-prd` (silent no-op otherwise).
 
 Create or import a product requirements document and store it under `docs/product/prds/`.
 

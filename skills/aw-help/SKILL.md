@@ -6,7 +6,7 @@ argument-hint: "[optional: what you're trying to do, or where you are in the wor
 
 # Workflow Help
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-help` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-help` (silent no-op otherwise).
 
 Read context. Recommend the right next skill. Input: `$ARGUMENTS`.
 

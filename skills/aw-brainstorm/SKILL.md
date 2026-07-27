@@ -6,7 +6,7 @@ argument-hint: "[feature idea or problem to explore]"
 
 # Brainstorm a Feature or Improvement
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-brainstorm` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-brainstorm` (silent no-op otherwise).
 
 Current year: 2026. Brainstorming defines what to build; `aw-plan` defines how. Output is not code. Use repo-relative paths only.
 

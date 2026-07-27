@@ -18,6 +18,8 @@ for pair in \
   "docs/workflow/org-knowledge.md:skills/aw-init/artifacts/org-knowledge.md" \
   "docs/metrics/README.md:skills/aw-init/artifacts/metrics-readme.md" \
   "docs/product/prds/template.md:skills/aw-init/artifacts/prd-template.md" \
+  "docs/solutions/README.md:skills/aw-init/artifacts/solutions-readme.md" \
+  "skills/aw-prd/references/prd-template.md:skills/aw-init/artifacts/prd-template.md" \
   "docs/standards/coding-approach.md:skills/aw-init/artifacts/coding-approach.md" \
   "docs/standards/traceability.md:skills/aw-init/artifacts/traceability.md" \
   "docs/standards/behavior-pinning.md:skills/aw-init/artifacts/behavior-pinning.md" \
@@ -88,6 +90,42 @@ if [ "$agents_words" -gt "$agents_word_budget" ]; then
   echo "skills/aw-init/artifacts/AGENTS.md exceeds word budget: $agents_words > $agents_word_budget" >&2
   exit 1
 fi
+
+# Skills point at their own references/ and assets/ files for progressive
+# disclosure. Those pointers are instructions an agent will try to follow, so a
+# path that does not exist is a silent failure at runtime: the agent is told to
+# read a schema or template that isn't there. Four such pointers shipped broken
+# (aw-capture's three solution-doc files, aw-prd's bundled template) before this
+# guard existed.
+dangling=0
+while IFS= read -r skill_file; do
+  skill_dir="$(dirname "$skill_file")"
+  while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    if [ ! -e "$skill_dir/$ref" ]; then
+      echo "dangling skill reference: $skill_file points at missing $ref" >&2
+      dangling=1
+    fi
+  done <<< "$(grep -o '\(references\|assets\)/[A-Za-z0-9._-]*\.\(md\|yaml\|yml\|json\|sh\)' "$skill_file" | sort -u)"
+done <<< "$(find "$repo_root/skills" -name SKILL.md)"
+if [ "$dangling" -ne 0 ]; then
+  echo "every references/ or assets/ path named in a SKILL.md must exist" >&2
+  exit 1
+fi
+
+# Skill bodies are loaded in full the moment the skill is invoked, so they carry
+# the same "keep it lightweight" pressure as AGENTS.md. Detail belongs in
+# references/, which loads only when actually needed. The budget is a ratchet:
+# growing past it means cutting something or raising the number deliberately in
+# the same diff.
+skill_word_budget=2200
+while IFS= read -r skill_file; do
+  skill_words="$(wc -w < "$skill_file" | tr -d '[:space:]')"
+  if [ "$skill_words" -gt "$skill_word_budget" ]; then
+    echo "${skill_file#"$repo_root/"} exceeds skill word budget: $skill_words > $skill_word_budget" >&2
+    exit 1
+  fi
+done <<< "$(find "$repo_root/skills" -name SKILL.md)"
 
 # This repo self-hosts the workflow's docs/ registries; validate them too.
 # (validate_docs_indexes is defined below, so defer the call until after definitions.)
@@ -232,6 +270,9 @@ assert_repo_install() {
   assert_file "$target_repo/docs/workflow/gates.md"
   assert_file "$target_repo/docs/workflow/org-knowledge.md"
   assert_file "$target_repo/docs/metrics/README.md"
+  # aw-capture solution writes here and aw-refresh solutions maintains it, so the
+  # directory has to exist in installed repos rather than only in the docs.
+  assert_file "$target_repo/docs/solutions/README.md"
   assert_file "$target_repo/docs/workflow/config.yml"
   assert_contains "$target_repo/docs/workflow/README.md" "Workflow Config"
   assert_contains "$target_repo/docs/workflow/README.md" "Schema"
