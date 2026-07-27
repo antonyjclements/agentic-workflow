@@ -1,7 +1,7 @@
 ---
 title: Evaluate the augmented workflow and fix the findings
 date: 2026-07-27
-status: unprocessed
+status: processed
 tags:
   - workflow
   - evaluation
@@ -15,6 +15,10 @@ tags:
   focusing on progressive disclosure and over-narrow instruction.
 - Fixed the findings on `claude/augmented-workflow-eval-mwmb1u`, branched fresh from
   `main` after the skill-tracking and e2e work merged.
+- Abstracted GitHub access in `aw-commit-push-pr`, `aw-resolve-pr-feedback`, and
+  `aw-debug`, which had assumed the `gh` CLI. The gap was found by running in a
+  harness that has no `gh` — this session's own environment reaches GitHub through
+  MCP tools, so the skills' remote steps would have failed silently.
 
 ## What Worked
 
@@ -70,10 +74,13 @@ tags:
 
 ## Open Questions
 
-- Two session logs from the e2e work remain `status: unprocessed`, and
-  `docs/context/wiki.md` (generated 2026-07-14) is behind them. Synthesis is
-  outstanding and needs its own `chore(memory)` commit.
-- `aw-commit-push-pr`, `aw-resolve-pr-feedback`, and `aw-debug` still assume the `gh`
-  CLI. In MCP-first harnesses (Claude Code on the web, this session) `gh` is absent.
-  `aw-commit-push-pr` already abstracts the blocking-question tool across harnesses;
-  GitHub access has no equivalent abstraction yet. Not addressed in this change.
+- Both questions raised mid-session were resolved before it ended: the GitHub access
+  abstraction shipped, and synthesis ran over this batch.
+- `docs/solutions/` is now installed but empty in this repo. The first real
+  `aw-capture solution` doc will be the test of whether the category mapping is
+  usable in practice.
+- `aw-commit-push-pr` is 2,137 words against the new 2,200-word skill budget. The
+  next addition to it has to cut something or move detail into `references/`.
+- "Prove a guard fails before trusting it" reached three sessions of evidence and is
+  a candidate for `docs/standards/` rather than a learning. Needs user confirmation
+  before promotion.

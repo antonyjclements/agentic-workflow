@@ -1,4 +1,25 @@
 learnings:
+  - path: docs/learnings/2026-07-27-prove-a-guard-fails-before-trusting-it.md
+    title: Prove a guard fails before trusting it
+    scope: repo
+    tags:
+      - testing
+      - enforcement
+      - aw-gate
+  - path: docs/learnings/2026-07-27-review-the-diff-before-stamping-the-gate.md
+    title: Review the diff before stamping the gate, not after
+    scope: repo
+    tags:
+      - workflow
+      - review
+      - enforcement
+  - path: docs/learnings/2026-07-27-offer-session-capture-manually-hook-may-not-have-run.md
+    title: Offer session capture manually; the Stop hook may not have run
+    scope: repo
+    tags:
+      - workflow
+      - session-capture
+      - hooks
   - path: docs/learnings/2026-07-27-installed-artifacts-are-spec-output-not-spec-source.md
     title: Installed reference docs are spec output, not a source the spec defers to
     scope: repo

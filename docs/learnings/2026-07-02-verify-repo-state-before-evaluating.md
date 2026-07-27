@@ -3,11 +3,13 @@ title: Verify current repo state before evaluating or reviewing
 scope: repo
 created: 2026-07-02
 trigger: correction
-status: tentative
-evidence-count: 1
-unconfirmed-runs: 1
+status: active
+evidence-count: 3
+unconfirmed-runs: 0
 derived-from:
   - docs/sessions/2026-07-02-lightweight-agents-md-and-index-free-registries.md
+  - docs/sessions/2026-07-26-e2e-testing-workflow-integration.md
+  - docs/sessions/2026-07-27-augmented-workflow-evaluation-fixes.md
 tags:
   - process
   - evaluation

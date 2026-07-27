@@ -4,10 +4,11 @@ scope: repo
 created: 2026-07-14
 trigger: dead-end
 status: tentative
-evidence-count: 1
+evidence-count: 2
 unconfirmed-runs: 0
 derived-from:
   - docs/sessions/2026-07-03-enforcement-gates-telemetry-org-knowledge.md
+  - docs/sessions/2026-07-27-augmented-workflow-evaluation-fixes.md
 tags:
   - workflow
   - enforcement

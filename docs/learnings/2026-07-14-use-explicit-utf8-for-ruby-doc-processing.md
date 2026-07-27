@@ -5,7 +5,7 @@ created: 2026-07-14
 trigger: dead-end
 status: tentative
 evidence-count: 2
-unconfirmed-runs: 0
+unconfirmed-runs: 1
 derived-from:
   - docs/sessions/2026-07-02-spec-drift-refresh.md
   - docs/sessions/2026-07-03-self-host-install-verification.md
