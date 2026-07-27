@@ -5,9 +5,9 @@ created: 2026-07-02
 trigger: dead-end
 status: tentative
 evidence-count: 1
-unconfirmed-runs: 1
+unconfirmed-runs: 2
 derived-from:
-  - docs/sessions/2026-07-02-spec-drift-refresh.md
+  - 2026-07-02-spec-drift-refresh
 tags:
   - tooling
   - shell
@@ -31,4 +31,8 @@ A filtered listing (`ls | grep -v <word>`) can silently hide files whose *names*
 
 ## Evidence
 
-- `ls docs/decisions/ | grep -v index` hid `2026-07-02-remove-brainstorm-index-and-validate-registries.md` because the filename contains "index", triggering a false missing-file investigation. (docs/sessions/2026-07-02-spec-drift-refresh.md)
+- `ls docs/decisions/ | grep -v index` hid `2026-07-02-remove-brainstorm-index-and-validate-registries.md` because the filename contains "index", triggering a false missing-file investigation. (`2026-07-02-spec-drift-refresh`)
+
+The source session logs were removed by the 14-day retention window on 2026-07-27.
+The identifiers above stay resolvable through
+`git log --diff-filter=D -- docs/sessions/`.

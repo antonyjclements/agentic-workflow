@@ -80,6 +80,7 @@ The workflow routes:
 - enforceable project rules to `docs/standards/`
 - immutable decisions to `docs/decisions/`
 - correction-driven learnings to `docs/learnings/` or `~/.agents/learnings/`
+- reusable solved-problem docs to `docs/solutions/<category>/` (self-describing, no index)
 - session logs to `docs/sessions/` (self-describing, no index)
 - the synthesized project wiki to `docs/context/wiki.md`
 - ticket creation, workflow step overrides, implementation test policy, PR templates, commit messages, post-PR CI monitoring, Slack research, human review, enforcement gates, telemetry, skill tracking, and org-shared knowledge routing to `docs/workflow/config.yml`
@@ -98,6 +99,7 @@ The workflow routes:
 - cross-session memory through `aw-capture session` and `aw-synthesize-memory`
 - interactive skill recommendation through `aw-help`
 - ticket-first implementation handoff for agents that start from a ticket ID or URL after checkout
+- GitHub access through whichever path the harness provides: the `gh` CLI, or GitHub MCP tools (`mcp__github__*`) where `gh` is unavailable
 - deterministic spec traceability checks and annotation proxying through `.scripts/aw-gate.js`
 - deterministic workflow execution breadcrumbs and checks through `.scripts/aw-gate.js`
 
@@ -211,13 +213,17 @@ The workflow routes:
 
 ## Acceptance Criteria
 
-- New installs create `.augmented-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/standards/coding-approach.md`, `docs/decisions/index.yml`, `docs/learnings/index.yml`, `docs/workflow/README.md`, `docs/workflow/field-guide.md`, `docs/workflow/gates.md`, `docs/workflow/org-knowledge.md`, `docs/metrics/README.md`, and the optional Claude Code Stop hook (`.claude/hooks/log-session.sh` plus a `.claude/settings.json` entry). No index is created for `docs/brainstorms/` or `docs/sessions/`. The installed workflow README and skills reference `gates.md`, `org-knowledge.md`, and `docs/metrics/README.md`, so those are installed too rather than left as dangling references.
+- New installs create `.augmented-workflow-version`, `docs/product/prds/index.yml`, `docs/product/prds/template.md`, `docs/features/index.yml`, `docs/standards/index.yml`, `docs/standards/coding-approach.md`, `docs/decisions/index.yml`, `docs/learnings/index.yml`, `docs/workflow/README.md`, `docs/workflow/field-guide.md`, `docs/workflow/gates.md`, `docs/workflow/org-knowledge.md`, `docs/metrics/README.md`, `docs/solutions/README.md`, and the optional Claude Code Stop hook (`.claude/hooks/log-session.sh` plus a `.claude/settings.json` entry). No index is created for `docs/brainstorms/`, `docs/sessions/`, or `docs/solutions/`. The installed workflow README and skills reference `gates.md`, `org-knowledge.md`, and `docs/metrics/README.md`, so those are installed too rather than left as dangling references.
 - The installed `AGENTS.md` version stamp, installer version marker, and config migration version marker are sourced from root `aw-version.txt` when a full source tree is available.
 - `CHANGELOG.md` exists and contains an entry for the version in `aw-version.txt` (Keep a Changelog format); `scripts/test-install.sh` fails when the current version has no changelog entry.
 - New installs include `AGENTS.md` and `CLAUDE.md`; `CLAUDE.md` delegates to `AGENTS.md`.
 - New installs place skills in `~/.agents/skills` and, when safe, symlink `~/.claude/skills`, `~/.codeium/skills`, and `~/.windsurf/skills` to that directory.
 - The augmented-workflow repository self-hosts its own install for dogfooding: root `AGENTS.md`/`CLAUDE.md` and the `docs/workflow/` copies are committed and must stay identical to their `skills/aw-init/artifacts/` sources, enforced by `scripts/test-install.sh`. Target repos receive those artifacts only through `aw-init`, and there is no root `scripts/install.sh`.
 - The installed `AGENTS.md` artifact stays within the word budget enforced by `scripts/test-install.sh` (currently 1,200 words), and `scripts/test-install.sh` fails when it is exceeded.
+- Every bundled `SKILL.md` stays within a word budget enforced by `scripts/test-install.sh` (currently 2,200 words), so detail that grows past it moves into `references/` rather than into the always-loaded skill body.
+- Every `references/` or `assets/` path named in a bundled `SKILL.md` exists; `scripts/test-install.sh` fails on a dangling skill reference, because a pointer to a missing file is an instruction the agent cannot follow.
+- `aw-capture solution` writes to `docs/solutions/<category>/YYYY-MM-DD-<slug>.md` using the bundled `references/solution-doc.md` schema, category mapping, and template; `aw-refresh solutions` maintains that tree, excluding `README.md` and `_archived/`.
+- Skills that reach GitHub (`aw-commit-push-pr`, `aw-resolve-pr-feedback`, `aw-debug`) resolve their access path before the first GitHub action — `gh` when available, GitHub MCP tools otherwise — and stay on that path for the run. When neither path reaches GitHub, they complete the local work and report which remote step did not run rather than reporting a PR, reply, or resolution that does not exist.
 - `scripts/test-install.sh` validates docs registries — every `docs/**/index.yml` parses, every indexed `path`/`spec` reference exists, and every `docs/features/*/spec.md` is indexed — for this repository and for each test-installed target repo.
 - Agents can discover and use the spec, standard, decision, and learning registries from `AGENTS.md`.
 - Installed `AGENTS.md` includes top-level task triage so trivial changes and small fixes can avoid the full spec/plan/review workflow when it is not warranted.
@@ -241,6 +247,8 @@ The workflow routes:
 - `aw-capture session` writes self-describing session logs with `status` in frontmatter; no session index exists or is maintained.
 - The memory loop functions without lifecycle hooks: the Stop hook is an optional convenience, and agents offer `aw-capture session` at meaningful session ends regardless.
 - `aw-synthesize-memory` promotes learnings only through corroboration (tentative until three sessions agree), expires uncorroborated learnings after three runs, requires user confirmation before writing standards, regenerates `docs/context/wiki.md` in full with a visible `generated` stamp, and removes processed logs past the retention window.
+- A learning's `derived-from` keeps an identifier for every corroborating session, including sessions whose logs have aged out; identifiers are never blanked or dropped, and `evidence-count` equals the number of identifiers cited. `scripts/test-install.sh` fails on an empty `derived-from` or a count mismatch.
+- Durable artifacts cite session logs by identifier (`YYYY-MM-DD-<slug>`), never by `docs/sessions/...` path. Because synthesis deletes processed logs past the retention window, a path written into a learning, standard, or the wiki becomes a dangling reference on a later run; the identifier stays resolvable through git history. `scripts/test-install.sh` fails when a session path appears in `docs/learnings/`, `docs/standards/`, or `docs/context/wiki.md`.
 - Agents treat a context wiki older than 30 days (or several unprocessed session logs behind) as stale and verify against the underlying registries.
 - Session logs and synthesis output are committed as separate `chore(session)` / `chore(memory)` commits, never inside feature commits.
 - New installs write `gates`, `telemetry`, and `org_knowledge` sections to `docs/workflow/config.yml`, all disabled by default. `aw-init --with-gates` additionally installs `.scripts/aw-gate.js`, appends `.aw-gate-state.json` and `.aw-org-cache/` to `.gitignore`, and registers `docs/metrics/events*.jsonl merge=union` in `.gitattributes`.

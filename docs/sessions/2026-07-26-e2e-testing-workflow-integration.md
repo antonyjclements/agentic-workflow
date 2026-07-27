@@ -1,7 +1,7 @@
 ---
 title: Integrate e2e test authoring capability into the workflow
 date: 2026-07-26
-status: unprocessed
+status: processed
 tags:
   - e2e-testing
   - workflow-config

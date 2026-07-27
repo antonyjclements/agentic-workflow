@@ -8,7 +8,7 @@ argument-hint: "[optional: feature description, spec path, plan path to deepen, 
 
 Current year: 2026. `aw-brainstorm` defines what; `aw-plan` defines how; `aw-work` executes. Direct invocation always produces or updates a plan. Do not implement code here.
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-plan` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-plan` (silent no-op otherwise).
 
 ## Interaction
 

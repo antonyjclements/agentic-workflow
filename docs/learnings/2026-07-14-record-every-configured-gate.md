@@ -4,10 +4,11 @@ scope: repo
 created: 2026-07-14
 trigger: dead-end
 status: tentative
-evidence-count: 1
+evidence-count: 2
 unconfirmed-runs: 0
 derived-from:
-  - docs/sessions/2026-07-03-enforcement-gates-telemetry-org-knowledge.md
+  - 2026-07-03-enforcement-gates-telemetry-org-knowledge
+  - 2026-07-27-augmented-workflow-evaluation-fixes
 tags:
   - workflow
   - enforcement
@@ -33,4 +34,4 @@ tags:
 
 ## Evidence
 
-- The first gate functional test recorded only `review`, but the default config enforced three gates, so `check` still failed until every configured gate was recorded. (docs/sessions/2026-07-03-enforcement-gates-telemetry-org-knowledge.md)
+- The first gate functional test recorded only `review`, but the default config enforced three gates, so `check` still failed until every configured gate was recorded. (`2026-07-03-enforcement-gates-telemetry-org-knowledge`)

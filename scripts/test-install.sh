@@ -18,6 +18,8 @@ for pair in \
   "docs/workflow/org-knowledge.md:skills/aw-init/artifacts/org-knowledge.md" \
   "docs/metrics/README.md:skills/aw-init/artifacts/metrics-readme.md" \
   "docs/product/prds/template.md:skills/aw-init/artifacts/prd-template.md" \
+  "docs/solutions/README.md:skills/aw-init/artifacts/solutions-readme.md" \
+  "skills/aw-prd/references/prd-template.md:skills/aw-init/artifacts/prd-template.md" \
   "docs/standards/coding-approach.md:skills/aw-init/artifacts/coding-approach.md" \
   "docs/standards/traceability.md:skills/aw-init/artifacts/traceability.md" \
   "docs/standards/behavior-pinning.md:skills/aw-init/artifacts/behavior-pinning.md" \
@@ -88,6 +90,93 @@ if [ "$agents_words" -gt "$agents_word_budget" ]; then
   echo "skills/aw-init/artifacts/AGENTS.md exceeds word budget: $agents_words > $agents_word_budget" >&2
   exit 1
 fi
+
+# Skills point at their own references/ and assets/ files for progressive
+# disclosure. Those pointers are instructions an agent will try to follow, so a
+# path that does not exist is a silent failure at runtime: the agent is told to
+# read a schema or template that isn't there. Four such pointers shipped broken
+# (aw-capture's three solution-doc files, aw-prd's bundled template) before this
+# guard existed.
+dangling=0
+while IFS= read -r skill_file; do
+  skill_dir="$(dirname "$skill_file")"
+  while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    if [ ! -e "$skill_dir/$ref" ]; then
+      echo "dangling skill reference: $skill_file points at missing $ref" >&2
+      dangling=1
+    fi
+  done <<< "$(grep -o '\(references\|assets\)/[A-Za-z0-9._-]*\.\(md\|yaml\|yml\|json\|sh\)' "$skill_file" | sort -u)"
+done <<< "$(find "$repo_root/skills" -name SKILL.md)"
+if [ "$dangling" -ne 0 ]; then
+  echo "every references/ or assets/ path named in a SKILL.md must exist" >&2
+  exit 1
+fi
+
+# Durable artifacts outlive session logs by design: aw-synthesize-memory deletes
+# processed logs past its retention window. So a docs/sessions/ path written into a
+# learning, a standard, or the wiki becomes a dangling reference on a later run — a
+# link that looks like an audit trail and is not one. Cite sessions by identifier
+# (YYYY-MM-DD-<slug>), which stays resolvable through git history. Four learnings
+# carried dangling paths before this guard existed.
+session_refs=0
+while IFS= read -r durable; do
+  [ -e "$durable" ] || continue
+  while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    echo "session path in durable artifact: ${durable#"$repo_root/"} references $ref" >&2
+    session_refs=1
+  done <<< "$(grep -o 'docs/sessions/[0-9A-Za-z._-]*\.md' "$durable" | sort -u)"
+done <<< "$(find "$repo_root/docs/learnings" "$repo_root/docs/standards" -name '*.md' 2>/dev/null; echo "$repo_root/docs/context/wiki.md")"
+if [ "$session_refs" -ne 0 ]; then
+  echo "cite sessions by identifier (YYYY-MM-DD-<slug>), not by path — retention deletes the logs" >&2
+  exit 1
+fi
+
+# A learning with no derived-from has no audit trail at all, which is the failure
+# the identifier scheme exists to avoid — blanking the list is not the fix for a
+# source log that aged out, since identifiers stay resolvable through git history.
+# Two learnings were blanked this way before the identifier scheme existed.
+# Learnings predating the memory loop (2026-07-02) have no session to cite; they are
+# listed here explicitly so an addition to this list has to be justified in the diff.
+learning_grandfathered="2026-05-24-blank-ticket-skill-is-opt-out.md"
+empty_derived=0
+while IFS= read -r learning; do
+  case " $learning_grandfathered " in *" $(basename "$learning") "*) continue ;; esac
+  count="$(awk '/^derived-from:/{f=1; if ($0 ~ /\[\]/) exit; next} f && /^  - /{c++; next} f && !/^  - /{exit} END{print c+0}' "$learning")"
+  if [ "${count:-0}" -eq 0 ]; then
+    echo "learning without audit trail: ${learning#"$repo_root/"} has an empty derived-from" >&2
+    empty_derived=1
+    continue
+  fi
+  # evidence-count is the number of sessions that corroborated the learning, so it
+  # must equal the number of identifiers cited. A mismatch means an identifier was
+  # dropped without decrementing the count — which is exactly how two learnings
+  # silently lost sources during the path-to-identifier migration.
+  evidence="$(awk '/^evidence-count:/{print $2; exit}' "$learning")"
+  if [ "${evidence:-0}" != "$count" ]; then
+    echo "audit trail mismatch: ${learning#"$repo_root/"} has evidence-count $evidence but $count derived-from identifier(s)" >&2
+    empty_derived=1
+  fi
+done <<< "$(find "$repo_root/docs/learnings" -name '*.md' 2>/dev/null)"
+if [ "$empty_derived" -ne 0 ]; then
+  echo "cite at least one session identifier (YYYY-MM-DD-<slug>); aged-out logs keep theirs" >&2
+  exit 1
+fi
+
+# Skill bodies are loaded in full the moment the skill is invoked, so they carry
+# the same "keep it lightweight" pressure as AGENTS.md. Detail belongs in
+# references/, which loads only when actually needed. The budget is a ratchet:
+# growing past it means cutting something or raising the number deliberately in
+# the same diff.
+skill_word_budget=2200
+while IFS= read -r skill_file; do
+  skill_words="$(wc -w < "$skill_file" | tr -d '[:space:]')"
+  if [ "$skill_words" -gt "$skill_word_budget" ]; then
+    echo "${skill_file#"$repo_root/"} exceeds skill word budget: $skill_words > $skill_word_budget" >&2
+    exit 1
+  fi
+done <<< "$(find "$repo_root/skills" -name SKILL.md)"
 
 # This repo self-hosts the workflow's docs/ registries; validate them too.
 # (validate_docs_indexes is defined below, so defer the call until after definitions.)
@@ -232,6 +321,9 @@ assert_repo_install() {
   assert_file "$target_repo/docs/workflow/gates.md"
   assert_file "$target_repo/docs/workflow/org-knowledge.md"
   assert_file "$target_repo/docs/metrics/README.md"
+  # aw-capture solution writes here and aw-refresh solutions maintains it, so the
+  # directory has to exist in installed repos rather than only in the docs.
+  assert_file "$target_repo/docs/solutions/README.md"
   assert_file "$target_repo/docs/workflow/config.yml"
   assert_contains "$target_repo/docs/workflow/README.md" "Workflow Config"
   assert_contains "$target_repo/docs/workflow/README.md" "Schema"

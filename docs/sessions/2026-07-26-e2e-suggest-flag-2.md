@@ -1,7 +1,7 @@
 ---
 title: Add trace --suggest-e2e for retrospective marker adoption
 date: 2026-07-26
-status: unprocessed
+status: processed
 tags:
   - e2e-testing
   - aw-gate

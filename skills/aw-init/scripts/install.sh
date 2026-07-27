@@ -461,6 +461,11 @@ install_repo_files() {
   ensure_standard_index_entry "docs/standards/e2e-coverage.md" "End-to-End Coverage" testing specs workflow
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
+  # docs/solutions/ is index-free and self-describing (same as brainstorms and
+  # sessions), so the README is the only thing to install. Without it, the
+  # directory aw-capture solution writes to and aw-refresh solutions maintains
+  # did not exist in installed repos.
+  copy_prompted "$artifact_dir/solutions-readme.md" "$repo_dir/docs/solutions/README.md"
   copy_prompted "$artifact_dir/workflow-readme.md" "$repo_dir/docs/workflow/README.md"
   copy_prompted "$artifact_dir/field-guide.md" "$repo_dir/docs/workflow/field-guide.md"
   copy_prompted "$artifact_dir/gates.md" "$repo_dir/docs/workflow/gates.md"

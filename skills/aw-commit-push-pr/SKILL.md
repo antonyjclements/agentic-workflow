@@ -5,7 +5,19 @@ description: Commit, push, and open a PR with an adaptive, value-first descripti
 
 # Git Commit, Push, and PR
 
-At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-commit-push-pr` — silent no-op otherwise. See `docs/workflow/tracking.md`.
+First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-commit-push-pr` (silent no-op otherwise).
+
+**Reaching GitHub:** the `gh` commands below are the fallback, not the default.
+Before the first GitHub step, establish the path and use it for every GitHub action
+in the run: **GitHub MCP tools (`mcp__github__*`) when available** — load schemas with
+`ToolSearch` if needed — otherwise `gh`. Prefer MCP because it honors the harness's
+permission and repo scoping, takes structured parameters, and returns JSON; `gh` uses
+whatever token is on the machine, which may be a different identity than this session
+is scoped to. See [references/github-access.md](references/github-access.md) for the
+command mapping. Git operations (`status`, `diff`, `commit`, `push`) are unaffected —
+they are plain git, not `gh`. If neither path reaches GitHub, do the local work,
+then say plainly that the PR was not created and why; never report a PR that does
+not exist.
 
 **Asking the user:** When this skill says "ask the user", use the platform's blocking question tool: `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex, `ask_user` in Gemini, `ask_user` in Pi (requires the `pi-ask-user` extension). Fall back to presenting the question in chat only when no blocking tool exists in the harness or the call errors (e.g., Codex edit modes) — not because a schema load is required. Never silently skip the question.
 

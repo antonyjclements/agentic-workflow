@@ -23,3 +23,9 @@ standards:
       - testing
       - specs
       - workflow
+  - path: docs/standards/guard-verification.md
+    title: Guard Verification
+    tags:
+      - testing
+      - enforcement
+      - aw-gate
