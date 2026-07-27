@@ -829,7 +829,7 @@ function mergeAnchorScans(a, b) {
   const seen = new Set();
   const anchors = [];
   for (const anchor of [...a.anchors, ...b.anchors]) {
-    const key = `${anchor.id} ${anchor.file} ${anchor.line}`;
+    const key = `${anchor.id}::${anchor.file}::${anchor.line}`;
     if (seen.has(key)) continue;
     seen.add(key);
     anchors.push(anchor);

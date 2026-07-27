@@ -240,6 +240,41 @@ write_file_if_missing() {
   echo "write: $dest"
 }
 
+ensure_standard_index_entry() {
+  local index_file="$repo_dir/docs/standards/index.yml"
+  local standard_path="$1"
+  local title="$2"
+  shift 2
+
+  mkdir -p "$(dirname "$index_file")"
+  if [ ! -f "$index_file" ]; then
+    printf 'standards: []\n' > "$index_file"
+    echo "write: $index_file"
+  fi
+
+  if grep -Fq "path: $standard_path" "$index_file"; then
+    echo "preserve: $index_file ($standard_path already indexed)"
+    return 0
+  fi
+
+  if grep -Fxq "standards: []" "$index_file"; then
+    local temp_file
+    temp_file="$(mktemp "${TMPDIR:-/tmp}/augmented-workflow-standards-index.XXXXXX")"
+    sed 's/^standards: \[\]$/standards:/' "$index_file" > "$temp_file"
+    mv "$temp_file" "$index_file"
+  fi
+
+  {
+    printf '  - path: %s\n' "$standard_path"
+    printf '    title: %s\n' "$title"
+    printf '    tags:\n'
+    for tag in "$@"; do
+      printf '      - %s\n' "$tag"
+    done
+  } >> "$index_file"
+  echo "index: $standard_path -> $index_file"
+}
+
 install_skills() {
   local source_skills_dir=""
 
@@ -421,6 +456,7 @@ install_repo_files() {
   copy_prompted "$artifact_dir/traceability.md" "$repo_dir/docs/standards/traceability.md"
   copy_prompted "$artifact_dir/behavior-pinning.md" "$repo_dir/docs/standards/behavior-pinning.md"
   copy_prompted "$artifact_dir/e2e-coverage.md" "$repo_dir/docs/standards/e2e-coverage.md"
+  ensure_standard_index_entry "docs/standards/e2e-coverage.md" "End-to-End Coverage" testing specs workflow
   write_file_if_missing "$repo_dir/docs/decisions/index.yml" "decisions: []"
   write_file_if_missing "$repo_dir/docs/learnings/index.yml" "learnings: []"
   copy_prompted "$artifact_dir/workflow-readme.md" "$repo_dir/docs/workflow/README.md"

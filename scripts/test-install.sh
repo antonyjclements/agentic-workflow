@@ -213,6 +213,7 @@ assert_repo_install() {
   assert_file "$target_repo/docs/standards/traceability.md"
   assert_file "$target_repo/docs/standards/behavior-pinning.md"
   assert_file "$target_repo/docs/standards/e2e-coverage.md"
+  assert_contains "$target_repo/docs/standards/index.yml" "docs/standards/e2e-coverage.md"
   assert_file "$target_repo/docs/decisions/index.yml"
   assert_file "$target_repo/docs/learnings/index.yml"
   assert_file "$target_repo/docs/workflow/README.md"
@@ -305,6 +306,24 @@ assert_file "$aw_init_learnings/index.yml"
 assert_symlink "$HOME/.claude/skills"
 assert_symlink "$HOME/.codeium/skills"
 assert_symlink "$HOME/.windsurf/skills"
+
+existing_standards_target="$tmp_root/existing-standards-target"
+mkdir -p "$existing_standards_target/docs/standards"
+cat > "$existing_standards_target/docs/standards/index.yml" <<'YAML'
+standards:
+  - path: docs/standards/coding-approach.md
+    title: Coding Approach
+YAML
+
+"$repo_root/skills/aw-init/scripts/install.sh" \
+  --repo "$existing_standards_target" \
+  --skip-skills \
+  --skip-skill-links \
+  --learnings-dir "$tmp_root/existing-standards-learnings"
+
+assert_file "$existing_standards_target/docs/standards/e2e-coverage.md"
+assert_contains "$existing_standards_target/docs/standards/index.yml" "docs/standards/coding-approach.md"
+assert_contains "$existing_standards_target/docs/standards/index.yml" "docs/standards/e2e-coverage.md"
 
 # --with-gates installs the deterministic gate helper and gitignores its state.
 gates_target="$tmp_root/gates-target"
