@@ -47,10 +47,11 @@ version has no entry here.
   sentences. The in-skill emit is unchanged — see
   `docs/decisions/2026-07-27-keep-tracking-emit-in-skills.md` for why it stays out
   of a lifecycle hook.
-- `docs/features/augmented-workflow/spec.md` states the durable contract for gates,
-  telemetry, tracking, traceability, workflow trace, and pins, and points at
-  `docs/workflow/gates.md` for CLI surface, flags, and config keys instead of
-  restating them. All acceptance criteria are unchanged.
+- `docs/features/augmented-workflow/spec.md` gains three acceptance criteria (skill
+  word budget, no dangling skill references, `aw-capture solution` storage) and a
+  routing entry for `docs/solutions/`. Nothing was removed: the CLI surface and
+  config keys are this product's observable contract, so they stay in the spec —
+  `docs/workflow/gates.md` is shipped output that conforms to it, not its source.
 
 ## [0.10.0] - 2026-07-26
 

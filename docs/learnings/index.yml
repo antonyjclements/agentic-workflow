@@ -1,4 +1,11 @@
 learnings:
+  - path: docs/learnings/2026-07-27-installed-artifacts-are-spec-output-not-spec-source.md
+    title: Installed reference docs are spec output, not a source the spec defers to
+    scope: repo
+    tags:
+      - specs
+      - self-hosting
+      - documentation
   - path: docs/learnings/2026-05-24-blank-ticket-skill-is-opt-out.md
     title: Blank ticket skill is an opt-out
     scope: repo
