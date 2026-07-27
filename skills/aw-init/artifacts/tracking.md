@@ -59,10 +59,10 @@ Good-enough grouping without infrastructure. Not perfect for parallel sessions i
 
 ## Emit command
 
-Skills shell out to `aw-gate.js track` — the same deterministic helper that owns telemetry, receipts, and freshness gates:
+Skills shell out to `aw-gate.js track` — the same deterministic helper that owns telemetry, receipts, and freshness gates. Always guard the call with a presence check so repos installed without `--with-gates` (no `.scripts/aw-gate.js`) stay silent instead of erroring on module-not-found:
 
 ```bash
-node .scripts/aw-gate.js track <skill>
+[ -f .scripts/aw-gate.js ] && node .scripts/aw-gate.js track <skill> || true
 ```
 
 The workflow step is derived inside `aw-gate.js` from the skill name (canonical map + `workflow.steps.<step>.skill` overrides), so skills pass only their own name. Auxiliary and meta skills (`aw-help`, `aw-init`) map to no step and are recorded with `workflow_step` omitted.
@@ -70,11 +70,16 @@ The workflow step is derived inside `aw-gate.js` from the skill name (canonical 
 Examples:
 
 ```bash
-node .scripts/aw-gate.js track aw-plan
-node .scripts/aw-gate.js track aw-help
+[ -f .scripts/aw-gate.js ] && node .scripts/aw-gate.js track aw-plan || true
+[ -f .scripts/aw-gate.js ] && node .scripts/aw-gate.js track aw-help || true
 ```
 
-The command is silent on success and never fails the caller (`try/catch` around the whole write). If `.scripts/aw-gate.js` is not installed in the repo, or `tracking.enabled` is false, or the config file is missing — the command exits 0 with no output. Skills need no conditional logic around the call.
+Two independent layers guarantee fire-and-forget:
+
+- The presence check keeps the command a no-op when the helper isn't installed (repos without `--with-gates`).
+- Inside `aw-gate.js`, the whole `cmdTrack` body is wrapped in `try/catch` and returns silently when `tracking.enabled` is false, the config file is missing, or any internal error occurs.
+
+Skills need no additional conditional logic around the call.
 
 Single-line JSONL appends are atomic on POSIX up to `PIPE_BUF` (~4KB), which the payload sits well under. Concurrent skill calls in the same repo won't tear each other's lines; `merge=union` handles concurrent branches.
 

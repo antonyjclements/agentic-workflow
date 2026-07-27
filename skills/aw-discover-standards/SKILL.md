@@ -6,7 +6,7 @@ argument-hint: "[optional focus area, path, domain, or standard idea]"
 
 # Discover Standards
 
-Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-discover-standards` — silent no-op otherwise. See `docs/workflow/tracking.md`.
 
 Extract durable project standards from real code. Write concise markdown standards under `docs/standards/` and keep `docs/standards/index.yml` as the registry.
 

@@ -6,7 +6,7 @@ argument-hint: "[optional target repo path]"
 
 # Initialize Augmented Workflow
 
-Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-init` — silent no-op otherwise. See `docs/workflow/tracking.md`.
 
 Install repo-local augmented-workflow files into a target repository.
 

@@ -6,7 +6,7 @@ argument-hint: "[decision|learning|solution|session] [context, correction, or de
 
 # Capture
 
-Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-capture` — silent no-op otherwise. See `docs/workflow/tracking.md`.
 
 Route to the right capture mode based on what happened.
 

@@ -6,7 +6,7 @@ argument-hint: "[feature key, subject path, or plan/spec path]"
 
 # Pin Behavior
 
-Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-pin-behavior` — silent no-op otherwise. See `docs/workflow/tracking.md`.
 
 Create an equivalence oracle before changing legacy or unclear behavior.
 

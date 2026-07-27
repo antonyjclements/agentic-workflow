@@ -8,7 +8,7 @@ argument-hint: "[Plan doc path or description of work. Blank to auto use latest 
 
 Execute a plan, spec, or bare work request through implementation, verification, review, and shipping readiness.
 
-Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-work` — silent no-op otherwise. See `docs/workflow/tracking.md`.
 
 ## Input
 

@@ -6,7 +6,7 @@ argument-hint: "[spec|plan] [artifact path]"
 
 # Request Human Review
 
-Emit a tracking event per `docs/workflow/tracking.md` at the start of this skill.
+At the start of this skill, if `.scripts/aw-gate.js` exists, run `node .scripts/aw-gate.js track aw-request-human-review` — silent no-op otherwise. See `docs/workflow/tracking.md`.
 
 Create a small PR for product/engineering sign-off on a spec or plan artifact.
 
