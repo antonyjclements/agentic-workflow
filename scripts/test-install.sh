@@ -113,6 +113,26 @@ if [ "$dangling" -ne 0 ]; then
   exit 1
 fi
 
+# Durable artifacts outlive session logs by design: aw-synthesize-memory deletes
+# processed logs past its retention window. So a docs/sessions/ path written into a
+# learning, a standard, or the wiki becomes a dangling reference on a later run — a
+# link that looks like an audit trail and is not one. Cite sessions by identifier
+# (YYYY-MM-DD-<slug>), which stays resolvable through git history. Four learnings
+# carried dangling paths before this guard existed.
+session_refs=0
+while IFS= read -r durable; do
+  [ -e "$durable" ] || continue
+  while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    echo "session path in durable artifact: ${durable#"$repo_root/"} references $ref" >&2
+    session_refs=1
+  done <<< "$(grep -o 'docs/sessions/[0-9A-Za-z._-]*\.md' "$durable" | sort -u)"
+done <<< "$(find "$repo_root/docs/learnings" "$repo_root/docs/standards" -name '*.md' 2>/dev/null; echo "$repo_root/docs/context/wiki.md")"
+if [ "$session_refs" -ne 0 ]; then
+  echo "cite sessions by identifier (YYYY-MM-DD-<slug>), not by path — retention deletes the logs" >&2
+  exit 1
+fi
+
 # Skill bodies are loaded in full the moment the skill is invoked, so they carry
 # the same "keep it lightweight" pressure as AGENTS.md. Detail belongs in
 # references/, which loads only when actually needed. The budget is a ratchet:

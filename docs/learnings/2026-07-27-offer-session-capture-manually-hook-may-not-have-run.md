@@ -7,8 +7,8 @@ status: tentative
 evidence-count: 2
 unconfirmed-runs: 0
 derived-from:
-  - docs/sessions/2026-07-26-e2e-testing-workflow-integration.md
-  - docs/sessions/2026-07-26-e2e-suggest-flag-2.md
+  - 2026-07-26-e2e-testing-workflow-integration
+  - 2026-07-26-e2e-suggest-flag-2
 tags:
   - workflow
   - session-capture

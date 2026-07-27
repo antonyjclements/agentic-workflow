@@ -45,6 +45,13 @@ version has no entry here.
 - `docs/standards/guard-verification.md` — a check that has only ever passed is not
   known to work. Promoted from a learning that reached three corroborating sessions;
   requires injecting the violation a guard exists to catch and confirming it fires.
+- Durable artifacts now cite session logs by identifier (`YYYY-MM-DD-<slug>`) instead
+  of `docs/sessions/...` path. `aw-synthesize-memory` deletes processed logs past its
+  retention window, so the two rules contradicted each other: the workflow required
+  citing a path it also required deleting, making dangling references inevitable.
+  `aw-capture` and `aw-synthesize-memory` learning formats updated, existing learnings
+  migrated, and `scripts/test-install.sh` now fails when a session path appears in
+  `docs/learnings/`, `docs/standards/`, or `docs/context/wiki.md`.
 
 ### Changed
 

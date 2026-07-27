@@ -7,8 +7,8 @@ status: tentative
 evidence-count: 2
 unconfirmed-runs: 0
 derived-from:
-  - docs/sessions/2026-07-26-e2e-suggest-flag-2.md
-  - docs/sessions/2026-07-27-augmented-workflow-evaluation-fixes.md
+  - 2026-07-26-e2e-suggest-flag-2
+  - 2026-07-27-augmented-workflow-evaluation-fixes
 tags:
   - workflow
   - review

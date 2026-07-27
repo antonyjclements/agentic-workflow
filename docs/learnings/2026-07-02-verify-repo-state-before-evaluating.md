@@ -7,8 +7,8 @@ status: active
 evidence-count: 3
 unconfirmed-runs: 0
 derived-from:
-  - docs/sessions/2026-07-26-e2e-testing-workflow-integration.md
-  - docs/sessions/2026-07-27-augmented-workflow-evaluation-fixes.md
+  - 2026-07-26-e2e-testing-workflow-integration
+  - 2026-07-27-augmented-workflow-evaluation-fixes
 tags:
   - process
   - evaluation

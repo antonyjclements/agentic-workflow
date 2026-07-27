@@ -7,7 +7,7 @@ status: tentative
 evidence-count: 1
 unconfirmed-runs: 0
 derived-from:
-  - docs/sessions/2026-07-27-augmented-workflow-evaluation-fixes.md
+  - 2026-07-27-augmented-workflow-evaluation-fixes
 tags:
   - specs
   - self-hosting

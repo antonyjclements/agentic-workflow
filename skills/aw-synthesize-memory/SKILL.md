@@ -25,7 +25,7 @@ Use this skill when:
 - Extract the signal, discard the noise. Not every session produces a durable learning.
 - New learnings start as `tentative`. They graduate to `active` only through corroboration across multiple sessions. This prevents a single hallucinated or misread session from polluting the wiki.
 - Dead ends are low-cost to record and high-value for future agents. Err toward preserving them.
-- `docs/context/wiki.md` is a synthesis artifact, not a source artifact. Regenerate it in full on each run; never manually edit it.
+- `docs/context/wiki.md` is a synthesis artifact, not a source artifact. Regenerate it in full on each run; never manually edit it. It must not reference `docs/sessions/` paths — those files are deleted by retention.
 - The wiki must carry its `generated` date both in frontmatter and in the visible header line, so consumers can judge staleness. Consumers treat a wiki older than 30 days as stale.
 - Every path the wiki references must exist in the repository the wiki is generated for; `scripts/test-install.sh` fails on dangling wiki references.
 - Prefer updating existing learnings to creating near-duplicate entries.
@@ -89,7 +89,7 @@ status: tentative | active
 evidence-count: <N>
 unconfirmed-runs: <N>
 derived-from:
-  - docs/sessions/YYYY-MM-DD-<slug>.md
+  - YYYY-MM-DD-<slug>
 tags:
   - <tag>
 ---
@@ -118,7 +118,16 @@ Reference each source by path.>
 - `status: active` — confirmed across three or more sessions. Included in wiki.
 - `evidence-count` — total number of sessions that have corroborated this learning.
 - `unconfirmed-runs` — number of consecutive synthesis runs since creation without corroboration. Reset to 0 on any corroboration. Remove the learning when this reaches 3.
-- `derived-from` — append each corroborating session path. This is the audit trail.
+- `derived-from` — append each corroborating session **identifier** (`YYYY-MM-DD-<slug>`: the log's filename without directory or extension). This is the audit trail.
+
+**Never write a `docs/sessions/...` path into a learning, a standard, or the wiki.**
+Step 10 of this workflow deletes processed session logs, so any path written into a
+durable artifact becomes a dangling reference on a later run — a link that looks like
+an audit trail and is not one. Durable artifacts outlive their source logs by design.
+Record the identifier instead: it stays resolvable through `git log --diff-filter=D
+-- docs/sessions/` after the file is gone, and it never claims a file exists in the
+working tree. The same rule applies to prose: cite evidence by quoting or summarizing
+it, not by linking to the log.
 
 ## Context Wiki Format
 
@@ -172,7 +181,8 @@ Keep the wiki under 500 words. It is loaded into agent context at session start,
 - A **dead end** becomes a learning when the failed approach is plausible enough that a future agent would try it.
 - A **working approach** does not need a learning unless it is non-obvious and an agent would not naturally try it.
 - Consolidate related items into one learning rather than writing several near-duplicates.
-- Every learning must cite at least one `derived-from` session log. Do not write a learning without traceable evidence.
+- Every learning must cite at least one `derived-from` session identifier. Do not write a learning without traceable evidence. Cite the identifier (`YYYY-MM-DD-<slug>`), never a `docs/sessions/...` path — see the `derived-from` note above.
+- A learning whose source logs have already aged out keeps its existing identifiers. They remain valid references into git history; do not blank them and do not convert them to paths.
 
 ## Relation to Other Skills
 
