@@ -30,6 +30,16 @@ version has no entry here.
   word budget. The first would have caught the four broken pointers above; the
   second applies the existing `AGENTS.md` budget discipline to skill bodies.
 
+- Harness-portable GitHub access. `aw-commit-push-pr`, `aw-resolve-pr-feedback`, and
+  `aw-debug` assumed the `gh` CLI, which does not exist in MCP-first harnesses
+  (Claude Code on the web), sandboxed runners, or many enterprise environments. Each
+  now resolves its path before the first GitHub action — `gh`, else GitHub MCP tools
+  — and reports honestly when neither is reachable instead of claiming a PR or a
+  resolved thread that was never created. New
+  `skills/aw-commit-push-pr/references/github-access.md` carries the command mapping;
+  `aw-resolve-pr-feedback` documents the MCP equivalent of each of its four `gh api
+  graphql` scripts and adds `mcp__github` to its `allowed-tools`.
+
 ### Changed
 
 - `aw-work` now has a description with trigger phrases and disambiguation from

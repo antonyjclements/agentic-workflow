@@ -7,6 +7,17 @@ description: Commit, push, and open a PR with an adaptive, value-first descripti
 
 First action, if `.scripts/aw-gate.js` exists: `node .scripts/aw-gate.js track aw-commit-push-pr` (silent no-op otherwise).
 
+**Reaching GitHub:** this skill is written against the `gh` CLI, but `gh` is absent in
+MCP-first harnesses (Claude Code on the web, sandboxed runners, many enterprise
+setups). Before the first GitHub step, establish which path is available and use it
+for every GitHub action in the run: `gh` when it works, otherwise the GitHub MCP
+tools (`mcp__github__*` — load schemas with `ToolSearch` if they are not yet
+available). See [references/github-access.md](references/github-access.md) for the
+command mapping. Git operations (`status`, `diff`, `commit`, `push`) are unaffected —
+they are plain git, not `gh`. If neither path reaches GitHub, do the local work,
+then say plainly that the PR was not created and why; never report a PR that does
+not exist.
+
 **Asking the user:** When this skill says "ask the user", use the platform's blocking question tool: `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex, `ask_user` in Gemini, `ask_user` in Pi (requires the `pi-ask-user` extension). Fall back to presenting the question in chat only when no blocking tool exists in the harness or the call errors (e.g., Codex edit modes) — not because a schema load is required. Never silently skip the question.
 
 ## Mode

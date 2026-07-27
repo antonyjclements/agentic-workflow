@@ -99,6 +99,7 @@ The workflow routes:
 - cross-session memory through `aw-capture session` and `aw-synthesize-memory`
 - interactive skill recommendation through `aw-help`
 - ticket-first implementation handoff for agents that start from a ticket ID or URL after checkout
+- GitHub access through whichever path the harness provides: the `gh` CLI, or GitHub MCP tools (`mcp__github__*`) where `gh` is unavailable
 - deterministic spec traceability checks and annotation proxying through `.scripts/aw-gate.js`
 - deterministic workflow execution breadcrumbs and checks through `.scripts/aw-gate.js`
 
@@ -222,6 +223,7 @@ The workflow routes:
 - Every bundled `SKILL.md` stays within a word budget enforced by `scripts/test-install.sh` (currently 2,200 words), so detail that grows past it moves into `references/` rather than into the always-loaded skill body.
 - Every `references/` or `assets/` path named in a bundled `SKILL.md` exists; `scripts/test-install.sh` fails on a dangling skill reference, because a pointer to a missing file is an instruction the agent cannot follow.
 - `aw-capture solution` writes to `docs/solutions/<category>/YYYY-MM-DD-<slug>.md` using the bundled `references/solution-doc.md` schema, category mapping, and template; `aw-refresh solutions` maintains that tree, excluding `README.md` and `_archived/`.
+- Skills that reach GitHub (`aw-commit-push-pr`, `aw-resolve-pr-feedback`, `aw-debug`) resolve their access path before the first GitHub action — `gh` when available, GitHub MCP tools otherwise — and stay on that path for the run. When neither path reaches GitHub, they complete the local work and report which remote step did not run rather than reporting a PR, reply, or resolution that does not exist.
 - `scripts/test-install.sh` validates docs registries — every `docs/**/index.yml` parses, every indexed `path`/`spec` reference exists, and every `docs/features/*/spec.md` is indexed — for this repository and for each test-installed target repo.
 - Agents can discover and use the spec, standard, decision, and learning registries from `AGENTS.md`.
 - Installed `AGENTS.md` includes top-level task triage so trivial changes and small fixes can avoid the full spec/plan/review workflow when it is not warranted.

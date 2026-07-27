@@ -2,7 +2,7 @@
 name: aw-resolve-pr-feedback
 description: Resolve PR review feedback by evaluating validity and fixing issues in parallel. Use when addressing PR review comments, resolving review threads, or fixing code review feedback.
 argument-hint: "[PR number, comment URL, or blank for current branch's PR]"
-allowed-tools: Bash(gh *), Bash(git *), Read
+allowed-tools: Bash(gh *), Bash(git *), Read, mcp__github
 ---
 
 # Resolve PR Review Feedback
@@ -35,7 +35,30 @@ After determining mode, read the matching reference and follow it. Each referenc
 - **Full Mode** → `references/full-mode.md` (10 steps: fetch, triage, optional cluster analysis, plan, parallel implement, validate, commit/push, reply/resolve, verify, summary)
 - **Targeted Mode** → `references/targeted-mode.md` (2 steps: extract thread context from URL, fix/reply/resolve via the same validate/commit/push/reply pipeline)
 
+## Reaching GitHub
+
+Every script below shells out to `gh api graphql`, so all of them fail where `gh` is
+absent — MCP-first harnesses (Claude Code on the web), sandboxed runners, and many
+enterprise setups. Establish the path once, before fetching threads, and stay on it:
+
+| Need | `gh` path | GitHub MCP path |
+| --- | --- | --- |
+| Unresolved review threads | `scripts/get-pr-comments` | `pull_request_read` (review comments), grouping by thread |
+| Thread for a comment ID | `scripts/get-thread-for-comment` | `pull_request_read`, matching the comment ID |
+| Reply within a thread | `scripts/reply-to-pr-thread` | `add_reply_to_pull_request_comment` |
+| Resolve a thread | `scripts/resolve-pr-thread` | `resolve_review_thread` |
+
+Load MCP schemas with `ToolSearch` if they are not yet available. MCP tools need
+`owner` and `repo` explicitly; derive them from `git remote get-url origin`.
+
+If neither path reaches GitHub, still evaluate and fix the feedback you were given,
+then state which threads could not be replied to or resolved. Never claim a thread
+was resolved when the call did not run.
+
 ## Scripts
+
+`gh` path only. Each is a thin GraphQL wrapper; see the table above for the MCP
+equivalent.
 
 - [scripts/get-pr-comments](scripts/get-pr-comments) -- GraphQL query for unresolved review threads
 - [scripts/get-thread-for-comment](scripts/get-thread-for-comment) -- Map a comment node ID to its parent thread (for targeted mode)
@@ -47,5 +70,5 @@ After determining mode, read the matching reference and follow it. Each referenc
 - All unresolved review threads evaluated
 - Valid fixes committed and pushed
 - Each thread replied to with quoted context
-- Threads resolved via GraphQL (except `needs-human`)
-- Empty result from get-pr-comments on verify (minus intentionally-open threads)
+- Threads resolved (except `needs-human`), by whichever path this run is using
+- Verification fetch returns no unresolved threads (minus intentionally-open ones)
